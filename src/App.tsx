@@ -60,7 +60,6 @@ interface CustomService {
 
 interface Product {
   id: string
-  code?: string
   name: string
   category: string
   cost_price: number
@@ -109,9 +108,9 @@ const DEFAULT_SERVICES: CustomService[] = [
 ]
 
 const DEFAULT_PRODUCTS: Product[] = [
-  { id: '1', code: 'SSD480', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
-  { id: '2', code: 'TEL11', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
-  { id: '3', code: 'FNT500', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
+  { id: '1', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
+  { id: '2', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
+  { id: '3', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
 ]
 
 const NAV_ITEMS = [
@@ -159,7 +158,7 @@ const NAV_ITEMS = [
   },
 ] as const
 
-// ─── Componentes de UI Auxiliares ─────────────────────────────────────────────
+// ─── Componentes Auxiliares ───────────────────────────────────────────────────
 
 function AppLogo({ size = 36 }: { size?: number }) {
   const [imgError, setImgError] = useState(false)
@@ -363,7 +362,7 @@ function Topbar({
   )
 }
 
-// ─── Telas de Autenticação e Impressão ─────────────────────────────────────────
+// ─── Login Screen ─────────────────────────────────────────────────────────────
 
 function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; isDark: boolean }) {
   const [email, setEmail] = useState('')
@@ -449,6 +448,8 @@ function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; i
     </div>
   )
 }
+
+// ─── Modal de Emissão (OS e Vendas PDV) ─────────────────────────────────────────
 
 function PrintModal({
   order,
@@ -1159,7 +1160,6 @@ function QuotesScreen({
                               Virar OS
                             </button>
                           )}
-                          <WhatsAppBtn phone={q.phone} quoteDetails={q} />
                           <button
                             type="button"
                             onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
@@ -1175,6 +1175,282 @@ function QuotesScreen({
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tela de PDV (Frente de Caixa) ────────────────────────────────────────────
+
+function PDVScreen({
+  products = [],
+  clients = [],
+  sales = [],
+  isDark,
+  onCompleteSale,
+  onPrintSale,
+  onOpenMenu,
+}: {
+  products: Product[]
+  clients: Client[]
+  sales: Sale[]
+  isDark: boolean
+  onCompleteSale: (sale: Sale) => void
+  onPrintSale: (sale: Sale) => void
+  onOpenMenu: () => void
+}) {
+  const [cart, setCart] = useState<{ product: Product; qty: number }[]>([])
+  const [selectedClient, setSelectedClient] = useState('')
+  const [clientPhone, setClientPhone] = useState('')
+  const [clientCpf, setClientCpf] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'Dinheiro' | 'PIX' | 'Cartão de Crédito' | 'Cartão de Débito'>('PIX')
+
+  const total = cart.reduce((acc, item) => acc + (item.product.sale_price * item.qty), 0)
+
+  const handleSelectClient = (name: string) => {
+    setSelectedClient(name)
+    const found = clients.find(c => c.name.toLowerCase() === name.toLowerCase())
+    if (found) {
+      setClientPhone(found.phone)
+      setClientCpf(found.cpf)
+    }
+  }
+
+  const addToCart = (product: Product) => {
+    if (product.stock <= 0) {
+      alert('Produto sem estoque disponível!')
+      return
+    }
+    setCart(prev => {
+      const exists = prev.find(item => item.product.id === product.id)
+      if (exists) {
+        if (exists.qty >= product.stock) {
+          alert('Quantidade máxima em estoque atingida!')
+          return prev
+        }
+        return prev.map(item => item.product.id === product.id ? { ...item, qty: item.qty + 1 } : item)
+      }
+      return [...prev, { product, qty: 1 }]
+    })
+  }
+
+  const updateCartQty = (productId: string, qty: number, stock: number) => {
+    if (qty > stock) {
+      alert('Quantidade superior ao estoque disponível!')
+      return
+    }
+    if (qty <= 0) {
+      setCart(prev => prev.filter(item => item.product.id !== productId))
+      return
+    }
+    setCart(prev => prev.map(item => item.product.id === productId ? { ...item, qty } : item))
+  }
+
+  const handleFinishSale = () => {
+    if (cart.length === 0) {
+      alert('Adicione ao menos um produto no carrinho!')
+      return
+    }
+
+    const saleData: Sale = {
+      id: `VD-${Math.floor(1000 + Math.random() * 9000)}`,
+      client: selectedClient.trim() || 'Consumidor Final',
+      phone: clientPhone,
+      cpf: clientCpf,
+      payment_method: paymentMethod,
+      items: cart.map(item => ({
+        desc: item.product.name,
+        qty: item.qty,
+        unit: item.product.sale_price,
+      })),
+      total,
+      date: new Date().toLocaleDateString('pt-BR'),
+    }
+
+    onCompleteSale(saleData)
+    setCart([])
+    setSelectedClient('')
+    setClientPhone('')
+    setClientCpf('')
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Frente de Caixa (PDV)" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
+
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          {/* Coluna da Esquerda: Catálogo de Produtos para Venda */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className={`p-4 rounded-xl border ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
+              <h2 className="text-sm font-bold mb-3">Selecione os Produtos</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+                {products.length === 0 ? (
+                  <div className="col-span-2 text-center py-8 text-neutral-400 text-xs">Nenhum produto cadastrado no estoque</div>
+                ) : (
+                  products.map(p => (
+                    <div
+                      key={p.id}
+                      onClick={() => addToCart(p)}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between ${
+                        p.stock <= 0
+                          ? 'opacity-40 border-neutral-700 bg-neutral-900 pointer-events-none'
+                          : isDark ? 'border-neutral-800 bg-[#181818] hover:border-[#0066FF]' : 'border-slate-200 bg-slate-50 hover:border-[#0066FF]'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-bold text-xs">{p.name}</div>
+                        <div className="text-[10px] text-neutral-400">{p.category}</div>
+                      </div>
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-neutral-500/20">
+                        <span className="font-mono text-xs font-bold text-green-500">R$ {p.sale_price.toFixed(2)}</span>
+                        <span className="text-[10px] font-mono text-neutral-400">Estoque: {p.stock}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Histórico de Vendas Recentes */}
+            <div className={`p-4 rounded-xl border ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
+              <h2 className="text-sm font-bold mb-3">Últimas Vendas Realizadas</h2>
+              <div className="max-h-48 overflow-y-auto divide-y divide-neutral-500/10 text-xs">
+                {sales.length === 0 ? (
+                  <div className="text-center py-4 text-neutral-400">Nenhuma venda registrada ainda</div>
+                ) : (
+                  sales.slice(0, 5).map(s => (
+                    <div key={s.id} className="py-2 flex items-center justify-between">
+                      <div>
+                        <div className="font-bold">{s.client} <span className="font-normal text-neutral-400">({s.payment_method})</span></div>
+                        <div className="text-[10px] text-neutral-400">{s.date} - #{s.id}</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono font-bold text-green-500">R$ {s.total.toFixed(2)}</span>
+                        <button
+                          type="button"
+                          onClick={() => onPrintSale(s)}
+                          className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                          title="Imprimir Cupom"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Coluna da Direita: Carrinho e Finalização */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className={`p-4 rounded-xl border flex flex-col justify-between ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
+              <div>
+                <h2 className="text-sm font-bold mb-3">Carrinho de Compras</h2>
+                
+                {/* Dados do Cliente */}
+                <div className="space-y-2 mb-4">
+                  <input
+                    list="pdv-client-list"
+                    value={selectedClient}
+                    onChange={e => handleSelectClient(e.target.value)}
+                    placeholder="Cliente (opcional, padrão: Consumidor Final)"
+                    className={inputClass}
+                  />
+                  <datalist id="pdv-client-list">
+                    {clients.map(c => <option key={c.id} value={c.name} />)}
+                  </datalist>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={clientPhone}
+                      onChange={e => setClientPhone(e.target.value)}
+                      placeholder="Telefone"
+                      className={inputClass}
+                    />
+                    <input
+                      value={clientCpf}
+                      onChange={e => setClientCpf(e.target.value)}
+                      placeholder="CPF na Nota"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                {/* Itens no Carrinho */}
+                <div className="border-t border-b border-neutral-500/20 py-2 max-h-48 overflow-y-auto divide-y divide-neutral-500/10">
+                  {cart.length === 0 ? (
+                    <div className="text-center py-6 text-neutral-400 text-xs">Carrinho vazio</div>
+                  ) : (
+                    cart.map(item => (
+                      <div key={item.product.id} className="py-2 flex items-center justify-between text-xs">
+                        <div className="pr-2 flex-1">
+                          <div className="font-semibold">{item.product.name}</div>
+                          <div className="text-[10px] text-neutral-400">R$ {item.product.sale_price.toFixed(2)} un</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max={item.product.stock}
+                            value={item.qty}
+                            onChange={e => updateCartQty(item.product.id, Number(e.target.value), item.product.stock)}
+                            className="w-12 text-center rounded border border-neutral-700 bg-transparent text-xs py-1"
+                          />
+                          <span className="font-mono font-bold w-16 text-right">R$ {(item.product.sale_price * item.qty).toFixed(2)}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateCartQty(item.product.id, 0, item.product.stock)}
+                            className="text-neutral-400 hover:text-red-500 p-1"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Forma de Pagamento */}
+                <div className="mt-4">
+                  <label className="block text-xs font-mono text-neutral-400 mb-1">Forma de Pagamento:</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={e => setPaymentMethod(e.target.value as any)}
+                    className={inputClass}
+                  >
+                    <option value="PIX">⚡ PIX</option>
+                    <option value="Dinheiro">💵 Dinheiro</option>
+                    <option value="Cartão de Crédito">💳 Cartão de Crédito</option>
+                    <option value="Cartão de Débito">💳 Cartão de Débito</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Total e Conclusão */}
+              <div className="mt-5 pt-3 border-t border-neutral-500/20">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs uppercase font-mono text-neutral-400">Total a Pagar:</span>
+                  <span className="text-xl font-black font-mono text-green-500">R$ {total.toFixed(2)}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleFinishSale}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:opacity-95 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Concluir Venda & Baixar Estoque</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1464,171 +1740,739 @@ function SettingsScreen({
   )
 }
 
-// ─── DashboardScreen Declarado (Correção Definitiva do Erro) ─────────────────
+// ─── Modais de OS, Orçamento e Cliente ────────────────────────────────────────
 
-function DashboardScreen({
-  orders = [],
-  quotes = [],
+function OrderModal({
+  onClose,
+  clients = [],
   statuses = [],
+  services = [],
+  products = [],
+  onSave,
+  onQuickNewClient,
+  orderToEdit,
   isDark,
-  onNewOrder,
-  onNewQuote,
-  onNewClient,
-  onEditOrder,
-  onPrintOrder,
-  onOpenMenu,
 }: {
-  orders: Order[]
-  quotes: Quote[]
+  onClose: () => void
+  clients: Client[]
   statuses: CustomStatus[]
+  services: CustomService[]
+  products: Product[]
+  onSave: (order: Order) => void
+  onQuickNewClient: () => void
+  orderToEdit?: Order | null
   isDark: boolean
-  onNewOrder: () => void
-  onNewQuote: () => void
-  onNewClient: () => void
-  onEditOrder: (order: Order) => void
-  onPrintOrder: (order: Order) => void
-  onOpenMenu: () => void
 }) {
-  const [search, setSearch] = useState('')
+  const safeClients = Array.isArray(clients) ? clients : []
+  const safeStatuses = Array.isArray(statuses) ? statuses : []
+  const safeServices = Array.isArray(services) ? services : []
+  const safeProducts = Array.isArray(products) ? products : []
 
-  const safeOrders = Array.isArray(orders) ? orders : []
-  const safeQuotes = Array.isArray(quotes) ? quotes : []
-
-  const openOrders = safeOrders.filter(o => o && o.status !== 'Concluído' && o.status !== 'Entregue' && o.status !== 'Cancelado').length
-  const completedOrders = safeOrders.filter(o => o && (o.status === 'Concluído' || o.status === 'Entregue')).length
-  const pendingQuotes = safeQuotes.filter(q => q && q.status === 'Pendente').length
-  const totalRevenue = safeOrders.filter(o => o && o.status !== 'Cancelado').reduce((sum, o) => sum + Number(o.value || 0), 0)
-
-  const filteredOrders = safeOrders.filter(o =>
-    o && (
-      (o.client || '').toLowerCase().includes(search.toLowerCase()) ||
-      (o.device || '').toLowerCase().includes(search.toLowerCase()) ||
-      (o.id || '').toLowerCase().includes(search.toLowerCase())
-    )
+  const [client, setClient] = useState(orderToEdit?.client || (safeClients.length > 0 ? safeClients[0].name : ''))
+  const [phone, setPhone] = useState(orderToEdit?.phone || '')
+  const [device, setDevice] = useState(orderToEdit?.device || '')
+  const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
+  const [notes, setNotes] = useState(orderToEdit?.notes || '')
+  const [status, setStatus] = useState(orderToEdit?.status || (safeStatuses.length > 0 ? safeStatuses[0].label : 'Entrada'))
+  const [items, setItems] = useState<OrderItem[]>(
+    orderToEdit?.items && orderToEdit.items.length > 0
+      ? orderToEdit.items
+      : [{ desc: orderToEdit?.service || '', qty: 1, unit: orderToEdit?.value || 0 }]
   )
 
+  useEffect(() => {
+    if (!phone && client && safeClients.length > 0) {
+      const found = safeClients.find(c => c.name === client)
+      if (found) setPhone(found.phone)
+    }
+  }, [client, safeClients])
+
+  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
+
+  const handleClientSelectChange = (name: string) => {
+    setClient(name)
+    const found = safeClients.find(c => c.name === name)
+    if (found) setPhone(found.phone)
+  }
+
+  const handleApplyPreset = (value: string, index: number) => {
+    const svc = safeServices.find(s => s.name === value)
+    if (svc) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+      return
+    }
+    const prod = safeProducts.find(p => p.name === value)
+    if (prod) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
+    }
+  }
+
+  const handleSave = (e: React.FormEvent, sendToWhatsApp = false) => {
+    e.preventDefault()
+    if (!client.trim() || !device.trim()) {
+      alert('Selecione o cliente e informe o aparelho!')
+      return
+    }
+
+    const firstService = items[0]?.desc?.trim() || 'Serviço Técnico'
+    const savedOrder: Order = {
+      id: orderToEdit?.id || `OS-${Math.floor(1000 + Math.random() * 9000)}`,
+      client,
+      phone,
+      device,
+      service: firstService,
+      status,
+      value: total,
+      date: orderToEdit?.date || new Date().toLocaleDateString('pt-BR'),
+      technician: technician || 'Admin',
+      notes,
+      items,
+    }
+
+    onSave(savedOrder)
+
+    if (sendToWhatsApp && phone) {
+      const msg = `*AndradeTech - Ordem de Serviço #${savedOrder.id}*\n\n` +
+                  `Olá, *${client}*!\n` +
+                  `*Aparelho:* ${device}\n` +
+                  `*Serviço:* ${firstService}\n` +
+                  `*Situação:* ${status}\n` +
+                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
+                  `Qualquer dúvida estamos à disposição!`
+      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
+    }
+
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <Topbar
-        title="Visão Geral"
-        isDark={isDark}
-        onOpenMobileMenu={onOpenMenu}
-        onNewOrder={onNewOrder}
-        onNewQuote={onNewQuote}
-        onNewClient={onNewClient}
-      />
-
-      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
-        <div className="relative">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
-            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-          </svg>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Pesquisar por OS, cliente, aparelho..."
-            className={`w-full rounded-xl border py-2.5 pl-9 pr-4 text-xs outline-none transition-colors sm:text-sm ${
-              isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
-            }`}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-          {[
-            { label: 'Em Aberto', value: openOrders.toString(), sub: 'serviços ativos', color: 'text-[#0066FF]' },
-            { label: 'Concluídos', value: completedOrders.toString(), sub: 'finalizados', color: 'text-green-500' },
-            { label: 'Orçamentos', value: pendingQuotes.toString(), sub: 'pendentes', color: 'text-[#8A2BE2]' },
-            { label: 'Previsto', value: `R$ ${totalRevenue.toFixed(0)}`, sub: 'total faturado', color: isDark ? 'text-white' : 'text-slate-800' },
-          ].map(kpi => (
-            <div key={kpi.label} className={`rounded-xl border p-3 sm:p-4 transition-colors ${
-              isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-            }`}>
-              <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">{kpi.label}</span>
-              <div className={`mt-1 text-lg font-bold tracking-tight sm:text-2xl ${kpi.color}`}>{kpi.value}</div>
-              <div className="mt-0.5 font-mono text-[10px] text-neutral-400 sm:text-xs">{kpi.sub}</div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
+              {orderToEdit ? `EDITANDO ${orderToEdit.id}` : 'NOVO REGISTRO'}
             </div>
-          ))}
+            <h2 className="text-sm font-bold sm:text-base">
+              {orderToEdit ? 'Editar Ordem de Serviço' : 'Registrar Ordem de Serviço'}
+            </h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
         </div>
 
-        <div className={`overflow-hidden rounded-xl border transition-colors ${
-          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-        }`}>
-          <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-            <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Ordens de Serviço Recentes</span>
-            <span className="font-mono text-[11px] text-neutral-400">{safeOrders.length} cadastradas</span>
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
+                <button
+                  type="button"
+                  onClick={onQuickNewClient}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
+                  title="Cadastrar Novo Cliente"
+                >
+                  <span>+</span> Cliente
+                </button>
+              </div>
+              <input
+                list="order-client-options"
+                value={client}
+                onChange={e => handleClientSelectChange(e.target.value)}
+                placeholder="Selecione ou digite..."
+                className={inputClass}
+              />
+              <datalist id="order-client-options">
+                {safeClients.map(c => <option key={c.id} value={c.name} />)}
+              </datalist>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="(DDD) 99999-9999"
+                className={inputClass}
+              />
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[620px] text-xs">
-              <thead>
-                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Contato</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
-                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={6}>
-                      <EmptyState
-                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
-                        title="Nenhuma ordem recente"
-                        sub="Registre uma nova OS ou Orçamento"
-                        isDark={isDark}
-                      />
-                    </td>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
+              <input
+                value={device}
+                onChange={e => setDevice(e.target.value)}
+                placeholder="Ex: Notebook Lenovo, Galaxy S21..."
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
+              <select
+                value={status}
+                onChange={e => setStatus(e.target.value)}
+                className={inputClass}
+              >
+                {safeStatuses.map(s => (
+                  <option key={s.id} value={s.label}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Técnico Responsável</label>
+            <input
+              value={technician}
+              onChange={e => setTechnician(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Diagnóstico / Defeito</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Relato do problema, observações do aparelho..."
+              className={`${inputClass} resize-none`}
+            />
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Serviços & Peças</label>
+              <button
+                type="button"
+                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
+                className="text-xs font-semibold text-[#0066FF] hover:text-[#8A2BE2]"
+              >
+                + Adicionar Item
+              </button>
+            </div>
+
+            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <th className="px-3 py-2 text-left">Item (Serviço ou Peça)</th>
+                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
+                    <th className="w-20 px-2 py-2 text-right">Unit</th>
+                    <th className="w-20 px-2 py-2 text-right">Total</th>
+                    <th className="w-8"></th>
                   </tr>
-                ) : (
-                  filteredOrders.slice(0, 10).map(order => (
-                    <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
-                      <td className="px-3 py-2.5">
-                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
-                        <div className="font-mono text-[10px] text-neutral-400">{order.phone || 'Sem telefone'}</div>
-                      </td>
-                      <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
-                      <td className="px-3 py-2.5"><StatusBadge status={order.status} statuses={statuses} /></td>
-                      <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
-                        {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
-                      </td>
-                      <td className="px-3 py-2.5 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => onPrintOrder(order)}
-                            className="p-1 rounded text-neutral-400 hover:text-purple-500"
-                            title="Imprimir OS / Cupom"
+                </thead>
+                <tbody>
+                  {items.map((item, i) => (
+                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
+                      <td className="px-2 py-1.5">
+                        <div className="flex flex-col gap-1 sm:flex-row">
+                          <input
+                            value={item.desc}
+                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
+                            placeholder="Descrição..."
+                            className="w-full bg-transparent outline-none"
+                          />
+                          <select
+                            onChange={e => {
+                              if (e.target.value) handleApplyPreset(e.target.value, i)
+                            }}
+                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
+                            defaultValue=""
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onEditOrder(order)}
-                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
-                            title="Editar OS"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                            <option value="" disabled>Catálogo</option>
+                            <optgroup label="Serviços">
+                              {safeServices.map(s => (
+                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Produtos / Peças">
+                              {safeProducts.map(p => (
+                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
+                              ))}
+                            </optgroup>
+                          </select>
                         </div>
                       </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
+                          className="w-full bg-transparent text-center font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-1 py-1.5 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={item.unit || ''}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
+                          placeholder="0"
+                          className="w-full bg-transparent text-right font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
+                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
+                          className="text-neutral-400 hover:text-red-500"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
+                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
+                    <td className="px-2 py-2 text-right font-bold text-[#0066FF]">R$ {total.toFixed(2)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
+
+        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
+            Cancelar
+          </button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20 sm:flex-initial">
+              Salvar OS
+            </button>
+            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
+              Salvar & Whats
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   )
 }
 
-// ─── Raiz da Aplicação ────────────────────────────────────────────────────────
+function QuoteModal({
+  onClose,
+  clients = [],
+  services = [],
+  products = [],
+  onSave,
+  onConvertToOrder,
+  onQuickNewClient,
+  isDark,
+}: {
+  onClose: () => void
+  clients: Client[]
+  services: CustomService[]
+  products: Product[]
+  onSave: (quote: Quote) => void
+  onConvertToOrder: (quote: Quote) => void
+  onQuickNewClient: () => void
+  isDark: boolean
+}) {
+  const safeClients = Array.isArray(clients) ? clients : []
+  const safeServices = Array.isArray(services) ? services : []
+  const safeProducts = Array.isArray(products) ? products : []
+
+  const [client, setClient] = useState(safeClients.length > 0 ? safeClients[0].name : '')
+  const [phone, setPhone] = useState('')
+  const [device, setDevice] = useState('')
+  const [description, setDescription] = useState('')
+  const [validDays, setValidDays] = useState('7')
+  const [items, setItems] = useState<OrderItem[]>([{ desc: '', qty: 1, unit: 0 }])
+
+  useEffect(() => {
+    if (!phone && client && safeClients.length > 0) {
+      const found = safeClients.find(c => c.name === client)
+      if (found) setPhone(found.phone)
+    }
+  }, [client, safeClients])
+
+  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
+
+  const handleClientSelectChange = (name: string) => {
+    setClient(name)
+    const found = safeClients.find(c => c.name === name)
+    if (found) setPhone(found.phone)
+  }
+
+  const handleApplyPreset = (value: string, index: number) => {
+    const svc = safeServices.find(s => s.name === value)
+    if (svc) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+      return
+    }
+    const prod = safeProducts.find(p => p.name === value)
+    if (prod) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
+    }
+  }
+
+  const handleSave = (e: React.FormEvent, sendWhatsApp = false) => {
+    e.preventDefault()
+    if (!client.trim() || !device.trim()) {
+      alert('Selecione o cliente e informe o aparelho!')
+      return
+    }
+
+    const expDate = new Date()
+    expDate.setDate(expDate.getDate() + (Number(validDays) || 7))
+
+    const quoteData: Quote = {
+      id: `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
+      client,
+      phone,
+      device,
+      description: description || items[0]?.desc || 'Proposta de serviço',
+      value: total,
+      validUntil: expDate.toLocaleDateString('pt-BR'),
+      createdAt: new Date().toLocaleDateString('pt-BR'),
+      status: 'Pendente',
+      items,
+    }
+
+    onSave(quoteData)
+
+    if (sendWhatsApp && phone) {
+      const msg = `*AndradeTech - Proposta de Orçamento #${quoteData.id}*\n\n` +
+                  `Olá, *${client}*!\n` +
+                  `*Aparelho:* ${device}\n` +
+                  `*Descrição:* ${quoteData.description}\n` +
+                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
+                  `*Válido até:* ${quoteData.validUntil}\n\n` +
+                  `Aguardamos sua confirmação!`
+      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
+    }
+
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">PROPOSTA COMERCIAL</div>
+            <h2 className="text-sm font-bold sm:text-base">Criar Novo Orçamento</h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
+                <button
+                  type="button"
+                  onClick={onQuickNewClient}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
+                  title="Cadastrar Novo Cliente"
+                >
+                  <span>+</span> Cliente
+                </button>
+              </div>
+              <input
+                list="quote-client-options"
+                value={client}
+                onChange={e => handleClientSelectChange(e.target.value)}
+                placeholder="Selecione ou digite..."
+                className={inputClass}
+              />
+              <datalist id="quote-client-options">
+                {safeClients.map(c => <option key={c.id} value={c.name} />)}
+              </datalist>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="(DDD) 99999-9999"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
+              <input
+                value={device}
+                onChange={e => setDevice(e.target.value)}
+                placeholder="Ex: iPhone 12, Notebook Acer..."
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Validade</label>
+              <select
+                value={validDays}
+                onChange={e => setValidDays(e.target.value)}
+                className={inputClass}
+              >
+                <option value="3">3 dias</option>
+                <option value="7">7 dias (padrão)</option>
+                <option value="15">15 dias</option>
+                <option value="30">30 dias</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Resumo do Diagnóstico</label>
+            <textarea
+              rows={2}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Descreva a falha constatada e o que precisa ser substituído..."
+              className={`${inputClass} resize-none`}
+            />
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Itens / Peças / Serviços</label>
+              <button
+                type="button"
+                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
+                className="text-xs font-semibold text-[#8A2BE2] hover:text-[#0066FF]"
+              >
+                + Adicionar Item
+              </button>
+            </div>
+
+            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <th className="px-3 py-2 text-left">Item</th>
+                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
+                    <th className="w-20 px-2 py-2 text-right">Unit</th>
+                    <th className="w-20 px-2 py-2 text-right">Total</th>
+                    <th className="w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, i) => (
+                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
+                      <td className="px-2 py-1.5">
+                        <div className="flex flex-col gap-1 sm:flex-row">
+                          <input
+                            value={item.desc}
+                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
+                            placeholder="Peça ou mão de obra..."
+                            className="w-full bg-transparent outline-none"
+                          />
+                          <select
+                            onChange={e => {
+                              if (e.target.value) handleApplyPreset(e.target.value, i)
+                            }}
+                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Catálogo</option>
+                            <optgroup label="Serviços">
+                              {safeServices.map(s => (
+                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Produtos / Peças">
+                              {safeProducts.map(p => (
+                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
+                          className="w-full bg-transparent text-center font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-1 py-1.5 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={item.unit || ''}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
+                          placeholder="0"
+                          className="w-full bg-transparent text-right font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
+                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
+                          className="text-neutral-400 hover:text-red-500"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
+                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
+                    <td className="px-2 py-2 text-right font-bold text-[#8A2BE2]">R$ {total.toFixed(2)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
+            Cancelar
+          </button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-purple-500/20 sm:flex-initial">
+              Salvar Orçamento
+            </button>
+            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
+              Salvar & Whats
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ─── Modal de Cliente (Estrutura Real) ────────────────────────────────────────
+
+function ClientModal({
+  onClose,
+  onSave,
+  clientToEdit,
+  isDark,
+}: {
+  onClose: () => void
+  onSave: (client: Client) => void
+  clientToEdit?: Client | null
+  isDark: boolean
+}) {
+  const [name, setName] = useState(clientToEdit?.name || '')
+  const [phone, setPhone] = useState(clientToEdit?.phone || '')
+  const [cpf, setCpf] = useState(clientToEdit?.cpf || '')
+  const [address, setAddress] = useState(clientToEdit?.address || '')
+  const [city, setCity] = useState(clientToEdit?.city || '')
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return alert('Nome do cliente é obrigatório')
+
+    onSave({
+      id: clientToEdit?.id || `CLI-${Math.floor(100 + Math.random() * 900)}`,
+      name,
+      phone,
+      cpf,
+      address,
+      city: city || 'São João do Paraíso',
+      totalOrders: clientToEdit?.totalOrders || 0,
+      totalSpent: clientToEdit?.totalSpent || 0,
+      lastService: clientToEdit?.lastService || 'Cadastrado no sistema',
+      devices: clientToEdit?.devices || [],
+    })
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
+              {clientToEdit ? `EDITANDO ${clientToEdit.id}` : 'CADASTRO'}
+            </div>
+            <h2 className="text-base font-bold">
+              {clientToEdit ? 'Editar Cliente' : 'Novo Cliente'}
+            </h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="space-y-3 px-5 py-4">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome Completo *</label>
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Rafael Mendonça" className={inputClass} />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Telefone / WhatsApp *</label>
+              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(DDD) 99999-9999" className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">CPF / CNPJ</label>
+              <input value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className={inputClass} />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Endereço</label>
+            <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, bairro..." className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cidade / Estado</label>
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Ex: São João do Paraíso, BA" className={inputClass} />
+          </div>
+        </div>
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
+            Cancelar
+          </button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
+            {clientToEdit ? 'Salvar Alterações' : 'Salvar Cliente'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ─── Componente Principal ─────────────────────────────────────────────────────
 
 export default function App() {
   const [session, setSession] = useState<any>(null)
@@ -1662,10 +2506,8 @@ export default function App() {
   const [showProductModal, setShowProductModal] = useState(false)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
-  const [showPDVSaleModal, setShowPDVSaleModal] = useState(false)
 
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
-  const [quoteEditing, setQuoteEditing] = useState<Quote | null>(null)
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null)
 
@@ -1810,17 +2652,7 @@ export default function App() {
 
     try {
       const { data: pData } = await supabase.from('products').select('*')
-      if (pData && pData.length > 0) {
-        setProducts(pData.map(p => ({
-          id: p.id,
-          code: p.code || '',
-          name: p.name,
-          category: p.category,
-          cost_price: Number(p.cost_price) || 0,
-          sale_price: Number(p.sale_price) || 0,
-          stock: Number(p.stock) || 0,
-        })))
-      }
+      if (pData && pData.length > 0) setProducts(pData)
     } catch {}
 
     try {
@@ -1908,12 +2740,8 @@ export default function App() {
   }
 
   const handleSaveQuote = async (quoteData: Quote) => {
-    setQuotes(prev => {
-      const exists = prev.some(q => q.id === quoteData.id)
-      return exists ? prev.map(q => q.id === quoteData.id ? quoteData : q) : [quoteData, ...prev]
-    })
-
-    await supabase.from('quotes').upsert([{
+    setQuotes(prev => [quoteData, ...prev])
+    await supabase.from('quotes').insert([{
       id: quoteData.id,
       client: quoteData.client,
       phone: quoteData.phone,
@@ -1935,12 +2763,12 @@ export default function App() {
       client: quote.client,
       phone: quote.phone,
       device: quote.device,
-      service: quote.items[0]?.desc || quote.description,
+      service: (quote.items && quote.items[0]?.desc) || quote.description || 'Serviço Técnico',
       status: 'Entrada',
       value: quote.value,
       date: new Date().toLocaleDateString('pt-BR'),
       technician: 'Admin',
-      notes: `Convertido do Orçamento #${quote.id}. ${quote.description}`,
+      notes: `Convertido do Orçamento #${quote.id}. ${quote.description || ''}`,
       items: quote.items,
     }
 
@@ -1968,9 +2796,12 @@ export default function App() {
     await supabase.from('quotes').delete().eq('id', id)
   }
 
+  // ─── Lógica de PDV (Frente de Caixa & Baixa no Estoque) ───────────────────────
+
   const handleCompleteSale = async (saleData: Sale) => {
     setSales(prev => [saleData, ...prev])
 
+    // Registra a venda na tabela sales
     await supabase.from('sales').insert([{
       id: saleData.id,
       client: saleData.client,
@@ -1981,6 +2812,7 @@ export default function App() {
       total: saleData.total,
     }])
 
+    // Dá baixa automática na quantidade de cada produto vendido
     for (const item of saleData.items) {
       const prod = products.find(p => p.name === item.desc)
       if (prod) {
@@ -1990,7 +2822,8 @@ export default function App() {
       }
     }
 
-    if (confirm(`Venda #${saleData.id} concluída com sucesso!\nDeseja imprimir o cupom?`)) {
+    // Pergunta se deseja imprimir o comprovante/cupom fiscal da venda imediatamente
+    if (confirm(`Venda #${saleData.id} concluída com sucesso!\nDeseja imprimir o cupom da venda?`)) {
       setOrderToPrint({
         id: saleData.id,
         client: saleData.client,
@@ -2001,7 +2834,7 @@ export default function App() {
         value: saleData.total,
         date: saleData.date,
         technician: 'Frente de Caixa',
-        notes: `Comprovante de Compra no PDV. Pagamento via ${saleData.payment_method}.`,
+        notes: `Comprovante de Compra emitido no PDV. Pagamento efetuado via ${saleData.payment_method}.`,
         items: saleData.items,
       })
     }
@@ -2169,7 +3002,7 @@ export default function App() {
             statuses={statuses}
             isDark={isDark}
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
-            onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
+            onNewQuote={() => { setShowQuoteModal(true) }}
             onNewClient={handleOpenNewClient}
             onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
             onPrintOrder={(o) => setOrderToPrint(o)}
@@ -2193,8 +3026,10 @@ export default function App() {
           <QuotesScreen
             quotes={quotes}
             isDark={isDark}
-            onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
-            onEditQuote={(q) => { setQuoteEditing(q); setShowQuoteModal(true) }}
+            onNewQuote={() => { setShowQuoteModal(true) }}
+            onEditQuote={(q) => {
+              onConvertToOrder(q)
+            }}
             onConvertToOrder={handleConvertToOrder}
             onDeleteQuote={handleDeleteQuote}
             onOpenMenu={() => setMobileMenuOpen(true)}
@@ -2302,17 +3137,13 @@ export default function App() {
 
       {showQuoteModal && (
         <QuoteModal
-          onClose={() => {
-            setShowQuoteModal(false)
-            setQuoteEditing(null)
-          }}
+          onClose={() => setShowQuoteModal(false)}
           clients={clients}
           services={services}
           products={products}
           onSave={handleSaveQuote}
           onConvertToOrder={handleConvertToOrder}
           onQuickNewClient={handleOpenNewClient}
-          quoteToEdit={quoteEditing}
           isDark={isDark}
         />
       )}
