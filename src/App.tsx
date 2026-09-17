@@ -463,7 +463,7 @@ function OrderModal({
   )
 }
 
-// ─── Modal: Novo Orçamento ────────────────────────────────────────────────────
+// ─── Modal: Orçamento ─────────────────────────────────────────────────────────
 
 function QuoteModal({
   onClose,
@@ -727,30 +727,38 @@ function QuoteModal({
   )
 }
 
-// ─── Modal: Novo Cliente ──────────────────────────────────────────────────────
+// ─── Modal: Cliente (Criar & Editar) ──────────────────────────────────────────
 
-function NewClientModal({ onClose, onSave }: { onClose: () => void; onSave: (client: Client) => void }) {
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [cpf, setCpf] = useState('')
-  const [address, setAddress] = useState('')
-  const [city, setCity] = useState('')
+function ClientModal({
+  onClose,
+  onSave,
+  clientToEdit,
+}: {
+  onClose: () => void
+  onSave: (client: Client) => void
+  clientToEdit?: Client | null
+}) {
+  const [name, setName] = useState(clientToEdit?.name || '')
+  const [phone, setPhone] = useState(clientToEdit?.phone || '')
+  const [cpf, setCpf] = useState(clientToEdit?.cpf || '')
+  const [address, setAddress] = useState(clientToEdit?.address || '')
+  const [city, setCity] = useState(clientToEdit?.city || '')
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return alert('Nome do cliente é obrigatório')
 
     onSave({
-      id: `CLI-${Math.floor(100 + Math.random() * 900)}`,
+      id: clientToEdit?.id || `CLI-${Math.floor(100 + Math.random() * 900)}`,
       name,
       phone,
       cpf,
       address,
       city: city || 'Local',
-      totalOrders: 0,
-      totalSpent: 0,
-      lastService: 'Novo cadastro',
-      devices: [],
+      totalOrders: clientToEdit?.totalOrders || 0,
+      totalSpent: clientToEdit?.totalSpent || 0,
+      lastService: clientToEdit?.lastService || 'Cadastrado no sistema',
+      devices: clientToEdit?.devices || [],
     })
     onClose()
   }
@@ -760,8 +768,12 @@ function NewClientModal({ onClose, onSave }: { onClose: () => void; onSave: (cli
       <form onSubmit={handleSave} className="w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#111] shadow-2xl">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-800">
           <div>
-            <div className="text-[10px] font-mono text-neutral-500">CADASTRO</div>
-            <h2 className="text-base font-bold text-neutral-100">Novo Cliente</h2>
+            <div className="text-[10px] font-mono text-neutral-500 uppercase">
+              {clientToEdit ? `EDITANDO ${clientToEdit.id}` : 'CADASTRO'}
+            </div>
+            <h2 className="text-base font-bold text-neutral-100">
+              {clientToEdit ? 'Editar Cliente' : 'Novo Cliente'}
+            </h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-500 hover:text-white">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -796,7 +808,7 @@ function NewClientModal({ onClose, onSave }: { onClose: () => void; onSave: (cli
             Cancelar
           </button>
           <button type="submit" className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500">
-            Salvar Cliente
+            {clientToEdit ? 'Salvar Alterações' : 'Salvar Cliente'}
           </button>
         </div>
       </form>
@@ -1325,9 +1337,21 @@ function QuotesScreen({
   )
 }
 
-// ─── Tela: Clientes ───────────────────────────────────────────────────────────
+// ─── Tela: Clientes (com Editar e Excluir) ─────────────────────────────────────
 
-function ClientsScreen({ clients, onNewClient, onOpenMenu }: { clients: Client[]; onNewClient: () => void; onOpenMenu: () => void }) {
+function ClientsScreen({
+  clients,
+  onNewClient,
+  onEditClient,
+  onDeleteClient,
+  onOpenMenu,
+}: {
+  clients: Client[]
+  onNewClient: () => void
+  onEditClient: (client: Client) => void
+  onDeleteClient: (id: string) => void
+  onOpenMenu: () => void
+}) {
   const [search, setSearch] = useState('')
   const filtered = clients.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
@@ -1361,13 +1385,13 @@ function ClientsScreen({ clients, onNewClient, onOpenMenu }: { clients: Client[]
 
         <div className="rounded-xl border border-neutral-900 bg-[#111] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px] text-xs">
+            <table className="w-full min-w-[550px] text-xs">
               <thead>
                 <tr className="bg-[#0c0c0c] text-neutral-500 border-b border-neutral-900 text-left">
                   <th className="px-3 py-2.5 font-mono uppercase">Nome</th>
                   <th className="px-3 py-2.5 font-mono uppercase">Telefone</th>
                   <th className="px-3 py-2.5 font-mono uppercase">Cidade</th>
-                  <th className="px-3 py-2.5 font-mono uppercase text-right">Ação</th>
+                  <th className="px-3 py-2.5 font-mono uppercase text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-900">
@@ -1387,7 +1411,25 @@ function ClientsScreen({ clients, onNewClient, onOpenMenu }: { clients: Client[]
                       <td className="px-3 py-2.5 font-semibold text-neutral-200">{c.name}</td>
                       <td className="px-3 py-2.5 font-mono text-neutral-400">{c.phone || 'Sem número'}</td>
                       <td className="px-3 py-2.5 text-neutral-500">{c.city}</td>
-                      <td className="px-3 py-2.5 text-right"><WhatsAppBtn phone={c.phone} label={`Olá ${c.name}!`} /></td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            onClick={() => onEditClient(c)}
+                            className="p-1 rounded text-neutral-400 hover:text-white transition-colors"
+                            title="Editar Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </button>
+                          <WhatsAppBtn phone={c.phone} label={`Olá ${c.name}!`} />
+                          <button
+                            onClick={() => { if(confirm(`Deseja realmente excluir o cliente ${c.name}?`)) onDeleteClient(c.id) }}
+                            className="p-1 rounded text-neutral-500 hover:text-red-400 transition-colors"
+                            title="Excluir Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -1573,8 +1615,9 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [showQuoteModal, setShowQuoteModal] = useState(false)
+  const [showClientModal, setShowClientModal] = useState(false)
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
-  const [showNewClient, setShowNewClient] = useState(false)
+  const [clientEditing, setClientEditing] = useState<Client | null>(null)
 
   const [clients, setClients] = useState<Client[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -1648,21 +1691,40 @@ export default function App() {
     fetchData()
   }, [])
 
-  // 2. Ações de Clientes no Supabase
-  const handleSaveClient = async (newClient: Client) => {
-    setClients(prev => [newClient, ...prev])
-    await supabase.from('clients').insert([{
-      id: newClient.id,
-      name: newClient.name,
-      phone: newClient.phone,
-      cpf: newClient.cpf,
-      address: newClient.address,
-      city: newClient.city,
-      total_orders: 0,
-      total_spent: 0,
-      last_service: newClient.lastService,
-      devices: newClient.devices,
+  // 2. Ações de Clientes no Supabase (Criar, Editar, Excluir)
+  const handleSaveClient = async (clientData: Client) => {
+    setClients(prev => {
+      const exists = prev.some(c => c.id === clientData.id)
+      return exists ? prev.map(c => c.id === clientData.id ? clientData : c) : [clientData, ...prev]
+    })
+
+    await supabase.from('clients').upsert([{
+      id: clientData.id,
+      name: clientData.name,
+      phone: clientData.phone,
+      cpf: clientData.cpf,
+      address: clientData.address,
+      city: clientData.city,
+      total_orders: clientData.totalOrders,
+      total_spent: clientData.totalSpent,
+      last_service: clientData.lastService,
+      devices: clientData.devices,
     }])
+  }
+
+  const handleDeleteClient = async (id: string) => {
+    setClients(prev => prev.filter(c => c.id !== id))
+    await supabase.from('clients').delete().eq('id', id)
+  }
+
+  const handleOpenEditClient = (client: Client) => {
+    setClientEditing(client)
+    setShowClientModal(true)
+  }
+
+  const handleOpenNewClient = () => {
+    setClientEditing(null)
+    setShowClientModal(true)
   }
 
   // 3. Ações de Ordens no Supabase
@@ -1831,7 +1893,7 @@ export default function App() {
             statuses={statuses}
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
             onNewQuote={() => setShowQuoteModal(true)}
-            onNewClient={() => setShowNewClient(true)}
+            onNewClient={handleOpenNewClient}
             onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
@@ -1859,7 +1921,9 @@ export default function App() {
         {screen === 'clients' && (
           <ClientsScreen
             clients={clients}
-            onNewClient={() => setShowNewClient(true)}
+            onNewClient={handleOpenNewClient}
+            onEditClient={handleOpenEditClient}
+            onDeleteClient={handleDeleteClient}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
         )}
@@ -1888,7 +1952,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Navegação Inferior Mobile */}
+      {/* Barra Inferior Mobile */}
       <nav className="fixed bottom-0 inset-x-0 h-14 bg-[#0d0d0d] border-t border-neutral-900 flex md:hidden items-center justify-around z-40 px-2">
         {NAV_ITEMS.map(item => {
           const isActive = screen === item.id
@@ -1930,10 +1994,14 @@ export default function App() {
         />
       )}
 
-      {showNewClient && (
-        <NewClientModal
-          onClose={() => setShowNewClient(false)}
+      {showClientModal && (
+        <ClientModal
+          onClose={() => {
+            setShowClientModal(false)
+            setClientEditing(null)
+          }}
           onSave={handleSaveClient}
+          clientToEdit={clientEditing}
         />
       )}
     </div>
