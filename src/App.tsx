@@ -1328,7 +1328,6 @@ export default function App() {
   const [productEditing, setProductEditing] = useState<Product | null>(null)
   const [serviceEditing, setServiceEditing] = useState<CustomService | null>(null)
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null)
-  const [quoteToPrint, setQuoteToPrint] = useState<Quote | null>(null)
 
   const [clients, setClients] = useState<Client[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -1615,8 +1614,16 @@ export default function App() {
   }
 
   const safeClients = Array.isArray(clients) ? clients : []
+  // Garante que se o cliente da OS ou Orçamento editado não estiver na lista, ele não quebre o dropdown
+  const ensuredClientsForOrder = orderEditing && orderEditing.client && !safeClients.some(c => c.name === orderEditing.client)
+    ? [{ id: 'temp-order', name: orderEditing.client, phone: orderEditing.phone, cpf: '', address: '', city: '', totalOrders: 0, totalSpent: 0, lastService: '', devices: [] }, ...safeClients]
+    : safeClients
+
+  const ensuredClientsForQuote = quoteEditing && quoteEditing.client && !safeClients.some(c => c.name === quoteEditing.client)
+    ? [{ id: 'temp-quote', name: quoteEditing.client, phone: quoteEditing.phone, cpf: '', address: '', city: '', totalOrders: 0, totalSpent: 0, lastService: '', devices: [] }, ...safeClients]
+    : safeClients
+
   const selectedClientForPrint = orderToPrint ? safeClients.find(c => c.name.toLowerCase() === (orderToPrint.client || '').toLowerCase()) : undefined
-  const selectedClientForQuotePrint = quoteToPrint ? safeClients.find(c => c.name.toLowerCase() === (quoteToPrint.client || '').toLowerCase()) : undefined
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-slate-100 text-slate-900'}`}>
@@ -1796,7 +1803,6 @@ export default function App() {
             onConvertToOrder={handleConvertToOrder}
             onDeleteQuote={handleDeleteQuote}
             onPrintQuote={(q) => {
-              // Converte o orçamento temporariamente para o formato de OS para poder imprimir usando o mesmo PrintModal
               setOrderToPrint({
                 id: q.id,
                 client: q.client,
@@ -1876,14 +1882,14 @@ export default function App() {
         })}
       </nav>
 
-      {/* Modais Globais */}
+      {/* Modais Globais com Listas Seguras */}
       {showOrderModal && (
         <OrderModal
           onClose={() => {
             setShowOrderModal(false)
             setOrderEditing(null)
           }}
-          clients={clients}
+          clients={ensuredClientsForOrder}
           statuses={statuses}
           services={services}
           products={products}
@@ -1900,7 +1906,7 @@ export default function App() {
             setShowQuoteModal(false)
             setQuoteEditing(null)
           }}
-          clients={clients}
+          clients={ensuredClientsForQuote}
           services={services}
           products={products}
           onSave={handleSaveQuote}
@@ -1923,7 +1929,7 @@ export default function App() {
         />
       )}
 
-      {/* Modais de Ajustes com Edição e Backdrop Blur */}
+      {/* Modais de Ajustes com Edição */}
       {showProductModal && (
         <ProductModal
           onClose={() => {
