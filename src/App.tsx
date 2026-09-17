@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-type Screen = 'dashboard' | 'orders' | 'quotes' | 'clients' | 'settings'
+type Screen = 'dashboard' | 'orders' | 'quotes' | 'clients' | 'pdv' | 'settings'
 
 interface OrderItem {
   desc: string
@@ -73,7 +73,18 @@ interface CustomStatus {
   dot: string
 }
 
-// ─── Constantes Globais (Declaradas no topo para evitar ReferenceError) ─────────
+interface Sale {
+  id: string
+  client: string
+  phone: string
+  cpf: string
+  payment_method: 'Dinheiro' | 'PIX' | 'Cartão de Crédito' | 'Cartão de Débito'
+  items: OrderItem[]
+  total: number
+  date: string
+}
+
+// ─── Constantes Globais ───────────────────────────────────────────────────────
 
 const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
 
@@ -122,6 +133,13 @@ const NAV_ITEMS = [
     label: 'Orçamentos',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+    ),
+  },
+  {
+    id: 'pdv',
+    label: 'PDV (Vendas)',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
     ),
   },
   {
@@ -214,17 +232,7 @@ function StatusBadge({ status, statuses = [] }: { status: string; statuses?: Cus
   )
 }
 
-function WhatsAppBtn({
-  phone,
-  label = '',
-  orderDetails,
-  quoteDetails,
-}: {
-  phone: string
-  label?: string
-  orderDetails?: Partial<Order>
-  quoteDetails?: Partial<Quote>
-}) {
+function WhatsAppBtn({ phone, label = '', orderDetails }: { phone: string; label?: string; orderDetails?: Partial<Order> }) {
   let msg = `Olá! Passando para falar sobre seu atendimento na AndradeTech.`
 
   if (orderDetails) {
@@ -236,15 +244,6 @@ function WhatsAppBtn({
           `*Situação Atual:* ${orderDetails.status || 'Em andamento'}\n` +
           (orderDetails.value ? `*Valor Total:* R$ ${Number(orderDetails.value).toFixed(2)}\n\n` : '\n') +
           `Estamos à disposição!`
-  } else if (quoteDetails) {
-    msg = `*AndradeTech - Proposta de Orçamento*\n\n` +
-          `Olá, *${quoteDetails.client || 'Cliente'}*!\n` +
-          `*Orçamento:* #${quoteDetails.id || '---'}\n` +
-          `*Aparelho:* ${quoteDetails.device || 'N/A'}\n` +
-          `*Descrição:* ${quoteDetails.description || 'Reparo técnico'}\n` +
-          `*Valor Total:* R$ ${(Number(quoteDetails.value) || 0).toFixed(2)}\n` +
-          `*Validade da proposta:* ${quoteDetails.validUntil || '7 dias'}\n\n` +
-          `Podemos confirmar a aprovação do serviço?`
   } else if (label) {
     msg = `Olá! ${label}`
   }
@@ -450,7 +449,7 @@ function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; i
   )
 }
 
-// ─── Modal de Emissão de OS (Impressão) ───────────────────────────────────────
+// ─── Modal de Emissão (OS e Vendas PDV) ─────────────────────────────────────────
 
 function PrintModal({
   order,
@@ -467,7 +466,9 @@ function PrintModal({
 
   const items = (order.items && order.items.length > 0)
     ? order.items
-    : [{ desc: order.service || 'Serviço Técnico Especializado', qty: 1, unit: order.value || 0 }]
+    : [{ desc: order.service || 'Item de Serviço / Venda', qty: 1, unit: order.value || 0 }]
+
+  const isSale = order.id.startsWith('VD-')
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
@@ -478,7 +479,7 @@ function PrintModal({
           isDark ? 'border-neutral-800 bg-[#161616]' : 'border-slate-200 bg-slate-50'
         }`}>
           <div className="flex items-center gap-3">
-            <span className="font-bold text-sm sm:text-base">Emissão de Comprovante / OS</span>
+            <span className="font-bold text-sm sm:text-base">{isSale ? 'Comprovante de Venda' : 'Ordem de Serviço'}</span>
             <div className={`flex rounded-lg border p-0.5 ${isDark ? 'border-neutral-700 bg-black' : 'border-slate-300 bg-white'}`}>
               <button
                 type="button"
@@ -530,9 +531,11 @@ function PrintModal({
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] font-mono uppercase bg-slate-100 px-2 py-1 rounded border border-slate-300 font-bold">ORDEM DE SERVIÇO</span>
+                  <span className="text-[10px] font-mono uppercase bg-slate-100 px-2 py-1 rounded border border-slate-300 font-bold">
+                    {isSale ? 'CUPOM NÃO FISCAL DE VENDA' : 'ORDEM DE SERVIÇO'}
+                  </span>
                   <div className="text-xl font-mono font-black text-blue-600 mt-1">{order.id}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">Emissão: {order.date}</div>
+                  <div className="text-[10px] text-slate-500 font-mono">Data: {order.date}</div>
                 </div>
               </div>
 
@@ -545,16 +548,16 @@ function PrintModal({
                   {client?.address && <div className="text-[11px] text-slate-600">Endereço: {client.address} - {client.city}</div>}
                 </div>
                 <div>
-                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">EQUIPAMENTO & SITUAÇÃO</div>
-                  <div className="font-bold text-sm text-slate-800">{order.device}</div>
-                  <div className="text-[11px] text-slate-600">Situação Atual: <span className="font-bold text-slate-800">{order.status}</span></div>
-                  <div className="text-[11px] text-slate-600">Técnico Resp.: {order.technician}</div>
+                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">DETALHES DA OPERAÇÃO</div>
+                  <div className="font-bold text-sm text-slate-800">{isSale ? 'Venda de Produtos / PDV' : order.device}</div>
+                  <div className="text-[11px] text-slate-600">Forma / Situação: <span className="font-bold text-slate-800">{order.status}</span></div>
+                  <div className="text-[11px] text-slate-600">Responsável: {order.technician}</div>
                 </div>
               </div>
 
               {order.notes && (
                 <div className="border border-slate-200 rounded-lg p-3 mb-5 bg-white">
-                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">RELATO DO DEFEITO / OBSERVAÇÕES TÉCNICAS</div>
+                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">OBSERVAÇÕES</div>
                   <div className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap">{order.notes}</div>
                 </div>
               )}
@@ -563,7 +566,7 @@ function PrintModal({
                 <table className="w-full text-left">
                   <thead className="bg-slate-100 border-b border-slate-200 font-mono text-[10px] text-slate-600 uppercase">
                     <tr>
-                      <th className="p-2.5">Descrição do Serviço / Peça</th>
+                      <th className="p-2.5">Descrição do Item / Peça</th>
                       <th className="p-2.5 text-center w-16">Qtd</th>
                       <th className="p-2.5 text-right w-24">V. Unit</th>
                       <th className="p-2.5 text-right w-28">Total</th>
@@ -581,27 +584,23 @@ function PrintModal({
                   </tbody>
                   <tfoot>
                     <tr className="bg-slate-100 font-mono border-t-2 border-slate-300">
-                      <td colSpan={3} className="p-3 text-right uppercase font-bold text-slate-700">Valor Total a Pagar:</td>
+                      <td colSpan={3} className="p-3 text-right uppercase font-bold text-slate-700">Valor Total Pago:</td>
                       <td className="p-3 text-right text-sm font-black text-blue-600">R$ {Number(order.value || 0).toFixed(2)}</td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
 
-              <div className="border border-slate-200 rounded-lg p-3 text-[9px] text-slate-500 leading-relaxed mb-8">
-                <span className="font-bold text-slate-700 uppercase">Termo de Garantia Legal (Art. 26 do CDC):</span> A garantia para serviços executados e peças substituídas é de 90 (noventa) dias a contar da data de retirada do aparelho, cobrindo exclusivamente o defeito solucionado. A garantia perde sua validade em casos de selo rompido, oxidação por umidade, quedas, trincas ou danos causados por mau uso e sobretensão elétrica.
-              </div>
-
-              <div className="grid grid-cols-2 gap-10 text-center pt-4">
+              <div className="grid grid-cols-2 gap-10 text-center pt-8">
                 <div>
                   <div className="border-t border-slate-400 w-full mb-1"></div>
                   <div className="font-bold text-[11px] text-slate-800">{order.client}</div>
-                  <div className="text-[10px] text-slate-500">Assinatura do Cliente</div>
+                  <div className="text-[10px] text-slate-500">Cliente</div>
                 </div>
                 <div>
                   <div className="border-t border-slate-400 w-full mb-1"></div>
-                  <div className="font-bold text-[11px] text-slate-800">AndradeTech Assistência Técnica</div>
-                  <div className="text-[10px] text-slate-500">Assinatura do Responsável</div>
+                  <div className="font-bold text-[11px] text-slate-800">AndradeTech</div>
+                  <div className="text-[10px] text-slate-500">Vendedor / Responsável</div>
                 </div>
               </div>
             </div>
@@ -611,33 +610,23 @@ function PrintModal({
             <div id="print-area" className="w-[80mm] bg-white text-black p-4 rounded shadow-md border border-neutral-300 font-mono text-[11px] leading-tight print:m-0 print:p-0 print:border-none print:shadow-none print:w-[80mm]">
               <div className="text-center pb-2 border-b border-dashed border-black mb-2">
                 <div className="font-black text-sm">ANDRADETECH</div>
-                <div className="text-[9px]">Assistência Técnica Especializada</div>
+                <div className="text-[9px]">Comprovante de Venda / PDV</div>
                 <div className="text-[9px]">São João do Paraíso - Bahia</div>
-                <div className="text-[9px]">Tel/WhatsApp: (73) 98834-3028</div>
-                <div className="text-[8px]">andrade.tech2026@gmail.com</div>
+                <div className="text-[9px]">WhatsApp: (73) 98834-3028</div>
               </div>
 
               <div className="text-center font-bold text-xs py-1 border-b border-dashed border-black mb-2">
-                ORDEM DE SERVIÇO #{order.id}
+                VENDA #{order.id}
               </div>
 
               <div className="space-y-1 mb-2 border-b border-dashed border-black pb-2 text-[10px]">
                 <div><b>Data:</b> {order.date}</div>
                 <div><b>Cliente:</b> {order.client}</div>
-                <div><b>Contato:</b> {order.phone || 'N/A'}</div>
-                <div><b>Aparelho:</b> {order.device}</div>
-                <div><b>Técnico:</b> {order.technician}</div>
-                <div><b>Situação:</b> {order.status}</div>
+                <div><b>Pagamento:</b> {order.status}</div>
               </div>
 
-              {order.notes && (
-                <div className="mb-2 border-b border-dashed border-black pb-2 text-[10px]">
-                  <b>Defeito:</b> {order.notes}
-                </div>
-              )}
-
               <div className="mb-2 border-b border-dashed border-black pb-2">
-                <div className="font-bold text-[10px] mb-1">ITENS / SERVIÇOS:</div>
+                <div className="font-bold text-[10px] mb-1">ITENS:</div>
                 {items.map((it, i) => (
                   <div key={i} className="flex justify-between text-[10px]">
                     <span className="truncate pr-1">{it.qty}x {it.desc}</span>
@@ -647,17 +636,13 @@ function PrintModal({
               </div>
 
               <div className="flex justify-between font-black text-xs py-1 border-b border-dashed border-black mb-3">
-                <span>TOTAL:</span>
+                <span>TOTAL PAGO:</span>
                 <span>R$ {Number(order.value || 0).toFixed(2)}</span>
-              </div>
-
-              <div className="text-[8px] text-center leading-tight mb-4 text-neutral-600">
-                Garantia legal de 90 dias conforme CDC sobre serviços executados. Não cobre quedas ou umidade.
               </div>
 
               <div className="text-center pt-4">
                 <div className="border-t border-black w-4/5 mx-auto mb-1"></div>
-                <div className="text-[9px]">Assinatura do Cliente</div>
+                <div className="text-[9px]">Obrigado pela preferência!</div>
               </div>
             </div>
           )}
@@ -688,969 +673,7 @@ function PrintModal({
   )
 }
 
-// ─── Modais de Ajustes ────────────────────────────────────────────────────────
-
-function ProductModal({
-  onClose,
-  onSave,
-  isDark,
-}: {
-  onClose: () => void
-  onSave: (prod: Product) => void
-  isDark: boolean
-}) {
-  const [name, setName] = useState('')
-  const [category, setCategory] = useState('Peça')
-  const [costPrice, setCostPrice] = useState('')
-  const [salePrice, setSalePrice] = useState('')
-  const [stock, setStock] = useState('1')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Informe o nome da peça/produto!')
-
-    onSave({
-      id: Date.now().toString(),
-      name: name.trim(),
-      category: category.trim() || 'Peça',
-      cost_price: Number(costPrice) || 0,
-      sale_price: Number(salePrice) || 0,
-      stock: Number(stock) || 0,
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">ESTOQUE & PEÇAS</div>
-            <h2 className="text-base font-bold">Novo Produto / Peça</h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-3 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Descrição do Produto *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston, Tela iPhone 11..." className={inputClass} />
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Telas, Armazenamento, Fontes..." className={inputClass} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Custo (R$)</label>
-              <input type="number" step="any" value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="0.00" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Venda (R$) *</label>
-              <input required type="number" step="any" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="0.00" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Quantidade</label>
-              <input type="number" min="0" value={stock} onChange={e => setStock(e.target.value)} className={inputClass} />
-            </div>
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            Salvar Peça / Produto
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-function ServiceModal({
-  onClose,
-  onSave,
-  isDark,
-}: {
-  onClose: () => void
-  onSave: (svc: CustomService) => void
-  isDark: boolean
-}) {
-  const [name, setName] = useState('')
-  const [defaultPrice, setDefaultPrice] = useState('')
-  const [category, setCategory] = useState('Hardware')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Informe o nome do serviço!')
-
-    onSave({
-      id: Date.now().toString(),
-      name: name.trim(),
-      default_price: Number(defaultPrice) || 0,
-      category: category.trim() || 'Geral',
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">MÃO DE OBRA</div>
-            <h2 className="text-base font-bold">Novo Serviço Técnico</h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-3 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome do Serviço *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Limpeza com Pasta Térmica..." className={inputClass} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Padrão (R$) *</label>
-              <input required type="number" step="any" value={defaultPrice} onChange={e => setDefaultPrice(e.target.value)} placeholder="0.00" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software, Manutenção..." className={inputClass} />
-            </div>
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            Salvar Serviço
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-function StatusModal({
-  onClose,
-  onSave,
-  isDark,
-}: {
-  onClose: () => void
-  onSave: (st: CustomStatus) => void
-  isDark: boolean
-}) {
-  const [label, setLabel] = useState('')
-  const [dot, setDot] = useState('#0066FF')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!label.trim()) return alert('Informe o nome da situação!')
-
-    onSave({
-      id: Date.now().toString(),
-      label: label.trim(),
-      dot,
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-md rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">FLUXO DE OS</div>
-            <h2 className="text-base font-bold">Nova Situação / Status</h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-4 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome da Situação *</label>
-            <input required value={label} onChange={e => setLabel(e.target.value)} placeholder="Ex: Em Garantia, Aguardando Cliente..." className={inputClass} />
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cor de Identificação</label>
-            <div className="flex items-center gap-3">
-              <input type="color" value={dot} onChange={e => setDot(e.target.value)} className="h-10 w-16 cursor-pointer rounded-lg border-0 bg-transparent" />
-              <span className="font-mono text-xs uppercase text-neutral-400">{dot}</span>
-            </div>
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            Salvar Situação
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-// ─── Modal de OS (Estrutura Real) ─────────────────────────────────────────────
-
-function OrderModal({
-  onClose,
-  clients = [],
-  statuses = [],
-  services = [],
-  products = [],
-  onSave,
-  onQuickNewClient,
-  orderToEdit,
-  isDark,
-}: {
-  onClose: () => void
-  clients: Client[]
-  statuses: CustomStatus[]
-  services: CustomService[]
-  products: Product[]
-  onSave: (order: Order) => void
-  onQuickNewClient: () => void
-  orderToEdit?: Order | null
-  isDark: boolean
-}) {
-  const safeClients = Array.isArray(clients) ? clients : []
-  const safeStatuses = Array.isArray(statuses) ? statuses : []
-  const safeServices = Array.isArray(services) ? services : []
-  const safeProducts = Array.isArray(products) ? products : []
-
-  const [client, setClient] = useState(orderToEdit?.client || (safeClients.length > 0 ? safeClients[0].name : ''))
-  const [phone, setPhone] = useState(orderToEdit?.phone || '')
-  const [device, setDevice] = useState(orderToEdit?.device || '')
-  const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
-  const [notes, setNotes] = useState(orderToEdit?.notes || '')
-  const [status, setStatus] = useState(orderToEdit?.status || (safeStatuses.length > 0 ? safeStatuses[0].label : 'Entrada'))
-  const [items, setItems] = useState<OrderItem[]>(
-    orderToEdit?.items && orderToEdit.items.length > 0
-      ? orderToEdit.items
-      : [{ desc: orderToEdit?.service || '', qty: 1, unit: orderToEdit?.value || 0 }]
-  )
-
-  useEffect(() => {
-    if (!phone && client && safeClients.length > 0) {
-      const found = safeClients.find(c => c.name === client)
-      if (found) setPhone(found.phone)
-    }
-  }, [client, safeClients])
-
-  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
-
-  const handleClientSelectChange = (name: string) => {
-    setClient(name)
-    const found = safeClients.find(c => c.name === name)
-    if (found) setPhone(found.phone)
-  }
-
-  const handleApplyPreset = (value: string, index: number) => {
-    const svc = safeServices.find(s => s.name === value)
-    if (svc) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
-      return
-    }
-    const prod = safeProducts.find(p => p.name === value)
-    if (prod) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
-    }
-  }
-
-  const handleSave = (e: React.FormEvent, sendToWhatsApp = false) => {
-    e.preventDefault()
-    if (!client.trim() || !device.trim()) {
-      alert('Selecione o cliente e informe o aparelho!')
-      return
-    }
-
-    const firstService = items[0]?.desc?.trim() || 'Serviço Técnico'
-    const savedOrder: Order = {
-      id: orderToEdit?.id || `OS-${Math.floor(1000 + Math.random() * 9000)}`,
-      client,
-      phone,
-      device,
-      service: firstService,
-      status,
-      value: total,
-      date: orderToEdit?.date || new Date().toLocaleDateString('pt-BR'),
-      technician: technician || 'Admin',
-      notes,
-      items,
-    }
-
-    onSave(savedOrder)
-
-    if (sendToWhatsApp && phone) {
-      const msg = `*AndradeTech - Ordem de Serviço #${savedOrder.id}*\n\n` +
-                  `Olá, *${client}*!\n` +
-                  `*Aparelho:* ${device}\n` +
-                  `*Serviço:* ${firstService}\n` +
-                  `*Situação:* ${status}\n` +
-                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
-                  `Qualquer dúvida estamos à disposição!`
-      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
-    }
-
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
-              {orderToEdit ? `EDITANDO ${orderToEdit.id}` : 'NOVO REGISTRO'}
-            </div>
-            <h2 className="text-sm font-bold sm:text-base">
-              {orderToEdit ? 'Editar Ordem de Serviço' : 'Registrar Ordem de Serviço'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
-                <button
-                  type="button"
-                  onClick={onQuickNewClient}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
-                  title="Cadastrar Novo Cliente"
-                >
-                  <span>+</span> Cliente
-                </button>
-              </div>
-              <input
-                list="order-client-options"
-                value={client}
-                onChange={e => handleClientSelectChange(e.target.value)}
-                placeholder="Selecione ou digite..."
-                className={inputClass}
-              />
-              <datalist id="order-client-options">
-                {safeClients.map(c => <option key={c.id} value={c.name} />)}
-              </datalist>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
-              <input
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="(DDD) 99999-9999"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
-              <input
-                value={device}
-                onChange={e => setDevice(e.target.value)}
-                placeholder="Ex: Notebook Lenovo, Galaxy S21..."
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
-              <select
-                value={status}
-                onChange={e => setStatus(e.target.value)}
-                className={inputClass}
-              >
-                {safeStatuses.map(s => (
-                  <option key={s.id} value={s.label}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Técnico Responsável</label>
-            <input
-              value={technician}
-              onChange={e => setTechnician(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Diagnóstico / Defeito</label>
-            <textarea
-              rows={2}
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Relato do problema, observações do aparelho..."
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Serviços & Peças</label>
-              <button
-                type="button"
-                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
-                className="text-xs font-semibold text-[#0066FF] hover:text-[#8A2BE2]"
-              >
-                + Adicionar Item
-              </button>
-            </div>
-
-            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                    <th className="px-3 py-2 text-left">Item (Serviço ou Peça)</th>
-                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
-                    <th className="w-20 px-2 py-2 text-right">Unit</th>
-                    <th className="w-20 px-2 py-2 text-right">Total</th>
-                    <th className="w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, i) => (
-                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
-                      <td className="px-2 py-1.5">
-                        <div className="flex flex-col gap-1 sm:flex-row">
-                          <input
-                            value={item.desc}
-                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
-                            placeholder="Descrição..."
-                            className="w-full bg-transparent outline-none"
-                          />
-                          <select
-                            onChange={e => {
-                              if (e.target.value) handleApplyPreset(e.target.value, i)
-                            }}
-                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Catálogo</option>
-                            <optgroup label="Serviços">
-                              {safeServices.map(s => (
-                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Produtos / Peças">
-                              {safeProducts.map(p => (
-                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </div>
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.qty}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
-                          className="w-full bg-transparent text-center font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-1 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.unit || ''}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
-                          placeholder="0"
-                          className="w-full bg-transparent text-right font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
-                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
-                          className="text-neutral-400 hover:text-red-500"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
-                    <td className="px-2 py-2 text-right font-bold text-[#0066FF]">R$ {total.toFixed(2)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
-            Cancelar
-          </button>
-          <div className="flex w-full gap-2 sm:w-auto">
-            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20 sm:flex-initial">
-              Salvar OS
-            </button>
-            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
-              Salvar & Whats
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-// ─── Modal de Orçamento (Sem botão de impressão conforme pedido) ───────────────
-
-function QuoteModal({
-  onClose,
-  clients = [],
-  services = [],
-  products = [],
-  onSave,
-  onConvertToOrder,
-  onQuickNewClient,
-  isDark,
-}: {
-  onClose: () => void
-  clients: Client[]
-  services: CustomService[]
-  products: Product[]
-  onSave: (quote: Quote) => void
-  onConvertToOrder: (quote: Quote) => void
-  onQuickNewClient: () => void
-  isDark: boolean
-}) {
-  const safeClients = Array.isArray(clients) ? clients : []
-  const safeServices = Array.isArray(services) ? services : []
-  const safeProducts = Array.isArray(products) ? products : []
-
-  const [client, setClient] = useState(safeClients.length > 0 ? safeClients[0].name : '')
-  const [phone, setPhone] = useState('')
-  const [device, setDevice] = useState('')
-  const [description, setDescription] = useState('')
-  const [validDays, setValidDays] = useState('7')
-  const [items, setItems] = useState<OrderItem[]>([{ desc: '', qty: 1, unit: 0 }])
-
-  useEffect(() => {
-    if (!phone && client && safeClients.length > 0) {
-      const found = safeClients.find(c => c.name === client)
-      if (found) setPhone(found.phone)
-    }
-  }, [client, safeClients])
-
-  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
-
-  const handleClientSelectChange = (name: string) => {
-    setClient(name)
-    const found = safeClients.find(c => c.name === name)
-    if (found) setPhone(found.phone)
-  }
-
-  const handleApplyPreset = (value: string, index: number) => {
-    const svc = safeServices.find(s => s.name === value)
-    if (svc) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
-      return
-    }
-    const prod = safeProducts.find(p => p.name === value)
-    if (prod) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
-    }
-  }
-
-  const handleSave = (e: React.FormEvent, sendWhatsApp = false) => {
-    e.preventDefault()
-    if (!client.trim() || !device.trim()) {
-      alert('Selecione o cliente e informe o aparelho!')
-      return
-    }
-
-    const expDate = new Date()
-    expDate.setDate(expDate.getDate() + (Number(validDays) || 7))
-
-    const quoteData: Quote = {
-      id: `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
-      client,
-      phone,
-      device,
-      description: description || items[0]?.desc || 'Proposta de serviço',
-      value: total,
-      validUntil: expDate.toLocaleDateString('pt-BR'),
-      createdAt: new Date().toLocaleDateString('pt-BR'),
-      status: 'Pendente',
-      items,
-    }
-
-    onSave(quoteData)
-
-    if (sendWhatsApp && phone) {
-      const msg = `*AndradeTech - Proposta de Orçamento #${quoteData.id}*\n\n` +
-                  `Olá, *${client}*!\n` +
-                  `*Aparelho:* ${device}\n` +
-                  `*Descrição:* ${quoteData.description}\n` +
-                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
-                  `*Válido até:* ${quoteData.validUntil}\n\n` +
-                  `Aguardamos sua confirmação!`
-      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
-    }
-
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">PROPOSTA COMERCIAL</div>
-            <h2 className="text-sm font-bold sm:text-base">Criar Novo Orçamento</h2>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
-                <button
-                  type="button"
-                  onClick={onQuickNewClient}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
-                  title="Cadastrar Novo Cliente"
-                >
-                  <span>+</span> Cliente
-                </button>
-              </div>
-              <input
-                list="quote-client-options"
-                value={client}
-                onChange={e => handleClientSelectChange(e.target.value)}
-                placeholder="Selecione ou digite..."
-                className={inputClass}
-              />
-              <datalist id="quote-client-options">
-                {safeClients.map(c => <option key={c.id} value={c.name} />)}
-              </datalist>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
-              <input
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="(DDD) 99999-9999"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
-              <input
-                value={device}
-                onChange={e => setDevice(e.target.value)}
-                placeholder="Ex: iPhone 12, Notebook Acer..."
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Validade</label>
-              <select
-                value={validDays}
-                onChange={e => setValidDays(e.target.value)}
-                className={inputClass}
-              >
-                <option value="3">3 dias</option>
-                <option value="7">7 dias (padrão)</option>
-                <option value="15">15 dias</option>
-                <option value="30">30 dias</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Resumo do Diagnóstico</label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Descreva a falha constatada e o que precisa ser substituído..."
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Itens / Peças / Serviços</label>
-              <button
-                type="button"
-                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
-                className="text-xs font-semibold text-[#8A2BE2] hover:text-[#0066FF]"
-              >
-                + Adicionar Item
-              </button>
-            </div>
-
-            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                    <th className="px-3 py-2 text-left">Item</th>
-                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
-                    <th className="w-20 px-2 py-2 text-right">Unit</th>
-                    <th className="w-20 px-2 py-2 text-right">Total</th>
-                    <th className="w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, i) => (
-                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
-                      <td className="px-2 py-1.5">
-                        <div className="flex flex-col gap-1 sm:flex-row">
-                          <input
-                            value={item.desc}
-                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
-                            placeholder="Peça ou mão de obra..."
-                            className="w-full bg-transparent outline-none"
-                          />
-                          <select
-                            onChange={e => {
-                              if (e.target.value) handleApplyPreset(e.target.value, i)
-                            }}
-                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Catálogo</option>
-                            <optgroup label="Serviços">
-                              {safeServices.map(s => (
-                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Produtos / Peças">
-                              {safeProducts.map(p => (
-                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </div>
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.qty}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
-                          className="w-full bg-transparent text-center font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-1 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.unit || ''}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
-                          placeholder="0"
-                          className="w-full bg-transparent text-right font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
-                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
-                          className="text-neutral-400 hover:text-red-500"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
-                    <td className="px-2 py-2 text-right font-bold text-[#8A2BE2]">R$ {total.toFixed(2)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
-            Cancelar
-          </button>
-          <div className="flex w-full gap-2 sm:w-auto">
-            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-purple-500/20 sm:flex-initial">
-              Salvar Orçamento
-            </button>
-            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
-              Salvar & Whats
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-// ─── Modal de Cliente (Estrutura Real) ────────────────────────────────────────
-
-function ClientModal({
-  onClose,
-  onSave,
-  clientToEdit,
-  isDark,
-}: {
-  onClose: () => void
-  onSave: (client: Client) => void
-  clientToEdit?: Client | null
-  isDark: boolean
-}) {
-  const [name, setName] = useState(clientToEdit?.name || '')
-  const [phone, setPhone] = useState(clientToEdit?.phone || '')
-  const [cpf, setCpf] = useState(clientToEdit?.cpf || '')
-  const [address, setAddress] = useState(clientToEdit?.address || '')
-  const [city, setCity] = useState(clientToEdit?.city || '')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Nome do cliente é obrigatório')
-
-    onSave({
-      id: clientToEdit?.id || `CLI-${Math.floor(100 + Math.random() * 900)}`,
-      name,
-      phone,
-      cpf,
-      address,
-      city: city || 'São João do Paraíso',
-      totalOrders: clientToEdit?.totalOrders || 0,
-      totalSpent: clientToEdit?.totalSpent || 0,
-      lastService: clientToEdit?.lastService || 'Cadastrado no sistema',
-      devices: clientToEdit?.devices || [],
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
-              {clientToEdit ? `EDITANDO ${clientToEdit.id}` : 'CADASTRO'}
-            </div>
-            <h2 className="text-base font-bold">
-              {clientToEdit ? 'Editar Cliente' : 'Novo Cliente'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-3 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome Completo *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Rafael Mendonça" className={inputClass} />
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Telefone / WhatsApp *</label>
-              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(DDD) 99999-9999" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">CPF / CNPJ</label>
-              <input value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className={inputClass} />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Endereço</label>
-            <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, bairro..." className={inputClass} />
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cidade / Estado</label>
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Ex: São João do Paraíso, BA" className={inputClass} />
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {clientToEdit ? 'Salvar Alterações' : 'Salvar Cliente'}
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-// ─── Telas Principais (Dashboard, Orders, Quotes, Clients, Settings) ─────────
+// ─── Telas Principais (Dashboard, Orders, Quotes, PDV, Clients, Settings) ─────
 
 function DashboardScreen({
   orders = [],
@@ -2137,7 +1160,6 @@ function QuotesScreen({
                               Virar OS
                             </button>
                           )}
-                          <WhatsAppBtn phone={q.phone} quoteDetails={q} />
                           <button
                             type="button"
                             onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
@@ -2153,6 +1175,282 @@ function QuotesScreen({
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tela de PDV (Frente de Caixa) ────────────────────────────────────────────
+
+function PDVScreen({
+  products = [],
+  clients = [],
+  sales = [],
+  isDark,
+  onCompleteSale,
+  onPrintSale,
+  onOpenMenu,
+}: {
+  products: Product[]
+  clients: Client[]
+  sales: Sale[]
+  isDark: boolean
+  onCompleteSale: (sale: Sale) => void
+  onPrintSale: (sale: Sale) => void
+  onOpenMenu: () => void
+}) {
+  const [cart, setCart] = useState<{ product: Product; qty: number }[]>([])
+  const [selectedClient, setSelectedClient] = useState('')
+  const [clientPhone, setClientPhone] = useState('')
+  const [clientCpf, setClientCpf] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'Dinheiro' | 'PIX' | 'Cartão de Crédito' | 'Cartão de Débito'>('PIX')
+
+  const total = cart.reduce((acc, item) => acc + (item.product.sale_price * item.qty), 0)
+
+  const handleSelectClient = (name: string) => {
+    setSelectedClient(name)
+    const found = clients.find(c => c.name.toLowerCase() === name.toLowerCase())
+    if (found) {
+      setClientPhone(found.phone)
+      setClientCpf(found.cpf)
+    }
+  }
+
+  const addToCart = (product: Product) => {
+    if (product.stock <= 0) {
+      alert('Produto sem estoque disponível!')
+      return
+    }
+    setCart(prev => {
+      const exists = prev.find(item => item.product.id === product.id)
+      if (exists) {
+        if (exists.qty >= product.stock) {
+          alert('Quantidade máxima em estoque atingida!')
+          return prev
+        }
+        return prev.map(item => item.product.id === product.id ? { ...item, qty: item.qty + 1 } : item)
+      }
+      return [...prev, { product, qty: 1 }]
+    })
+  }
+
+  const updateCartQty = (productId: string, qty: number, stock: number) => {
+    if (qty > stock) {
+      alert('Quantidade superior ao estoque disponível!')
+      return
+    }
+    if (qty <= 0) {
+      setCart(prev => prev.filter(item => item.product.id !== productId))
+      return
+    }
+    setCart(prev => prev.map(item => item.product.id === productId ? { ...item, qty } : item))
+  }
+
+  const handleFinishSale = () => {
+    if (cart.length === 0) {
+      alert('Adicione ao menos um produto no carrinho!')
+      return
+    }
+
+    const saleData: Sale = {
+      id: `VD-${Math.floor(1000 + Math.random() * 9000)}`,
+      client: selectedClient.trim() || 'Consumidor Final',
+      phone: clientPhone,
+      cpf: clientCpf,
+      payment_method: paymentMethod,
+      items: cart.map(item => ({
+        desc: item.product.name,
+        qty: item.qty,
+        unit: item.product.sale_price,
+      })),
+      total,
+      date: new Date().toLocaleDateString('pt-BR'),
+    }
+
+    onCompleteSale(saleData)
+    setCart([])
+    setSelectedClient('')
+    setClientPhone('')
+    setClientCpf('')
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Frente de Caixa (PDV)" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
+
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          {/* Coluna da Esquerda: Catálogo de Produtos para Venda */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className={`p-4 rounded-xl border ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
+              <h2 className="text-sm font-bold mb-3">Selecione os Produtos</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+                {products.length === 0 ? (
+                  <div className="col-span-2 text-center py-8 text-neutral-400 text-xs">Nenhum produto cadastrado no estoque</div>
+                ) : (
+                  products.map(p => (
+                    <div
+                      key={p.id}
+                      onClick={() => addToCart(p)}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between ${
+                        p.stock <= 0
+                          ? 'opacity-40 border-neutral-700 bg-neutral-900 pointer-events-none'
+                          : isDark ? 'border-neutral-800 bg-[#181818] hover:border-[#0066FF]' : 'border-slate-200 bg-slate-50 hover:border-[#0066FF]'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-bold text-xs">{p.name}</div>
+                        <div className="text-[10px] text-neutral-400">{p.category}</div>
+                      </div>
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-neutral-500/20">
+                        <span className="font-mono text-xs font-bold text-green-500">R$ {p.sale_price.toFixed(2)}</span>
+                        <span className="text-[10px] font-mono text-neutral-400">Estoque: {p.stock}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Histórico de Vendas Recentes */}
+            <div className={`p-4 rounded-xl border ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
+              <h2 className="text-sm font-bold mb-3">Últimas Vendas Realizadas</h2>
+              <div className="max-h-48 overflow-y-auto divide-y divide-neutral-500/10 text-xs">
+                {sales.length === 0 ? (
+                  <div className="text-center py-4 text-neutral-400">Nenhuma venda registrada ainda</div>
+                ) : (
+                  sales.slice(0, 5).map(s => (
+                    <div key={s.id} className="py-2 flex items-center justify-between">
+                      <div>
+                        <div className="font-bold">{s.client} <span className="font-normal text-neutral-400">({s.payment_method})</span></div>
+                        <div className="text-[10px] text-neutral-400">{s.date} - #{s.id}</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono font-bold text-green-500">R$ {s.total.toFixed(2)}</span>
+                        <button
+                          type="button"
+                          onClick={() => onPrintSale(s)}
+                          className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                          title="Imprimir Cupom"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Coluna da Direita: Carrinho e Finalização */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className={`p-4 rounded-xl border flex flex-col justify-between ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
+              <div>
+                <h2 className="text-sm font-bold mb-3">Carrinho de Compras</h2>
+                
+                {/* Dados do Cliente */}
+                <div className="space-y-2 mb-4">
+                  <input
+                    list="pdv-client-list"
+                    value={selectedClient}
+                    onChange={e => handleSelectClient(e.target.value)}
+                    placeholder="Cliente (opcional, padrão: Consumidor Final)"
+                    className={inputClass}
+                  />
+                  <datalist id="pdv-client-list">
+                    {clients.map(c => <option key={c.id} value={c.name} />)}
+                  </datalist>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={clientPhone}
+                      onChange={e => setClientPhone(e.target.value)}
+                      placeholder="Telefone"
+                      className={inputClass}
+                    />
+                    <input
+                      value={clientCpf}
+                      onChange={e => setClientCpf(e.target.value)}
+                      placeholder="CPF na Nota"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                {/* Itens no Carrinho */}
+                <div className="border-t border-b border-neutral-500/20 py-2 max-h-48 overflow-y-auto divide-y divide-neutral-500/10">
+                  {cart.length === 0 ? (
+                    <div className="text-center py-6 text-neutral-400 text-xs">Carrinho vazio</div>
+                  ) : (
+                    cart.map(item => (
+                      <div key={item.product.id} className="py-2 flex items-center justify-between text-xs">
+                        <div className="pr-2 flex-1">
+                          <div className="font-semibold">{item.product.name}</div>
+                          <div className="text-[10px] text-neutral-400">R$ {item.product.sale_price.toFixed(2)} un</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max={item.product.stock}
+                            value={item.qty}
+                            onChange={e => updateCartQty(item.product.id, Number(e.target.value), item.product.stock)}
+                            className="w-12 text-center rounded border border-neutral-700 bg-transparent text-xs py-1"
+                          />
+                          <span className="font-mono font-bold w-16 text-right">R$ {(item.product.sale_price * item.qty).toFixed(2)}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateCartQty(item.product.id, 0, item.product.stock)}
+                            className="text-neutral-400 hover:text-red-500 p-1"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Forma de Pagamento */}
+                <div className="mt-4">
+                  <label className="block text-xs font-mono text-neutral-400 mb-1">Forma de Pagamento:</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={e => setPaymentMethod(e.target.value as any)}
+                    className={inputClass}
+                  >
+                    <option value="PIX">⚡ PIX</option>
+                    <option value="Dinheiro">💵 Dinheiro</option>
+                    <option value="Cartão de Crédito">💳 Cartão de Crédito</option>
+                    <option value="Cartão de Débito">💳 Cartão de Débito</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Total e Conclusão */}
+              <div className="mt-5 pt-3 border-t border-neutral-500/20">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs uppercase font-mono text-neutral-400">Total a Pagar:</span>
+                  <span className="text-xl font-black font-mono text-green-500">R$ {total.toFixed(2)}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleFinishSale}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:opacity-95 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Concluir Venda & Baixar Estoque</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2442,7 +1740,739 @@ function SettingsScreen({
   )
 }
 
-// ─── Raiz da Aplicação ────────────────────────────────────────────────────────
+// ─── Modais de OS, Orçamento e Cliente ────────────────────────────────────────
+
+function OrderModal({
+  onClose,
+  clients = [],
+  statuses = [],
+  services = [],
+  products = [],
+  onSave,
+  onQuickNewClient,
+  orderToEdit,
+  isDark,
+}: {
+  onClose: () => void
+  clients: Client[]
+  statuses: CustomStatus[]
+  services: CustomService[]
+  products: Product[]
+  onSave: (order: Order) => void
+  onQuickNewClient: () => void
+  orderToEdit?: Order | null
+  isDark: boolean
+}) {
+  const safeClients = Array.isArray(clients) ? clients : []
+  const safeStatuses = Array.isArray(statuses) ? statuses : []
+  const safeServices = Array.isArray(services) ? services : []
+  const safeProducts = Array.isArray(products) ? products : []
+
+  const [client, setClient] = useState(orderToEdit?.client || (safeClients.length > 0 ? safeClients[0].name : ''))
+  const [phone, setPhone] = useState(orderToEdit?.phone || '')
+  const [device, setDevice] = useState(orderToEdit?.device || '')
+  const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
+  const [notes, setNotes] = useState(orderToEdit?.notes || '')
+  const [status, setStatus] = useState(orderToEdit?.status || (safeStatuses.length > 0 ? safeStatuses[0].label : 'Entrada'))
+  const [items, setItems] = useState<OrderItem[]>(
+    orderToEdit?.items && orderToEdit.items.length > 0
+      ? orderToEdit.items
+      : [{ desc: orderToEdit?.service || '', qty: 1, unit: orderToEdit?.value || 0 }]
+  )
+
+  useEffect(() => {
+    if (!phone && client && safeClients.length > 0) {
+      const found = safeClients.find(c => c.name === client)
+      if (found) setPhone(found.phone)
+    }
+  }, [client, safeClients])
+
+  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
+
+  const handleClientSelectChange = (name: string) => {
+    setClient(name)
+    const found = safeClients.find(c => c.name === name)
+    if (found) setPhone(found.phone)
+  }
+
+  const handleApplyPreset = (value: string, index: number) => {
+    const svc = safeServices.find(s => s.name === value)
+    if (svc) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+      return
+    }
+    const prod = safeProducts.find(p => p.name === value)
+    if (prod) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
+    }
+  }
+
+  const handleSave = (e: React.FormEvent, sendToWhatsApp = false) => {
+    e.preventDefault()
+    if (!client.trim() || !device.trim()) {
+      alert('Selecione o cliente e informe o aparelho!')
+      return
+    }
+
+    const firstService = items[0]?.desc?.trim() || 'Serviço Técnico'
+    const savedOrder: Order = {
+      id: orderToEdit?.id || `OS-${Math.floor(1000 + Math.random() * 9000)}`,
+      client,
+      phone,
+      device,
+      service: firstService,
+      status,
+      value: total,
+      date: orderToEdit?.date || new Date().toLocaleDateString('pt-BR'),
+      technician: technician || 'Admin',
+      notes,
+      items,
+    }
+
+    onSave(savedOrder)
+
+    if (sendToWhatsApp && phone) {
+      const msg = `*AndradeTech - Ordem de Serviço #${savedOrder.id}*\n\n` +
+                  `Olá, *${client}*!\n` +
+                  `*Aparelho:* ${device}\n` +
+                  `*Serviço:* ${firstService}\n` +
+                  `*Situação:* ${status}\n` +
+                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
+                  `Qualquer dúvida estamos à disposição!`
+      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
+    }
+
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
+              {orderToEdit ? `EDITANDO ${orderToEdit.id}` : 'NOVO REGISTRO'}
+            </div>
+            <h2 className="text-sm font-bold sm:text-base">
+              {orderToEdit ? 'Editar Ordem de Serviço' : 'Registrar Ordem de Serviço'}
+            </h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
+                <button
+                  type="button"
+                  onClick={onQuickNewClient}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
+                  title="Cadastrar Novo Cliente"
+                >
+                  <span>+</span> Cliente
+                </button>
+              </div>
+              <input
+                list="order-client-options"
+                value={client}
+                onChange={e => handleClientSelectChange(e.target.value)}
+                placeholder="Selecione ou digite..."
+                className={inputClass}
+              />
+              <datalist id="order-client-options">
+                {safeClients.map(c => <option key={c.id} value={c.name} />)}
+              </datalist>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="(DDD) 99999-9999"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
+              <input
+                value={device}
+                onChange={e => setDevice(e.target.value)}
+                placeholder="Ex: Notebook Lenovo, Galaxy S21..."
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
+              <select
+                value={status}
+                onChange={e => setStatus(e.target.value)}
+                className={inputClass}
+              >
+                {safeStatuses.map(s => (
+                  <option key={s.id} value={s.label}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Técnico Responsável</label>
+            <input
+              value={technician}
+              onChange={e => setTechnician(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Diagnóstico / Defeito</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Relato do problema, observações do aparelho..."
+              className={`${inputClass} resize-none`}
+            />
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Serviços & Peças</label>
+              <button
+                type="button"
+                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
+                className="text-xs font-semibold text-[#0066FF] hover:text-[#8A2BE2]"
+              >
+                + Adicionar Item
+              </button>
+            </div>
+
+            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <th className="px-3 py-2 text-left">Item (Serviço ou Peça)</th>
+                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
+                    <th className="w-20 px-2 py-2 text-right">Unit</th>
+                    <th className="w-20 px-2 py-2 text-right">Total</th>
+                    <th className="w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, i) => (
+                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
+                      <td className="px-2 py-1.5">
+                        <div className="flex flex-col gap-1 sm:flex-row">
+                          <input
+                            value={item.desc}
+                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
+                            placeholder="Descrição..."
+                            className="w-full bg-transparent outline-none"
+                          />
+                          <select
+                            onChange={e => {
+                              if (e.target.value) handleApplyPreset(e.target.value, i)
+                            }}
+                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Catálogo</option>
+                            <optgroup label="Serviços">
+                              {safeServices.map(s => (
+                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Produtos / Peças">
+                              {safeProducts.map(p => (
+                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
+                          className="w-full bg-transparent text-center font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-1 py-1.5 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={item.unit || ''}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
+                          placeholder="0"
+                          className="w-full bg-transparent text-right font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
+                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
+                          className="text-neutral-400 hover:text-red-500"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
+                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
+                    <td className="px-2 py-2 text-right font-bold text-[#0066FF]">R$ {total.toFixed(2)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
+            Cancelar
+          </button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20 sm:flex-initial">
+              Salvar OS
+            </button>
+            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
+              Salvar & Whats
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+function QuoteModal({
+  onClose,
+  clients = [],
+  services = [],
+  products = [],
+  onSave,
+  onConvertToOrder,
+  onQuickNewClient,
+  isDark,
+}: {
+  onClose: () => void
+  clients: Client[]
+  services: CustomService[]
+  products: Product[]
+  onSave: (quote: Quote) => void
+  onConvertToOrder: (quote: Quote) => void
+  onQuickNewClient: () => void
+  isDark: boolean
+}) {
+  const safeClients = Array.isArray(clients) ? clients : []
+  const safeServices = Array.isArray(services) ? services : []
+  const safeProducts = Array.isArray(products) ? products : []
+
+  const [client, setClient] = useState(safeClients.length > 0 ? safeClients[0].name : '')
+  const [phone, setPhone] = useState('')
+  const [device, setDevice] = useState('')
+  const [description, setDescription] = useState('')
+  const [validDays, setValidDays] = useState('7')
+  const [items, setItems] = useState<OrderItem[]>([{ desc: '', qty: 1, unit: 0 }])
+
+  useEffect(() => {
+    if (!phone && client && safeClients.length > 0) {
+      const found = safeClients.find(c => c.name === client)
+      if (found) setPhone(found.phone)
+    }
+  }, [client, safeClients])
+
+  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
+
+  const handleClientSelectChange = (name: string) => {
+    setClient(name)
+    const found = safeClients.find(c => c.name === name)
+    if (found) setPhone(found.phone)
+  }
+
+  const handleApplyPreset = (value: string, index: number) => {
+    const svc = safeServices.find(s => s.name === value)
+    if (svc) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+      return
+    }
+    const prod = safeProducts.find(p => p.name === value)
+    if (prod) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
+    }
+  }
+
+  const handleSave = (e: React.FormEvent, sendWhatsApp = false) => {
+    e.preventDefault()
+    if (!client.trim() || !device.trim()) {
+      alert('Selecione o cliente e informe o aparelho!')
+      return
+    }
+
+    const expDate = new Date()
+    expDate.setDate(expDate.getDate() + (Number(validDays) || 7))
+
+    const quoteData: Quote = {
+      id: `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
+      client,
+      phone,
+      device,
+      description: description || items[0]?.desc || 'Proposta de serviço',
+      value: total,
+      validUntil: expDate.toLocaleDateString('pt-BR'),
+      createdAt: new Date().toLocaleDateString('pt-BR'),
+      status: 'Pendente',
+      items,
+    }
+
+    onSave(quoteData)
+
+    if (sendWhatsApp && phone) {
+      const msg = `*AndradeTech - Proposta de Orçamento #${quoteData.id}*\n\n` +
+                  `Olá, *${client}*!\n` +
+                  `*Aparelho:* ${device}\n` +
+                  `*Descrição:* ${quoteData.description}\n` +
+                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
+                  `*Válido até:* ${quoteData.validUntil}\n\n` +
+                  `Aguardamos sua confirmação!`
+      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
+    }
+
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">PROPOSTA COMERCIAL</div>
+            <h2 className="text-sm font-bold sm:text-base">Criar Novo Orçamento</h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
+                <button
+                  type="button"
+                  onClick={onQuickNewClient}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
+                  title="Cadastrar Novo Cliente"
+                >
+                  <span>+</span> Cliente
+                </button>
+              </div>
+              <input
+                list="quote-client-options"
+                value={client}
+                onChange={e => handleClientSelectChange(e.target.value)}
+                placeholder="Selecione ou digite..."
+                className={inputClass}
+              />
+              <datalist id="quote-client-options">
+                {safeClients.map(c => <option key={c.id} value={c.name} />)}
+              </datalist>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="(DDD) 99999-9999"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
+              <input
+                value={device}
+                onChange={e => setDevice(e.target.value)}
+                placeholder="Ex: iPhone 12, Notebook Acer..."
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Validade</label>
+              <select
+                value={validDays}
+                onChange={e => setValidDays(e.target.value)}
+                className={inputClass}
+              >
+                <option value="3">3 dias</option>
+                <option value="7">7 dias (padrão)</option>
+                <option value="15">15 dias</option>
+                <option value="30">30 dias</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Resumo do Diagnóstico</label>
+            <textarea
+              rows={2}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Descreva a falha constatada e o que precisa ser substituído..."
+              className={`${inputClass} resize-none`}
+            />
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Itens / Peças / Serviços</label>
+              <button
+                type="button"
+                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
+                className="text-xs font-semibold text-[#8A2BE2] hover:text-[#0066FF]"
+              >
+                + Adicionar Item
+              </button>
+            </div>
+
+            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <th className="px-3 py-2 text-left">Item</th>
+                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
+                    <th className="w-20 px-2 py-2 text-right">Unit</th>
+                    <th className="w-20 px-2 py-2 text-right">Total</th>
+                    <th className="w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, i) => (
+                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
+                      <td className="px-2 py-1.5">
+                        <div className="flex flex-col gap-1 sm:flex-row">
+                          <input
+                            value={item.desc}
+                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
+                            placeholder="Peça ou mão de obra..."
+                            className="w-full bg-transparent outline-none"
+                          />
+                          <select
+                            onChange={e => {
+                              if (e.target.value) handleApplyPreset(e.target.value, i)
+                            }}
+                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Catálogo</option>
+                            <optgroup label="Serviços">
+                              {safeServices.map(s => (
+                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Produtos / Peças">
+                              {safeProducts.map(p => (
+                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
+                          className="w-full bg-transparent text-center font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-1 py-1.5 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={item.unit || ''}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
+                          placeholder="0"
+                          className="w-full bg-transparent text-right font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
+                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
+                          className="text-neutral-400 hover:text-red-500"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
+                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
+                    <td className="px-2 py-2 text-right font-bold text-[#8A2BE2]">R$ {total.toFixed(2)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
+            Cancelar
+          </button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-purple-500/20 sm:flex-initial">
+              Salvar Orçamento
+            </button>
+            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
+              Salvar & Whats
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ─── Modal de Cliente (Estrutura Real) ────────────────────────────────────────
+
+function ClientModal({
+  onClose,
+  onSave,
+  clientToEdit,
+  isDark,
+}: {
+  onClose: () => void
+  onSave: (client: Client) => void
+  clientToEdit?: Client | null
+  isDark: boolean
+}) {
+  const [name, setName] = useState(clientToEdit?.name || '')
+  const [phone, setPhone] = useState(clientToEdit?.phone || '')
+  const [cpf, setCpf] = useState(clientToEdit?.cpf || '')
+  const [address, setAddress] = useState(clientToEdit?.address || '')
+  const [city, setCity] = useState(clientToEdit?.city || '')
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return alert('Nome do cliente é obrigatório')
+
+    onSave({
+      id: clientToEdit?.id || `CLI-${Math.floor(100 + Math.random() * 900)}`,
+      name,
+      phone,
+      cpf,
+      address,
+      city: city || 'São João do Paraíso',
+      totalOrders: clientToEdit?.totalOrders || 0,
+      totalSpent: clientToEdit?.totalSpent || 0,
+      lastService: clientToEdit?.lastService || 'Cadastrado no sistema',
+      devices: clientToEdit?.devices || [],
+    })
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
+              {clientToEdit ? `EDITANDO ${clientToEdit.id}` : 'CADASTRO'}
+            </div>
+            <h2 className="text-base font-bold">
+              {clientToEdit ? 'Editar Cliente' : 'Novo Cliente'}
+            </h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="space-y-3 px-5 py-4">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome Completo *</label>
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Rafael Mendonça" className={inputClass} />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Telefone / WhatsApp *</label>
+              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(DDD) 99999-9999" className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">CPF / CNPJ</label>
+              <input value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className={inputClass} />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Endereço</label>
+            <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, bairro..." className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cidade / Estado</label>
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Ex: São João do Paraíso, BA" className={inputClass} />
+          </div>
+        </div>
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
+            Cancelar
+          </button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
+            {clientToEdit ? 'Salvar Alterações' : 'Salvar Cliente'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ─── Componente Principal ─────────────────────────────────────────────────────
 
 export default function App() {
   const [session, setSession] = useState<any>(null)
@@ -2478,13 +2508,13 @@ export default function App() {
   const [showStatusModal, setShowStatusModal] = useState(false)
 
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
-  const [quoteEditing, setQuoteEditing] = useState<Quote | null>(null)
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null)
 
   const [clients, setClients] = useState<Client[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [quotes, setQuotes] = useState<Quote[]>([])
+  const [sales, setSales] = useState<Sale[]>([])
   const [services, setServices] = useState<CustomService[]>(DEFAULT_SERVICES)
   const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS)
   const [statuses, setStatuses] = useState<CustomStatus[]>(DEFAULT_STATUSES)
@@ -2600,6 +2630,22 @@ export default function App() {
     } catch {}
 
     try {
+      const { data: vData } = await supabase.from('sales').select('*').order('created_at', { ascending: false })
+      if (vData) {
+        setSales(vData.map(v => ({
+          id: v.id,
+          client: v.client,
+          phone: v.phone || '',
+          cpf: v.cpf || '',
+          payment_method: v.payment_method,
+          items: Array.isArray(v.items) ? v.items : [],
+          total: Number(v.total) || 0,
+          date: v.created_at ? new Date(v.created_at).toLocaleDateString('pt-BR') : '',
+        })))
+      }
+    } catch {}
+
+    try {
       const { data: sData } = await supabase.from('services').select('*')
       if (sData && sData.length > 0) setServices(sData)
     } catch {}
@@ -2694,12 +2740,8 @@ export default function App() {
   }
 
   const handleSaveQuote = async (quoteData: Quote) => {
-    setQuotes(prev => {
-      const exists = prev.some(q => q.id === quoteData.id)
-      return exists ? prev.map(q => q.id === quoteData.id ? quoteData : q) : [quoteData, ...prev]
-    })
-
-    await supabase.from('quotes').upsert([{
+    setQuotes(prev => [quoteData, ...prev])
+    await supabase.from('quotes').insert([{
       id: quoteData.id,
       client: quoteData.client,
       phone: quoteData.phone,
@@ -2752,6 +2794,50 @@ export default function App() {
   const handleDeleteQuote = async (id: string) => {
     setQuotes(prev => prev.filter(q => q.id !== id))
     await supabase.from('quotes').delete().eq('id', id)
+  }
+
+  // ─── Lógica de PDV (Frente de Caixa & Baixa no Estoque) ───────────────────────
+
+  const handleCompleteSale = async (saleData: Sale) => {
+    setSales(prev => [saleData, ...prev])
+
+    // Registra a venda na tabela sales
+    await supabase.from('sales').insert([{
+      id: saleData.id,
+      client: saleData.client,
+      phone: saleData.phone,
+      cpf: saleData.cpf,
+      payment_method: saleData.payment_method,
+      items: saleData.items,
+      total: saleData.total,
+    }])
+
+    // Dá baixa automática na quantidade de cada produto vendido
+    for (const item of saleData.items) {
+      const prod = products.find(p => p.name === item.desc)
+      if (prod) {
+        const updatedStock = Math.max(0, prod.stock - item.qty)
+        setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock: updatedStock } : p))
+        await supabase.from('products').update({ stock: updatedStock }).eq('id', prod.id)
+      }
+    }
+
+    // Pergunta se deseja imprimir o comprovante/cupom fiscal da venda imediatamente
+    if (confirm(`Venda #${saleData.id} concluída com sucesso!\nDeseja imprimir o cupom da venda?`)) {
+      setOrderToPrint({
+        id: saleData.id,
+        client: saleData.client,
+        phone: saleData.phone,
+        device: 'Venda de Balcão (PDV)',
+        service: `Pagamento: ${saleData.payment_method}`,
+        status: saleData.payment_method,
+        value: saleData.total,
+        date: saleData.date,
+        technician: 'Frente de Caixa',
+        notes: `Comprovante de Compra emitido no PDV. Pagamento efetuado via ${saleData.payment_method}.`,
+        items: saleData.items,
+      })
+    }
   }
 
   if (authLoading) {
@@ -2916,7 +3002,7 @@ export default function App() {
             statuses={statuses}
             isDark={isDark}
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
-            onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
+            onNewQuote={() => { setShowQuoteModal(true) }}
             onNewClient={handleOpenNewClient}
             onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
             onPrintOrder={(o) => setOrderToPrint(o)}
@@ -2940,10 +3026,37 @@ export default function App() {
           <QuotesScreen
             quotes={quotes}
             isDark={isDark}
-            onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
-            onEditQuote={(q) => { setQuoteEditing(q); setShowQuoteModal(true) }}
+            onNewQuote={() => { setShowQuoteModal(true) }}
+            onEditQuote={(q) => {
+              onConvertToOrder(q)
+            }}
             onConvertToOrder={handleConvertToOrder}
             onDeleteQuote={handleDeleteQuote}
+            onOpenMenu={() => setMobileMenuOpen(true)}
+          />
+        )}
+        {screen === 'pdv' && (
+          <PDVScreen
+            products={products}
+            clients={clients}
+            sales={sales}
+            isDark={isDark}
+            onCompleteSale={handleCompleteSale}
+            onPrintSale={(sale) => {
+              setOrderToPrint({
+                id: sale.id,
+                client: sale.client,
+                phone: sale.phone,
+                device: 'Venda de Balcão (PDV)',
+                service: `Pagamento: ${sale.payment_method}`,
+                status: sale.payment_method,
+                value: sale.total,
+                date: sale.date,
+                technician: 'Frente de Caixa',
+                notes: `Comprovante de Compra no PDV. Pagamento via ${sale.payment_method}.`,
+                items: sale.items,
+              })
+            }}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
         )}
@@ -3024,17 +3137,13 @@ export default function App() {
 
       {showQuoteModal && (
         <QuoteModal
-          onClose={() => {
-            setShowQuoteModal(false)
-            setQuoteEditing(null)
-          }}
+          onClose={() => setShowQuoteModal(false)}
           clients={clients}
           services={services}
           products={products}
           onSave={handleSaveQuote}
           onConvertToOrder={handleConvertToOrder}
           onQuickNewClient={handleOpenNewClient}
-          quoteToEdit={quoteEditing}
           isDark={isDark}
         />
       )}
