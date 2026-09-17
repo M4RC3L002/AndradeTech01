@@ -603,6 +603,14 @@ function PrintModal({
                   <div className="text-[10px] text-slate-500">Vendedor / Responsável</div>
                 </div>
               </div>
+
+              <div className="mt-8 border-t-2 border-slate-300 pt-4 text-[10px] text-slate-700 leading-relaxed">
+                <div className="font-mono uppercase font-black text-slate-800 mb-1">TERMO DE GARANTIA (Art. 26, II, Lei 8.078/90 - CDC)</div>
+                <p>Este serviço e as peças substituídas possuem garantia legal de 90 (noventa) dias, contados a partir da data de entrega do produto.</p>
+                <p>A garantia cobre exclusivamente defeitos no reparo realizado ou nas peças trocadas sob condições normais de uso.</p>
+                <p>A garantia será anulada em caso de mau uso, quedas, contato com líquidos/oxidação, variações elétricas ou caso o aparelho seja aberto por terceiros sem nossa autorização.</p>
+                <p>Em caso de nova falha coberta, a assistência tem o prazo legal de até 30 dias para sanar o vício (Art. 18, CDC).</p>
+              </div>
             </div>
           )}
 
@@ -643,6 +651,13 @@ function PrintModal({
               <div className="text-center pt-4">
                 <div className="border-t border-black w-4/5 mx-auto mb-1"></div>
                 <div className="text-[9px]">Obrigado pela preferência!</div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-dashed border-black text-[8px] leading-tight">
+                <div className="font-black mb-1">TERMO DE GARANTIA (Art. 26, II, Lei 8.078/90 - CDC)</div>
+                <div>Este serviço e as peças substituídas possuem garantia legal de 90 (noventa) dias, contados a partir da data de entrega do produto.</div>
+                <div>A garantia cobre exclusivamente defeitos no reparo realizado ou nas peças trocadas sob condições normais de uso.</div>
+                <div>A garantia será anulada em caso de mau uso, quedas, contato com líquidos/oxidação, variações elétricas ou caso o aparelho seja aberto por terceiros sem nossa autorização.</div>
+                <div>Em caso de nova falha coberta, a assistência tem o prazo legal de até 30 dias para sanar o vício (Art. 18, CDC).</div>
               </div>
             </div>
           )}
