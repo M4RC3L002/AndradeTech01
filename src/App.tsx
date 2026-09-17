@@ -73,11 +73,6 @@ interface CustomStatus {
   dot: string
 }
 
-interface CategoryItem {
-  id: string
-  name: string
-}
-
 // ─── Padrões Iniciais & Navegação ──────────────────────────────────────────────
 
 const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
@@ -93,24 +88,18 @@ const DEFAULT_STATUSES: CustomStatus[] = [
 ]
 
 const DEFAULT_SERVICES: CustomService[] = [
-  { id: '1', name: 'Troca de Tela', default_price: 350, category: 'Dispositivos' },
-  { id: '2', name: 'Reparo de Bateria', default_price: 180, category: 'Dispositivos' },
-  { id: '3', name: 'Formatação + SO', default_price: 150, category: 'Computadores' },
-  { id: '4', name: 'Limpeza Interna e Pasta', default_price: 120, category: 'Computadores' },
-  { id: '5', name: 'Troca de Conector de Carga', default_price: 130, category: 'Dispositivos' },
-  { id: '6', name: 'Diagnóstico e Orçamento', default_price: 0, category: 'Geral' },
+  { id: '1', name: 'Troca de Tela', default_price: 350, category: 'Hardware' },
+  { id: '2', name: 'Reparo de Bateria', default_price: 180, category: 'Hardware' },
+  { id: '3', name: 'Formatação + SO', default_price: 150, category: 'Software' },
+  { id: '4', name: 'Limpeza Interna e Pasta', default_price: 120, category: 'Manutenção' },
+  { id: '5', name: 'Troca de Conector de Carga', default_price: 130, category: 'Hardware' },
+  { id: '6', name: 'Diagnóstico e Orçamento', default_price: 0, category: 'Diagnóstico' },
 ]
 
 const DEFAULT_PRODUCTS: Product[] = [
-  { id: '1', name: 'SSD 480GB Kingston', category: 'Computadores', cost_price: 130, sale_price: 240, stock: 4 },
-  { id: '2', name: 'Tela iPhone 11 Incell', category: 'Dispositivos', cost_price: 110, sale_price: 250, stock: 2 },
-  { id: '3', name: 'Fonte ATX 500W', category: 'Computadores', cost_price: 160, sale_price: 280, stock: 3 },
-]
-
-const DEFAULT_CATEGORIES: CategoryItem[] = [
-  { id: '1', name: 'Acessórios' },
-  { id: '2', name: 'Computadores' },
-  { id: '3', name: 'Dispositivos' },
+  { id: '1', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
+  { id: '2', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
+  { id: '3', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
 ]
 
 const NAV_ITEMS = [
@@ -462,24 +451,185 @@ function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; i
   )
 }
 
+// ─── Dashboard Screen ─────────────────────────────────────────────────────────
+
+function DashboardScreen({
+  orders = [],
+  quotes = [],
+  statuses = [],
+  isDark,
+  onNewOrder,
+  onNewQuote,
+  onNewClient,
+  onEditOrder,
+  onPrintOrder,
+  onOpenMenu,
+  onLogout,
+}: {
+  orders: Order[]
+  quotes: Quote[]
+  statuses: CustomStatus[]
+  isDark: boolean
+  onNewOrder: () => void
+  onNewQuote: () => void
+  onNewClient: () => void
+  onEditOrder: (order: Order) => void
+  onPrintOrder: (order: Order) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  const [search, setSearch] = useState('')
+
+  const openOrders = orders.filter(o => o && o.status !== 'Concluído' && o.status !== 'Entregue' && o.status !== 'Cancelado').length
+  const completedOrders = orders.filter(o => o && (o.status === 'Concluído' || o.status === 'Entregue')).length
+  const pendingQuotes = quotes.filter(q => q && q.status === 'Pendente').length
+  const totalRevenue = orders.filter(o => o && o.status !== 'Cancelado').reduce((sum, o) => sum + Number(o.value || 0), 0)
+
+  const filteredOrders = orders.filter(o =>
+    o && (
+      (o.client || '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.device || '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.id || '').toLowerCase().includes(search.toLowerCase())
+    )
+  )
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar
+        title="Visão Geral"
+        isDark={isDark}
+        onOpenMobileMenu={onOpenMenu}
+        onNewOrder={onNewOrder}
+        onNewQuote={onNewQuote}
+        onNewClient={onNewClient}
+        onLogout={onLogout}
+      />
+
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="relative">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Pesquisar por OS, cliente, aparelho..."
+            className={`w-full rounded-xl border py-2.5 pl-9 pr-4 text-xs outline-none transition-colors sm:text-sm ${
+              isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
+            }`}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+          {[
+            { label: 'Em Aberto', value: openOrders.toString(), sub: 'serviços ativos', color: 'text-[#0066FF]' },
+            { label: 'Concluídos', value: completedOrders.toString(), sub: 'finalizados', color: 'text-green-500' },
+            { label: 'Orçamentos', value: pendingQuotes.toString(), sub: 'pendentes', color: 'text-[#8A2BE2]' },
+            { label: 'Previsto', value: `R$ ${totalRevenue.toFixed(0)}`, sub: 'total faturado', color: isDark ? 'text-white' : 'text-slate-800' },
+          ].map(kpi => (
+            <div key={kpi.label} className={`rounded-xl border p-3 sm:p-4 transition-colors ${
+              isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+            }`}>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">{kpi.label}</span>
+              <div className={`mt-1 text-lg font-bold tracking-tight sm:text-2xl ${kpi.color}`}>{kpi.value}</div>
+              <div className="mt-0.5 font-mono text-[10px] text-neutral-400 sm:text-xs">{kpi.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+            <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Ordens de Serviço Recentes</span>
+            <span className="font-mono text-[11px] text-neutral-400">{orders.length} cadastradas</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Contato</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {filteredOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
+                        title="Nenhuma ordem recente"
+                        sub="Registre uma nova OS ou Orçamento"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filteredOrders.slice(0, 10).map(order => (
+                    <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
+                      <td className="px-3 py-2.5">
+                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                        <div className="font-mono text-[10px] text-neutral-400">{order.phone || 'Sem telefone'}</div>
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                      <td className="px-3 py-2.5"><StatusBadge status={order.status} statuses={statuses} /></td>
+                      <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                        {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onPrintOrder(order)}
+                            className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                            title="Imprimir OS / Cupom"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onEditOrder(order)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
+                            title="Editar OS"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Modais de Ajustes ────────────────────────────────────────────────────────
 
 function ProductModal({
   onClose,
   onSave,
-  categories = [],
   productToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (prod: Product) => void
-  categories?: CategoryItem[]
   productToEdit?: Product | null
   isDark: boolean
 }) {
-  const safeCats = Array.isArray(categories) && categories.length > 0 ? categories : DEFAULT_CATEGORIES
   const [name, setName] = useState(productToEdit?.name || '')
-  const [category, setCategory] = useState(productToEdit?.category || safeCats[0]?.name || 'Acessórios')
+  const [category, setCategory] = useState(productToEdit?.category || 'Peça')
   const [costPrice, setCostPrice] = useState(productToEdit?.cost_price !== undefined ? String(productToEdit.cost_price) : '')
   const [salePrice, setSalePrice] = useState(productToEdit?.sale_price !== undefined ? String(productToEdit.sale_price) : '')
   const [stock, setStock] = useState(productToEdit?.stock !== undefined ? String(productToEdit.stock) : '1')
@@ -491,7 +641,7 @@ function ProductModal({
     onSave({
       id: productToEdit?.id || Date.now().toString(),
       name: name.trim(),
-      category: category.trim() || 'Acessórios',
+      category: category.trim() || 'Peça',
       cost_price: Number(costPrice) || 0,
       sale_price: Number(salePrice) || 0,
       stock: Number(stock) || 0,
@@ -523,12 +673,8 @@ function ProductModal({
             <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston, Tela iPhone 11..." className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria (Filtro)</label>
-            <select value={category} onChange={e => setCategory(e.target.value)} className={inputClass}>
-              {safeCats.map(cat => (
-                <option key={cat.id} value={cat.name}>{cat.name}</option>
-              ))}
-            </select>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
+            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Telas, Armazenamento, Fontes..." className={inputClass} />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
@@ -550,7 +696,7 @@ function ProductModal({
             Cancelar
           </button>
           <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {productToEdit ? 'Atualizar Peça' : 'Salvar Peça'}
+            {productToEdit ? 'Atualizar Peça' : 'Salvar Peça / Produto'}
           </button>
         </div>
       </form>
@@ -561,20 +707,17 @@ function ProductModal({
 function ServiceModal({
   onClose,
   onSave,
-  categories = [],
   serviceToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (svc: CustomService) => void
-  categories?: CategoryItem[]
   serviceToEdit?: CustomService | null
   isDark: boolean
 }) {
-  const safeCats = Array.isArray(categories) && categories.length > 0 ? categories : DEFAULT_CATEGORIES
   const [name, setName] = useState(serviceToEdit?.name || '')
   const [defaultPrice, setDefaultPrice] = useState(serviceToEdit?.default_price !== undefined ? String(serviceToEdit.default_price) : '')
-  const [category, setCategory] = useState(serviceToEdit?.category || safeCats[0]?.name || 'Dispositivos')
+  const [category, setCategory] = useState(serviceToEdit?.category || 'Hardware')
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
@@ -584,7 +727,7 @@ function ServiceModal({
       id: serviceToEdit?.id || Date.now().toString(),
       name: name.trim(),
       default_price: Number(defaultPrice) || 0,
-      category: category.trim() || 'Dispositivos',
+      category: category.trim() || 'Geral',
     })
     onClose()
   }
@@ -610,7 +753,7 @@ function ServiceModal({
         <div className="space-y-3 px-5 py-4">
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome do Serviço *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Formatação..." className={inputClass} />
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Limpeza com Pasta Térmica..." className={inputClass} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -618,12 +761,8 @@ function ServiceModal({
               <input required type="number" step="any" value={defaultPrice} onChange={e => setDefaultPrice(e.target.value)} placeholder="0.00" className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria (Filtro)</label>
-              <select value={category} onChange={e => setCategory(e.target.value)} className={inputClass}>
-                {safeCats.map(cat => (
-                  <option key={cat.id} value={cat.name}>{cat.name}</option>
-                ))}
-              </select>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
+              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software, Manutenção..." className={inputClass} />
             </div>
           </div>
         </div>
@@ -643,23 +782,21 @@ function ServiceModal({
 function StatusModal({
   onClose,
   onSave,
-  statusToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (st: CustomStatus) => void
-  statusToEdit?: CustomStatus | null
   isDark: boolean
 }) {
-  const [label, setLabel] = useState(statusToEdit?.label || '')
-  const [dot, setDot] = useState(statusToEdit?.dot || '#0066FF')
+  const [label, setLabel] = useState('')
+  const [dot, setDot] = useState('#0066FF')
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     if (!label.trim()) return alert('Informe o nome da situação!')
 
     onSave({
-      id: statusToEdit?.id || Date.now().toString(),
+      id: Date.now().toString(),
       label: label.trim(),
       dot,
     })
@@ -678,7 +815,7 @@ function StatusModal({
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
             <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">FLUXO DE OS</div>
-            <h2 className="text-base font-bold">{statusToEdit ? 'Editar Situação' : 'Nova Situação / Status'}</h2>
+            <h2 className="text-base font-bold">Nova Situação / Status</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -702,7 +839,7 @@ function StatusModal({
             Cancelar
           </button>
           <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {statusToEdit ? 'Atualizar Situação' : 'Salvar Situação'}
+            Salvar Situação
           </button>
         </div>
       </form>
@@ -710,830 +847,660 @@ function StatusModal({
   )
 }
 
-function CategoryModal({
-  onClose,
-  onSave,
-  categoryToEdit,
-  isDark,
-}: {
-  onClose: () => void
-  onSave: (cat: CategoryItem) => void
-  categoryToEdit?: CategoryItem | null
-  isDark: boolean
-}) {
-  const [name, setName] = useState(categoryToEdit?.name || '')
+// ─── Telas Secundárias ────────────────────────────────────────────────────────
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Informe o nome da categoria!')
-
-    onSave({
-      id: categoryToEdit?.id || Date.now().toString(),
-      name: name.trim(),
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-md rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">FILTROS & CATEGORIAS</div>
-            <h2 className="text-base font-bold">{categoryToEdit ? 'Editar Categoria' : 'Nova Categoria'}</h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-4 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome da Categoria *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Acessórios, Computadores..." className={inputClass} />
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {categoryToEdit ? 'Atualizar Categoria' : 'Salvar Categoria'}
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-// ─── Modal: Ordem de Serviço ──────────────────────────────────────────────────
-
-function OrderModal({
-  onClose,
-  clients = [],
+function OrdersScreen({
+  orders = [],
   statuses = [],
-  services = [],
-  products = [],
-  onSave,
-  onQuickNewClient,
-  orderToEdit,
   isDark,
+  onNewOrder,
+  onEditOrder,
+  onPrintOrder,
+  onUpdateStatus,
+  onDeleteOrder,
+  onOpenMenu,
+  onLogout,
 }: {
-  onClose: () => void
-  clients: Client[]
+  orders: Order[]
   statuses: CustomStatus[]
-  services: CustomService[]
-  products: Product[]
-  onSave: (order: Order) => void
-  onQuickNewClient: () => void
-  orderToEdit?: Order | null
   isDark: boolean
+  onNewOrder: () => void
+  onEditOrder: (order: Order) => void
+  onPrintOrder: (order: Order) => void
+  onUpdateStatus: (id: string, status: string) => void
+  onDeleteOrder: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
 }) {
-  const safeClients = Array.isArray(clients) ? clients : []
-  const safeStatuses = Array.isArray(statuses) ? statuses : []
-  const safeServices = Array.isArray(services) ? services : []
-  const safeProducts = Array.isArray(products) ? products : []
+  const [view, setView] = useState<'list' | 'kanban'>('list')
+  const [filterStatus, setFilterStatus] = useState<string>('Todos')
 
-  const [client, setClient] = useState(orderToEdit?.client || (safeClients[0]?.name ?? ''))
-  const [phone, setPhone] = useState(orderToEdit?.phone || '')
-  const [device, setDevice] = useState(orderToEdit?.device || '')
-  const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
-  const [notes, setNotes] = useState(orderToEdit?.notes || '')
-  const [status, setStatus] = useState(orderToEdit?.status || (safeStatuses[0]?.label ?? 'Entrada'))
-  const [items, setItems] = useState<OrderItem[]>(
-    orderToEdit?.items && orderToEdit.items.length > 0
-      ? orderToEdit.items
-      : [{ desc: orderToEdit?.service || '', qty: 1, unit: orderToEdit?.value || 0 }]
-  )
-
-  useEffect(() => {
-    if (!phone && client && safeClients.length > 0) {
-      const found = safeClients.find(c => c.name === client)
-      if (found) setPhone(found.phone)
-    }
-  }, [client, safeClients])
-
-  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
-
-  const handleClientSelectChange = (name: string) => {
-    setClient(name)
-    const found = safeClients.find(c => c.name === name)
-    if (found) setPhone(found.phone)
-  }
-
-  const handleApplyPreset = (value: string, index: number) => {
-    const svc = safeServices.find(s => s.name === value)
-    if (svc) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
-      return
-    }
-    const prod = safeProducts.find(p => p.name === value)
-    if (prod) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
-    }
-  }
-
-  const handleSave = (e: React.FormEvent, sendToWhatsApp = false) => {
-    e.preventDefault()
-    if (!client.trim() || !device.trim()) {
-      alert('Selecione o cliente e informe o aparelho!')
-      return
-    }
-
-    const firstService = items[0]?.desc?.trim() || 'Serviço Técnico'
-    const savedOrder: Order = {
-      id: orderToEdit?.id || `OS-${Math.floor(1000 + Math.random() * 9000)}`,
-      client,
-      phone,
-      device,
-      service: firstService,
-      status,
-      value: total,
-      date: orderToEdit?.date || new Date().toLocaleDateString('pt-BR'),
-      technician: technician || 'Admin',
-      notes,
-      items,
-    }
-
-    onSave(savedOrder)
-
-    if (sendToWhatsApp && phone) {
-      const msg = `*AndradeTech - Ordem de Serviço #${savedOrder.id}*\n\n` +
-                  `Olá, *${client}*!\n` +
-                  `*Aparelho:* ${device}\n` +
-                  `*Serviço:* ${firstService}\n` +
-                  `*Situação:* ${status}\n` +
-                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
-                  `Qualquer dúvida estamos à disposição!`
-      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
-    }
-
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
+  const filtered = filterStatus === 'Todos' ? orders : orders.filter(o => o && o.status === filterStatus)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
-              {orderToEdit ? `EDITANDO ${orderToEdit.id}` : 'NOVO REGISTRO'}
-            </div>
-            <h2 className="text-sm font-bold sm:text-base">
-              {orderToEdit ? 'Editar Ordem de Serviço' : 'Registrar Ordem de Serviço'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Ordens de Serviço" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewOrder={onNewOrder} onLogout={onLogout}>
+        <div className={`ml-2 flex items-center gap-1 rounded-lg border p-0.5 ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-slate-100'}`}>
+          {(['list','kanban'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              className="rounded px-2 py-1 text-[11px] font-medium transition-all"
+              style={{
+                background: view === v ? 'linear-gradient(to right, #0066FF, #8A2BE2)' : 'transparent',
+                color: view === v ? '#fff' : (isDark ? '#888' : '#555'),
+              }}
+            >
+              {v === 'list' ? 'Lista' : 'Quadro'}
+            </button>
+          ))}
+        </div>
+      </Topbar>
+
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
+          {['Todos', ...statuses.map(s => s.label)].map(s => {
+            const isActive = filterStatus === s
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setFilterStatus(s)}
+                className="whitespace-nowrap rounded-full border px-3 py-1 font-mono text-xs transition-all"
+                style={{
+                  background: isActive ? 'rgba(0, 102, 255, 0.15)' : 'transparent',
+                  color: isActive ? '#0066FF' : (isDark ? '#777' : '#555'),
+                  borderColor: isActive ? '#0066FF' : (isDark ? '#262626' : '#E2E8F0'),
+                }}
+              >
+                {s}
+              </button>
+            )
+          })}
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
-                <button
-                  type="button"
-                  onClick={onQuickNewClient}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
-                  title="Cadastrar Novo Cliente"
-                >
-                  <span>+</span> Cliente
-                </button>
-              </div>
-              <select
-                value={client}
-                onChange={e => handleClientSelectChange(e.target.value)}
-                className={inputClass}
-              >
-                <option value="" disabled>Selecione um cliente...</option>
-                {safeClients.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
-              <input
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="(DDD) 99999-9999"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
-              <input
-                value={device}
-                onChange={e => setDevice(e.target.value)}
-                placeholder="Ex: Notebook Lenovo, Galaxy S21..."
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
-              <select
-                value={status}
-                onChange={e => setStatus(e.target.value)}
-                className={inputClass}
-              >
-                {safeStatuses.map(s => (
-                  <option key={s.id} value={s.label}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Técnico Responsável</label>
-            <input
-              value={technician}
-              onChange={e => setTechnician(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Diagnóstico / Defeito</label>
-            <textarea
-              rows={2}
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Relato do problema, observações do aparelho..."
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Serviços & Peças</label>
-              <button
-                type="button"
-                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
-                className="text-xs font-semibold text-[#0066FF] hover:text-[#8A2BE2]"
-              >
-                + Adicionar Item
-              </button>
-            </div>
-
-            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <table className="w-full text-xs">
+        {view === 'list' ? (
+          <div className={`overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px] text-xs">
                 <thead>
-                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                    <th className="px-3 py-2 text-left">Item (Serviço ou Peça)</th>
-                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
-                    <th className="w-20 px-2 py-2 text-right">Unit</th>
-                    <th className="w-20 px-2 py-2 text-right">Total</th>
-                    <th className="w-8"></th>
+                  <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                    <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Cliente</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                    <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {items.map((item, i) => (
-                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
-                      <td className="px-2 py-1.5">
-                        <div className="flex flex-col gap-1 sm:flex-row">
-                          <input
-                            value={item.desc}
-                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
-                            placeholder="Descrição..."
-                            className="w-full bg-transparent outline-none"
-                          />
-                          <select
-                            onChange={e => {
-                              if (e.target.value) handleApplyPreset(e.target.value, i)
-                            }}
-                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Catálogo</option>
-                            <optgroup label="Serviços">
-                              {safeServices.map(s => (
-                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Produtos / Peças">
-                              {safeProducts.map(p => (
-                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </div>
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.qty}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
-                          className="w-full bg-transparent text-center font-mono outline-none"
+                <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>
+                        <EmptyState
+                          icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
+                          title="Nenhuma ordem encontrada"
+                          sub="Crie uma nova OS para começar"
+                          isDark={isDark}
                         />
-                      </td>
-                      <td className="px-1 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.unit || ''}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
-                          placeholder="0"
-                          className="w-full bg-transparent text-right font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
-                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
-                          className="text-neutral-400 hover:text-red-500"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        </button>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filtered.map(order => (
+                      <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                        <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
+                        <td className="px-3 py-2.5">
+                          <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                          <div className="font-mono text-[10px] text-neutral-400">{order.phone || '—'}</div>
+                        </td>
+                        <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                        <td className="px-3 py-2.5">
+                          <select
+                            value={order.status}
+                            onChange={e => onUpdateStatus(order.id, e.target.value)}
+                            className={`rounded border px-1.5 py-0.5 font-mono text-xs outline-none ${
+                              isDark ? 'border-neutral-800 bg-[#181818] text-neutral-200' : 'border-slate-300 bg-white text-slate-800'
+                            }`}
+                          >
+                            {statuses.map(st => (
+                              <option key={st.id} value={st.label}>{st.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                          {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => onPrintOrder(order)}
+                              className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                              title="Imprimir OS / Cupom"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onEditOrder(order)}
+                              className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
+                              title="Editar OS"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                            </button>
+                            <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                            <button
+                              type="button"
+                              onClick={() => { if(confirm(`Excluir ${order.id}?`)) onDeleteOrder(order.id) }}
+                              className="rounded p-1 text-neutral-400 hover:text-red-500"
+                              title="Excluir OS"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
-                <tfoot>
-                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
-                    <td className="px-2 py-2 text-right font-bold text-[#0066FF]">R$ {total.toFixed(2)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
               </table>
             </div>
           </div>
-        </div>
-
-        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
-            Cancelar
-          </button>
-          <div className="flex w-full gap-2 sm:w-auto">
-            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20 sm:flex-initial">
-              Salvar OS
-            </button>
-            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
-              Salvar & Whats
-            </button>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-4">
+            {statuses.map(st => {
+              const colOrders = orders.filter(o => o && (o.status || '').toLowerCase() === (st.label || '').toLowerCase())
+              return (
+                <div key={st.id} className={`flex w-64 flex-shrink-0 flex-col rounded-xl border transition-colors ${
+                  isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+                }`}>
+                  <div className={`flex items-center justify-between border-b px-3.5 py-2.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ background: st.dot }} />
+                      <span className="font-mono text-xs font-semibold" style={{ color: st.dot }}>{st.label}</span>
+                    </div>
+                    <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500'}`}>{colOrders.length}</span>
+                  </div>
+                  <div className="min-h-[140px] flex-1 space-y-2 p-2">
+                    {colOrders.length === 0 ? (
+                      <div className="py-8 text-center font-mono text-xs text-neutral-400">vazio</div>
+                    ) : (
+                      colOrders.map(order => (
+                        <div key={order.id} className={`space-y-1.5 rounded-lg border p-3 ${
+                          isDark ? 'border-neutral-800/80 bg-[#141414]' : 'border-slate-200 bg-slate-50'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs font-bold text-[#0066FF]">{order.id}</span>
+                            <span className="font-mono text-[10px] text-neutral-400">{order.date}</span>
+                          </div>
+                          <div className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                          <div className="text-[11px] text-neutral-400">{order.device}</div>
+                          <div className={`flex items-center justify-between border-t pt-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                            <span className="font-mono text-xs font-bold text-[#8A2BE2]">R$ {Number(order.value || 0).toFixed(2)}</span>
+                            <div className="flex gap-1">
+                              <button type="button" onClick={() => onPrintOrder(order)} className="p-1 text-neutral-400 hover:text-purple-500" title="Imprimir OS">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                              </button>
+                              <button type="button" onClick={() => onEditOrder(order)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar OS">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                              </button>
+                              <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
-        </div>
-      </form>
+        )}
+      </div>
     </div>
   )
 }
 
-// ─── Modal: Orçamento ─────────────────────────────────────────────────────────
+function QuotesScreen({
+  quotes = [],
+  isDark,
+  onNewQuote,
+  onEditQuote,
+  onConvertToOrder,
+  onDeleteQuote,
+  onOpenMenu,
+  onLogout,
+}: {
+  quotes: Quote[]
+  isDark: boolean
+  onNewQuote: () => void
+  onEditQuote: (quote: Quote) => void
+  onConvertToOrder: (quote: Quote) => void
+  onDeleteQuote: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Orçamentos & Propostas" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewQuote={onNewQuote} onLogout={onLogout} />
 
-function QuoteModal({
-  onClose,
+      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+        <div className="flex items-center justify-between sm:hidden">
+          <span className="font-mono text-xs text-neutral-400">{quotes.length} orçamentos</span>
+          <button
+            type="button"
+            onClick={onNewQuote}
+            className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-1.5 text-xs font-semibold text-white shadow-md"
+          >
+            + Novo Orçamento
+          </button>
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[650px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Aparelho</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Resumo</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Validade</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Status</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {quotes.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /></svg>}
+                        title="Nenhum orçamento cadastrado"
+                        sub="Clique em '+ Orçamento' para gerar uma proposta"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  quotes.map(q => (
+                    <tr key={q.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">{q.id}</td>
+                      <td className="px-3 py-2.5">
+                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{q.client}</div>
+                        <div className="text-[10px] text-neutral-400">{q.device}</div>
+                      </td>
+                      <td className="max-w-[180px] truncate px-3 py-2.5 text-neutral-400">{q.description}</td>
+                      <td className={`px-3 py-2.5 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ {Number(q.value || 0).toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{q.validUntil}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`rounded px-2 py-0.5 font-mono text-[10px] ${
+                          q.status === 'Aprovado' ? 'border border-green-500/30 bg-green-500/10 text-green-500' :
+                          q.status === 'Cancelado' ? 'border border-red-500/30 bg-red-500/10 text-red-500' :
+                          'border border-purple-500/30 bg-purple-500/10 text-[#8A2BE2]'
+                        }`}>
+                          {q.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onEditQuote(q)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#8A2BE2] transition-colors"
+                            title="Editar Orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          {q.status !== 'Aprovado' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Deseja converter o orçamento ${q.id} em uma Ordem de Serviço?`)) {
+                                  onConvertToOrder(q)
+                                }
+                              }}
+                              className="rounded border border-[#0066FF]/30 bg-[#0066FF]/10 px-2 py-1 text-[11px] font-semibold text-[#0066FF] hover:bg-[#0066FF] hover:text-white transition-all"
+                              title="Converter para OS"
+                            >
+                              Virar OS
+                            </button>
+                          )}
+                          <WhatsAppBtn phone={q.phone} quoteDetails={q} />
+                          <button
+                            type="button"
+                            onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
+                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                            title="Descartar orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ClientsScreen({
   clients = [],
+  isDark,
+  onNewClient,
+  onEditClient,
+  onDeleteClient,
+  onOpenMenu,
+  onLogout,
+}: {
+  clients: Client[]
+  isDark: boolean
+  onNewClient: () => void
+  onEditClient: (client: Client) => void
+  onDeleteClient: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  const [search, setSearch] = useState('')
+  const filtered = clients.filter(c =>
+    c && ((c.name || '').toLowerCase().includes(search.toLowerCase()) || (c.phone || '').includes(search))
+  )
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Base de Clientes" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewClient={onNewClient} onLogout={onLogout} />
+
+      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar cliente ou tel..."
+              className={`w-full rounded-xl border py-2 pl-9 pr-3 text-xs outline-none transition-colors sm:text-sm ${
+                isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
+              }`}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onNewClient}
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-2 text-xs font-semibold text-white shadow-md hover:opacity-95"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+            <span>+ Cliente</span>
+          </button>
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[550px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">Nome</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Telefone</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cidade</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>}
+                        title="Nenhum cliente cadastrado"
+                        sub="Toque em '+ Cliente' para cadastrar"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map(c => (
+                    <tr key={c.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{c.name}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{c.phone || 'Sem número'}</td>
+                      <td className="px-3 py-2.5 text-neutral-400">{c.city}</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onEditClient(c)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF] transition-colors"
+                            title="Editar Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <WhatsAppBtn phone={c.phone} label={`Olá ${c.name}!`} />
+                          <button
+                            type="button"
+                            onClick={() => { if(confirm(`Deseja realmente excluir o cliente ${c.name}?`)) onDeleteClient(c.id) }}
+                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                            title="Excluir Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Settings Screen ──────────────────────────────────────────────────────────
+
+function SettingsScreen({
   services = [],
   products = [],
-  onSave,
-  onConvertToOrder,
-  onQuickNewClient,
-  quoteToEdit,
+  statuses = [],
   isDark,
+  onOpenProductModal,
+  onOpenServiceModal,
+  onOpenStatusModal,
+  onEditProduct,
+  onEditService,
+  onDeleteProduct,
+  onDeleteService,
+  onDeleteStatus,
+  onOpenMenu,
+  onLogout,
 }: {
-  onClose: () => void
-  clients: Client[]
   services: CustomService[]
   products: Product[]
-  onSave: (quote: Quote) => void
-  onConvertToOrder: (quote: Quote) => void
-  onQuickNewClient: () => void
-  quoteToEdit?: Quote | null
+  statuses: CustomStatus[]
   isDark: boolean
+  onOpenProductModal: () => void
+  onOpenServiceModal: () => void
+  onOpenStatusModal: () => void
+  onEditProduct: (p: Product) => void
+  onEditService: (s: CustomService) => void
+  onDeleteProduct: (id: string) => void
+  onDeleteService: (id: string) => void
+  onDeleteStatus: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
 }) {
-  const safeClients = Array.isArray(clients) ? clients : []
-  const safeServices = Array.isArray(services) ? services : []
   const safeProducts = Array.isArray(products) ? products : []
-
-  const [client, setClient] = useState(quoteToEdit?.client || (safeClients[0]?.name ?? ''))
-  const [phone, setPhone] = useState(quoteToEdit?.phone || '')
-  const [device, setDevice] = useState(quoteToEdit?.device || '')
-  const [description, setDescription] = useState(quoteToEdit?.description || '')
-  const [validDays, setValidDays] = useState('7')
-  const [status, setStatus] = useState<'Pendente' | 'Aprovado' | 'Cancelado'>(quoteToEdit?.status || 'Pendente')
-  const [items, setItems] = useState<OrderItem[]>(
-    quoteToEdit?.items && quoteToEdit.items.length > 0
-      ? quoteToEdit.items
-      : [{ desc: '', qty: 1, unit: 0 }]
-  )
-
-  useEffect(() => {
-    if (!phone && client && safeClients.length > 0) {
-      const found = safeClients.find(c => c.name === client)
-      if (found) setPhone(found.phone)
-    }
-  }, [client, safeClients])
-
-  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
-
-  const handleClientSelectChange = (name: string) => {
-    setClient(name)
-    const found = safeClients.find(c => c.name === name)
-    if (found) setPhone(found.phone)
-  }
-
-  const handleApplyPreset = (value: string, index: number) => {
-    const svc = safeServices.find(s => s.name === value)
-    if (svc) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
-      return
-    }
-    const prod = safeProducts.find(p => p.name === value)
-    if (prod) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
-    }
-  }
-
-  const handleSave = (e: React.FormEvent, sendWhatsApp = false) => {
-    e.preventDefault()
-    if (!client.trim() || !device.trim()) {
-      alert('Selecione o cliente e informe o aparelho!')
-      return
-    }
-
-    const expDate = new Date()
-    expDate.setDate(expDate.getDate() + (Number(validDays) || 7))
-
-    const quoteData: Quote = {
-      id: quoteToEdit?.id || `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
-      client,
-      phone,
-      device,
-      description: description || items[0]?.desc || 'Proposta de serviço',
-      value: total,
-      validUntil: quoteToEdit?.validUntil || expDate.toLocaleDateString('pt-BR'),
-      createdAt: quoteToEdit?.createdAt || new Date().toLocaleDateString('pt-BR'),
-      status,
-      items,
-    }
-
-    onSave(quoteData)
-
-    if (status === 'Aprovado' && (!quoteToEdit || quoteToEdit.status !== 'Aprovado')) {
-      const confirmConvert = confirm('O orçamento foi marcado como Aprovado. Deseja gerar a Ordem de Serviço agora?')
-      if (confirmConvert) {
-        onConvertToOrder(quoteData)
-      }
-    }
-
-    if (sendWhatsApp && phone) {
-      const msg = `*AndradeTech - Proposta de Orçamento #${quoteData.id}*\n\n` +
-                  `Olá, *${client}*!\n` +
-                  `*Aparelho:* ${device}\n` +
-                  `*Situação:* ${status}\n` +
-                  `*Descrição:* ${quoteData.description}\n` +
-                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
-                  `Aguardamos sua confirmação!`
-      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
-    }
-
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
+  const safeServices = Array.isArray(services) ? services : []
+  const safeStatuses = Array.isArray(statuses) ? statuses : []
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">
-              {quoteToEdit ? `EDITANDO ${quoteToEdit.id}` : 'PROPOSTA COMERCIAL'}
-            </div>
-            <h2 className="text-sm font-bold sm:text-base">
-              {quoteToEdit ? 'Editar Orçamento' : 'Criar Novo Orçamento'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
-                <button
-                  type="button"
-                  onClick={onQuickNewClient}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
-                  title="Cadastrar Novo Cliente"
-                >
-                  <span>+</span> Cliente
-                </button>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Configurações, Peças & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} onLogout={onLogout} />
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Card Produtos / Peças */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div>
+                <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Produtos & Peças</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeProducts.length})</span>
               </div>
-              <select
-                value={client}
-                onChange={e => handleClientSelectChange(e.target.value)}
-                className={inputClass}
-              >
-                <option value="" disabled>Selecione um cliente...</option>
-                {safeClients.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
-              <input
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="(DDD) 99999-9999"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
-              <input
-                value={device}
-                onChange={e => setDevice(e.target.value)}
-                placeholder="Ex: iPhone 12, Notebook Acer..."
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
-              <select
-                value={status}
-                onChange={e => setStatus(e.target.value as any)}
-                className={`${inputClass} font-semibold ${
-                  status === 'Aprovado' ? 'text-green-500' :
-                  status === 'Cancelado' ? 'text-red-500' : 'text-[#8A2BE2]'
-                }`}
-              >
-                <option value="Pendente">🟡 Pendente</option>
-                <option value="Aprovado">🟢 Aprovado (Vira OS)</option>
-                <option value="Cancelado">🔴 Cancelado</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Validade</label>
-              <select
-                value={validDays}
-                onChange={e => setValidDays(e.target.value)}
-                className={inputClass}
-              >
-                <option value="3">3 dias</option>
-                <option value="7">7 dias (padrão)</option>
-                <option value="15">15 dias</option>
-                <option value="30">30 dias</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Resumo do Diagnóstico</label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Descreva a falha constatada e o que precisa ser substituído..."
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Itens / Peças / Serviços</label>
               <button
                 type="button"
-                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
-                className="text-xs font-semibold text-[#8A2BE2] hover:text-[#0066FF]"
+                onClick={onOpenProductModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
               >
-                + Adicionar Item
+                + Nova Peça
               </button>
             </div>
 
-            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                    <th className="px-3 py-2 text-left">Item</th>
-                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
-                    <th className="w-20 px-2 py-2 text-right">Unit</th>
-                    <th className="w-20 px-2 py-2 text-right">Total</th>
-                    <th className="w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, i) => (
-                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
-                      <td className="px-2 py-1.5">
-                        <div className="flex flex-col gap-1 sm:flex-row">
-                          <input
-                            value={item.desc}
-                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
-                            placeholder="Peça ou mão de obra..."
-                            className="w-full bg-transparent outline-none"
-                          />
-                          <select
-                            onChange={e => {
-                              if (e.target.value) handleApplyPreset(e.target.value, i)
-                            }}
-                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Catálogo</option>
-                            <optgroup label="Serviços">
-                              {safeServices.map(s => (
-                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Produtos / Peças">
-                              {safeProducts.map(p => (
-                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </div>
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.qty}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
-                          className="w-full bg-transparent text-center font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-1 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.unit || ''}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
-                          placeholder="0"
-                          className="w-full bg-transparent text-right font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
-                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
-                          className="text-neutral-400 hover:text-red-500"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
-                    <td className="px-2 py-2 text-right font-bold text-[#8A2BE2]">R$ {total.toFixed(2)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {safeProducts.length === 0 ? (
+                <div className="p-6 text-center text-xs text-neutral-400">Nenhum produto cadastrado</div>
+              ) : (
+                safeProducts.map(p => (
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                    <div>
+                      <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</div>
+                      <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
+                        <span>Venda: R$ {Number(p.sale_price || 0).toFixed(2)}</span>
+                        <span>•</span>
+                        <span>Qtd: {p.stock}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onEditProduct(p)}
+                        className="p-1 rounded text-neutral-400 hover:text-[#0066FF]"
+                        title="Editar Peça"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteProduct(p.id)}
+                        className="p-1 rounded text-neutral-400 hover:text-red-500"
+                        title="Excluir"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Card Serviços */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div>
+                <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Serviços da Assistência</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeServices.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenServiceModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Novo Serviço
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {safeServices.length === 0 ? (
+                <div className="p-6 text-center text-xs text-neutral-400">Nenhum serviço cadastrado</div>
+              ) : (
+                safeServices.map(s => (
+                  <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                    <div>
+                      <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</div>
+                      <div className="font-mono text-neutral-400">R$ {Number(s.default_price || 0).toFixed(2)}</div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onEditService(s)}
+                        className="p-1 rounded text-neutral-400 hover:text-[#0066FF]"
+                        title="Editar Serviço"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteService(s.id)}
+                        className="p-1 rounded text-neutral-400 hover:text-red-500"
+                        title="Excluir"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Card Situações / Status */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div>
+                <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Situações de OS</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeStatuses.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenStatusModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Nova Situação
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {safeStatuses.map(st => (
+                <div key={st.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full shadow-sm" style={{ background: st.dot }} />
+                    <span className={isDark ? 'text-neutral-200' : 'text-slate-800'}>{st.label}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (safeStatuses.length <= 1) return alert('Mantenha ao menos uma situação!')
+                      onDeleteStatus(st.id)
+                    }}
+                    className="p-1 rounded text-neutral-400 hover:text-red-500"
+                    title="Excluir"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-
-        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
-            Cancelar
-          </button>
-          <div className="flex w-full gap-2 sm:w-auto">
-            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-purple-500/20 sm:flex-initial">
-              {quoteToEdit ? 'Atualizar Orçamento' : 'Salvar Orçamento'}
-            </button>
-            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
-              Salvar & Whats
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-// ─── Modal: Cliente ───────────────────────────────────────────────────────────
-
-function ClientModal({
-  onClose,
-  onSave,
-  clientToEdit,
-  isDark,
-}: {
-  onClose: () => void
-  onSave: (client: Client) => void
-  clientToEdit?: Client | null
-  isDark: boolean
-}) {
-  const [name, setName] = useState(clientToEdit?.name || '')
-  const [phone, setPhone] = useState(clientToEdit?.phone || '')
-  const [cpf, setCpf] = useState(clientToEdit?.cpf || '')
-  const [address, setAddress] = useState(clientToEdit?.address || '')
-  const [city, setCity] = useState(clientToEdit?.city || '')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Nome do cliente é obrigatório')
-
-    onSave({
-      id: clientToEdit?.id || `CLI-${Math.floor(100 + Math.random() * 900)}`,
-      name,
-      phone,
-      cpf,
-      address,
-      city: city || 'São João do Paraíso',
-      totalOrders: clientToEdit?.totalOrders || 0,
-      totalSpent: clientToEdit?.totalSpent || 0,
-      lastService: clientToEdit?.lastService || 'Cadastrado no sistema',
-      devices: clientToEdit?.devices || [],
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
-              {clientToEdit ? `EDITANDO ${clientToEdit.id}` : 'CADASTRO'}
-            </div>
-            <h2 className="text-base font-bold">
-              {clientToEdit ? 'Editar Cliente' : 'Novo Cliente'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-3 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome Completo *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Rafael Mendonça" className={inputClass} />
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Telefone / WhatsApp *</label>
-              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(DDD) 99999-9999" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">CPF / CNPJ</label>
-              <input value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className={inputClass} />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Endereço</label>
-            <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, bairro..." className={inputClass} />
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cidade / Estado</label>
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Ex: São João do Paraíso, BA" className={inputClass} />
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {clientToEdit ? 'Salvar Alterações' : 'Salvar Cliente'}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   )
 }
