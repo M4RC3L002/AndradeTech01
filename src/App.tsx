@@ -73,11 +73,6 @@ interface CustomStatus {
   dot: string
 }
 
-interface CategoryItem {
-  id: string
-  name: string
-}
-
 // ─── Padrões Iniciais ─────────────────────────────────────────────────────────
 
 const DEFAULT_STATUSES: CustomStatus[] = [
@@ -91,24 +86,18 @@ const DEFAULT_STATUSES: CustomStatus[] = [
 ]
 
 const DEFAULT_SERVICES: CustomService[] = [
-  { id: '1', name: 'Troca de Tela', default_price: 350, category: 'Dispositivos' },
-  { id: '2', name: 'Reparo de Bateria', default_price: 180, category: 'Dispositivos' },
-  { id: '3', name: 'Formatação + SO', default_price: 150, category: 'Computadores' },
-  { id: '4', name: 'Limpeza Interna e Pasta', default_price: 120, category: 'Computadores' },
-  { id: '5', name: 'Troca de Conector de Carga', default_price: 130, category: 'Dispositivos' },
-  { id: '6', name: 'Diagnóstico e Orçamento', default_price: 0, category: 'Geral' },
+  { id: '1', name: 'Troca de Tela', default_price: 350, category: 'Hardware' },
+  { id: '2', name: 'Reparo de Bateria', default_price: 180, category: 'Hardware' },
+  { id: '3', name: 'Formatação + SO', default_price: 150, category: 'Software' },
+  { id: '4', name: 'Limpeza Interna e Pasta', default_price: 120, category: 'Manutenção' },
+  { id: '5', name: 'Troca de Conector de Carga', default_price: 130, category: 'Hardware' },
+  { id: '6', name: 'Diagnóstico e Orçamento', default_price: 0, category: 'Diagnóstico' },
 ]
 
 const DEFAULT_PRODUCTS: Product[] = [
-  { id: '1', name: 'SSD 480GB Kingston', category: 'Computadores', cost_price: 130, sale_price: 240, stock: 4 },
-  { id: '2', name: 'Tela iPhone 11 Incell', category: 'Dispositivos', cost_price: 110, sale_price: 250, stock: 2 },
-  { id: '3', name: 'Fonte ATX 500W', category: 'Computadores', cost_price: 160, sale_price: 280, stock: 3 },
-]
-
-const DEFAULT_CATEGORIES: CategoryItem[] = [
-  { id: '1', name: 'Acessórios' },
-  { id: '2', name: 'Computadores' },
-  { id: '3', name: 'Dispositivos' },
+  { id: '1', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
+  { id: '2', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
+  { id: '3', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
 ]
 
 const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
@@ -145,7 +134,6 @@ function AppLogo({ size = 36 }: { size?: number }) {
 function ThemeToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }) {
   return (
     <button
-      type="button"
       onClick={onToggle}
       className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[11px] font-mono border transition-all ${
         isDark
@@ -168,7 +156,7 @@ function ThemeToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () => vo
   )
 }
 
-// ─── Modal de Emissão e Impressão ──────────────────────────────────────────────
+// ─── Modal de Emissão e Impressão (A4 e Bobina Térmica) ───────────────────────
 
 function PrintModal({
   order,
@@ -203,7 +191,6 @@ function PrintModal({
             <span className="font-bold text-sm sm:text-base">Emissão de Comprovante / OS</span>
             <div className={`flex rounded-lg border p-0.5 ${isDark ? 'border-neutral-700 bg-black' : 'border-slate-300 bg-white'}`}>
               <button
-                type="button"
                 onClick={() => setPrintType('a4')}
                 className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
                   printType === 'a4' ? 'bg-[#0066FF] text-white' : 'text-neutral-400'
@@ -212,7 +199,6 @@ function PrintModal({
                 📄 Folha A4
               </button>
               <button
-                type="button"
                 onClick={() => setPrintType('thermal')}
                 className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
                   printType === 'thermal' ? 'bg-[#8A2BE2] text-white' : 'text-neutral-400'
@@ -225,14 +211,13 @@ function PrintModal({
 
           <div className="flex items-center gap-2">
             <button
-              type="button"
               onClick={handleTriggerPrint}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] shadow hover:opacity-95"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               <span>Imprimir / PDF</span>
             </button>
-            <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500">
+            <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>
@@ -296,15 +281,15 @@ function PrintModal({
                       <tr key={idx} className="hover:bg-slate-50">
                         <td className="p-2.5 font-medium text-slate-800">{it.desc}</td>
                         <td className="p-2.5 text-center font-mono">{it.qty}</td>
-                        <td className="p-2.5 text-right font-mono">R$ {Number(it.unit || 0).toFixed(2)}</td>
-                        <td className="p-2.5 text-right font-mono font-bold">R$ {(Number(it.qty || 1) * Number(it.unit || 0)).toFixed(2)}</td>
+                        <td className="p-2.5 text-right font-mono">R$ {it.unit.toFixed(2)}</td>
+                        <td className="p-2.5 text-right font-mono font-bold">R$ {(it.qty * it.unit).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr className="bg-slate-100 font-mono border-t-2 border-slate-300">
                       <td colSpan={3} className="p-3 text-right uppercase font-bold text-slate-700">Valor Total a Pagar:</td>
-                      <td className="p-3 text-right text-sm font-black text-blue-600">R$ {Number(order.value || 0).toFixed(2)}</td>
+                      <td className="p-3 text-right text-sm font-black text-blue-600">R$ {order.value.toFixed(2)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -363,14 +348,14 @@ function PrintModal({
                 {items.map((it, i) => (
                   <div key={i} className="flex justify-between text-[10px]">
                     <span className="truncate pr-1">{it.qty}x {it.desc}</span>
-                    <span className="font-bold whitespace-nowrap">R$ {(Number(it.qty || 1) * Number(it.unit || 0)).toFixed(2)}</span>
+                    <span className="font-bold whitespace-nowrap">R$ {(it.qty * it.unit).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
 
               <div className="flex justify-between font-black text-xs py-1 border-b border-dashed border-black mb-3">
                 <span>TOTAL:</span>
-                <span>R$ {Number(order.value || 0).toFixed(2)}</span>
+                <span>R$ {order.value.toFixed(2)}</span>
               </div>
 
               <div className="text-[8px] text-center leading-tight mb-4 text-neutral-600">
@@ -410,36 +395,211 @@ function PrintModal({
   )
 }
 
-// ─── Modais de Ajustes ────────────────────────────────────────────────────────
+// ─── Tela de Login ───────────────────────────────────────────────────────────
+
+function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; isDark: boolean }) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setErrorMsg('')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password.trim(),
+    })
+
+    if (error) {
+      setErrorMsg('E-mail ou senha incorretos. Verifique suas credenciais.')
+      setLoading(false)
+    } else {
+      onLoginSuccess()
+    }
+  }
+
+  return (
+    <div className={`flex min-h-screen items-center justify-center p-4 transition-colors ${isDark ? 'bg-[#0a0a0a]' : 'bg-slate-100'}`}>
+      <div className={`w-full max-w-sm rounded-2xl border p-6 shadow-2xl transition-colors ${isDark ? 'bg-[#111] border-neutral-800' : 'bg-white border-slate-200'}`}>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="mb-3">
+            <AppLogo size={56} />
+          </div>
+          <h1 className="text-xl font-extrabold bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] bg-clip-text text-transparent">
+            AndradeTech
+          </h1>
+          <p className="font-mono text-xs text-neutral-400">Acesso Restrito ao Sistema</p>
+        </div>
+
+        {errorMsg && (
+          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-center text-xs text-red-500">
+            {errorMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-neutral-400">E-mail</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="seu-email@exemplo.com"
+              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+                isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#0066FF]'
+              }`}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-neutral-400">Senha</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+                isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#0066FF]'
+              }`}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] hover:opacity-95 shadow-md shadow-blue-500/20 disabled:opacity-50"
+          >
+            {loading ? 'Validando...' : 'Entrar no Painel'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Utilitários ──────────────────────────────────────────────────────────────
+
+function StatusBadge({ status, statuses }: { status: string; statuses: CustomStatus[] }) {
+  const current = statuses.find(s => s.label.toLowerCase() === status.toLowerCase()) || {
+    label: status,
+    dot: '#888888',
+  }
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 font-mono text-xs font-medium"
+      style={{
+        color: current.dot,
+        background: `${current.dot}18`,
+        border: `1px solid ${current.dot}33`,
+      }}
+    >
+      <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: current.dot }} />
+      {current.label}
+    </span>
+  )
+}
+
+function WhatsAppBtn({
+  phone,
+  label = '',
+  orderDetails,
+  quoteDetails,
+}: {
+  phone: string
+  label?: string
+  orderDetails?: Partial<Order>
+  quoteDetails?: Partial<Quote>
+}) {
+  let msg = `Olá! Passando para falar sobre seu atendimento na AndradeTech.`
+
+  if (orderDetails) {
+    msg = `*AndradeTech - Atualização de OS*\n\n` +
+          `Olá, *${orderDetails.client || 'Cliente'}*!\n` +
+          `*OS:* #${orderDetails.id || '---'}\n` +
+          `*Aparelho:* ${orderDetails.device || 'N/A'}\n` +
+          `*Serviço:* ${orderDetails.service || 'Em diagnóstico'}\n` +
+          `*Situação Atual:* ${orderDetails.status || 'Em andamento'}\n` +
+          (orderDetails.value ? `*Valor Total:* R$ ${orderDetails.value.toFixed(2)}\n\n` : '\n') +
+          `Estamos à disposição!`
+  } else if (quoteDetails) {
+    msg = `*AndradeTech - Proposta de Orçamento*\n\n` +
+          `Olá, *${quoteDetails.client || 'Cliente'}*!\n` +
+          `*Orçamento:* #${quoteDetails.id || '---'}\n` +
+          `*Aparelho:* ${quoteDetails.device || 'N/A'}\n` +
+          `*Descrição:* ${quoteDetails.description || 'Reparo técnico'}\n` +
+          `*Valor Total:* R$ ${(quoteDetails.value || 0).toFixed(2)}\n` +
+          `*Validade da proposta:* ${quoteDetails.validUntil || '7 dias'}\n\n` +
+          `Podemos confirmar a aprovação do serviço?`
+  } else if (label) {
+    msg = `Olá! ${label}`
+  }
+
+  const cleanPhone = phone ? phone.replace(/\D/g, '') : ''
+  const href = cleanPhone ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(msg)}` : '#'
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => {
+        if (!cleanPhone) {
+          e.preventDefault()
+          alert('Telefone do cliente não informado!')
+        }
+      }}
+      title="Enviar WhatsApp"
+      className="inline-flex flex-shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-white transition-all bg-[#25D366] hover:opacity-90 active:scale-95 shadow-sm"
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      <span className="hidden sm:inline">{label || 'WhatsApp'}</span>
+    </a>
+  )
+}
+
+function EmptyState({ icon, title, sub, isDark }: { icon: React.ReactNode; title: string; sub: string; isDark: boolean }) {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="mb-3 opacity-25 text-neutral-400">{icon}</div>
+      <div className={`mb-1 text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>{title}</div>
+      <div className={`text-xs ${isDark ? 'text-neutral-600' : 'text-slate-400'}`}>{sub}</div>
+    </div>
+  )
+}
+
+// ─── Modais Específicos de Configurações ───────────────────────────────────────
 
 function ProductModal({
   onClose,
   onSave,
-  categories = [],
-  productToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (prod: Product) => void
-  categories?: CategoryItem[]
-  productToEdit?: Product | null
   isDark: boolean
 }) {
-  const safeCats = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES
-  const [name, setName] = useState(productToEdit?.name || '')
-  const [category, setCategory] = useState(productToEdit?.category || safeCats[0]?.name || 'Geral')
-  const [costPrice, setCostPrice] = useState(productToEdit?.cost_price !== undefined ? String(productToEdit.cost_price) : '')
-  const [salePrice, setSalePrice] = useState(productToEdit?.sale_price !== undefined ? String(productToEdit.sale_price) : '')
-  const [stock, setStock] = useState(productToEdit?.stock !== undefined ? String(productToEdit.stock) : '1')
+  const [name, setName] = useState('')
+  const [category, setCategory] = useState('Peça')
+  const [costPrice, setCostPrice] = useState('')
+  const [salePrice, setSalePrice] = useState('')
+  const [stock, setStock] = useState('1')
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return alert('Informe o nome da peça/produto!')
 
     onSave({
-      id: productToEdit?.id || Date.now().toString(),
+      id: Date.now().toString(),
       name: name.trim(),
-      category: category.trim() || 'Geral',
+      category: category.trim() || 'Peça',
       cost_price: Number(costPrice) || 0,
       sale_price: Number(salePrice) || 0,
       stock: Number(stock) || 0,
@@ -459,7 +619,7 @@ function ProductModal({
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
             <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">ESTOQUE & PEÇAS</div>
-            <h2 className="text-base font-bold">{productToEdit ? 'Editar Peça / Produto' : 'Novo Produto / Peça'}</h2>
+            <h2 className="text-base font-bold">Novo Produto / Peça</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -471,13 +631,8 @@ function ProductModal({
             <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston, Tela iPhone 11..." className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria de Filtro</label>
-            <select value={category} onChange={e => setCategory(e.target.value)} className={inputClass}>
-              {safeCats.map(cat => (
-                <option key={cat.id} value={cat.name}>{cat.name}</option>
-              ))}
-              <option value="Geral">Geral</option>
-            </select>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
+            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Telas, Armazenamento, Fontes..." className={inputClass} />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
@@ -499,7 +654,7 @@ function ProductModal({
             Cancelar
           </button>
           <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {productToEdit ? 'Atualizar Peça' : 'Salvar Peça / Produto'}
+            Salvar Peça / Produto
           </button>
         </div>
       </form>
@@ -510,27 +665,22 @@ function ProductModal({
 function ServiceModal({
   onClose,
   onSave,
-  categories = [],
-  serviceToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (svc: CustomService) => void
-  categories?: CategoryItem[]
-  serviceToEdit?: CustomService | null
   isDark: boolean
 }) {
-  const safeCats = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES
-  const [name, setName] = useState(serviceToEdit?.name || '')
-  const [defaultPrice, setDefaultPrice] = useState(serviceToEdit?.default_price !== undefined ? String(serviceToEdit.default_price) : '')
-  const [category, setCategory] = useState(serviceToEdit?.category || safeCats[0]?.name || 'Geral')
+  const [name, setName] = useState('')
+  const [defaultPrice, setDefaultPrice] = useState('')
+  const [category, setCategory] = useState('Hardware')
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return alert('Informe o nome do serviço!')
 
     onSave({
-      id: serviceToEdit?.id || Date.now().toString(),
+      id: Date.now().toString(),
       name: name.trim(),
       default_price: Number(defaultPrice) || 0,
       category: category.trim() || 'Geral',
@@ -550,7 +700,7 @@ function ServiceModal({
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
             <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">MÃO DE OBRA</div>
-            <h2 className="text-base font-bold">{serviceToEdit ? 'Editar Serviço' : 'Novo Serviço Técnico'}</h2>
+            <h2 className="text-base font-bold">Novo Serviço Técnico</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -559,7 +709,7 @@ function ServiceModal({
         <div className="space-y-3 px-5 py-4">
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome do Serviço *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Formatação..." className={inputClass} />
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Limpeza com Pasta Térmica..." className={inputClass} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -567,13 +717,8 @@ function ServiceModal({
               <input required type="number" step="any" value={defaultPrice} onChange={e => setDefaultPrice(e.target.value)} placeholder="0.00" className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria de Filtro</label>
-              <select value={category} onChange={e => setCategory(e.target.value)} className={inputClass}>
-                {safeCats.map(cat => (
-                  <option key={cat.id} value={cat.name}>{cat.name}</option>
-                ))}
-                <option value="Geral">Geral</option>
-              </select>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
+              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software, Manutenção..." className={inputClass} />
             </div>
           </div>
         </div>
@@ -582,68 +727,7 @@ function ServiceModal({
             Cancelar
           </button>
           <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {serviceToEdit ? 'Atualizar Serviço' : 'Salvar Serviço'}
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-function CategoryModal({
-  onClose,
-  onSave,
-  categoryToEdit,
-  isDark,
-}: {
-  onClose: () => void
-  onSave: (cat: CategoryItem) => void
-  categoryToEdit?: CategoryItem | null
-  isDark: boolean
-}) {
-  const [name, setName] = useState(categoryToEdit?.name || '')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Informe o nome da categoria!')
-
-    onSave({
-      id: categoryToEdit?.id || Date.now().toString(),
-      name: name.trim(),
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-md rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">FILTROS & CATEGORIAS</div>
-            <h2 className="text-base font-bold">{categoryToEdit ? 'Editar Categoria' : 'Nova Categoria'}</h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-4 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome da Categoria *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Acessórios, Computadores, Dispositivos..." className={inputClass} />
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {categoryToEdit ? 'Atualizar Categoria' : 'Salvar Categoria'}
+            Salvar Serviço
           </button>
         </div>
       </form>
@@ -654,23 +738,21 @@ function CategoryModal({
 function StatusModal({
   onClose,
   onSave,
-  statusToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (st: CustomStatus) => void
-  statusToEdit?: CustomStatus | null
   isDark: boolean
 }) {
-  const [label, setLabel] = useState(statusToEdit?.label || '')
-  const [dot, setDot] = useState(statusToEdit?.dot || '#0066FF')
+  const [label, setLabel] = useState('')
+  const [dot, setDot] = useState('#0066FF')
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     if (!label.trim()) return alert('Informe o nome da situação!')
 
     onSave({
-      id: statusToEdit?.id || Date.now().toString(),
+      id: Date.now().toString(),
       label: label.trim(),
       dot,
     })
@@ -689,7 +771,7 @@ function StatusModal({
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
             <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">FLUXO DE OS</div>
-            <h2 className="text-base font-bold">{statusToEdit ? 'Editar Situação' : 'Nova Situação / Status'}</h2>
+            <h2 className="text-base font-bold">Nova Situação / Status</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -713,7 +795,7 @@ function StatusModal({
             Cancelar
           </button>
           <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {statusToEdit ? 'Atualizar Situação' : 'Salvar Situação'}
+            Salvar Situação
           </button>
         </div>
       </form>
@@ -723,7 +805,7 @@ function StatusModal({
 
 // ─── Modal: Ordem de Serviço ──────────────────────────────────────────────────
 
-function OrderModal({
+function OrderModalWrapper({
   onClose,
   clients,
   statuses,
@@ -744,660 +826,24 @@ function OrderModal({
   orderToEdit?: Order | null
   isDark: boolean
 }) {
-  const [client, setClient] = useState(orderToEdit?.client || (clients && clients.length > 0 ? clients[0].name : ''))
-  const [phone, setPhone] = useState(orderToEdit?.phone || '')
-  const [device, setDevice] = useState(orderToEdit?.device || '')
-  const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
-  const [notes, setNotes] = useState(orderToEdit?.notes || '')
-  const [status, setStatus] = useState(orderToEdit?.status || (statuses && statuses[0] ? statuses[0].label : 'Entrada'))
-  const [items, setItems] = useState<OrderItem[]>(
-    orderToEdit?.items && orderToEdit.items.length > 0
-      ? orderToEdit.items
-      : [{ desc: orderToEdit?.service || '', qty: 1, unit: orderToEdit?.value || 0 }]
-  )
-
-  useEffect(() => {
-    if (!phone && client && clients) {
-      const found = clients.find(c => c.name === client)
-      if (found) setPhone(found.phone)
-    }
-  }, [client, clients])
-
-  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
-
-  const handleClientSelectChange = (name: string) => {
-    setClient(name)
-    if (clients) {
-      const found = clients.find(c => c.name === name)
-      if (found) setPhone(found.phone)
-    }
-  }
-
-  const handleApplyPreset = (value: string, index: number) => {
-    if (services) {
-      const svc = services.find(s => s.name === value)
-      if (svc) {
-        setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
-        return
-      }
-    }
-    if (products) {
-      const prod = products.find(p => p.name === value)
-      if (prod) {
-        setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
-      }
-    }
-  }
-
-  const handleSave = (e: React.FormEvent, sendToWhatsApp = false) => {
-    e.preventDefault()
-    if (!client.trim() || !device.trim()) {
-      alert('Selecione o cliente e informe o aparelho!')
-      return
-    }
-
-    const firstService = items[0]?.desc?.trim() || 'Serviço Técnico'
-    const savedOrder: Order = {
-      id: orderToEdit?.id || `OS-${Math.floor(1000 + Math.random() * 9000)}`,
-      client,
-      phone,
-      device,
-      service: firstService,
-      status,
-      value: total,
-      date: orderToEdit?.date || new Date().toLocaleDateString('pt-BR'),
-      technician: technician || 'Admin',
-      notes,
-      items,
-    }
-
-    onSave(savedOrder)
-
-    if (sendToWhatsApp && phone) {
-      const msg = `*AndradeTech - Ordem de Serviço #${savedOrder.id}*\n\n` +
-                  `Olá, *${client}*!\n` +
-                  `*Aparelho:* ${device}\n` +
-                  `*Serviço:* ${firstService}\n` +
-                  `*Situação:* ${status}\n` +
-                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
-                  `Qualquer dúvida estamos à disposição!`
-      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
-    }
-
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
-              {orderToEdit ? `EDITANDO ${orderToEdit.id}` : 'NOVO REGISTRO'}
-            </div>
-            <h2 className="text-sm font-bold sm:text-base">
-              {orderToEdit ? 'Editar Ordem de Serviço' : 'Registrar Ordem de Serviço'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
-                <button
-                  type="button"
-                  onClick={onQuickNewClient}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
-                  title="Cadastrar Novo Cliente"
-                >
-                  <span>+</span> Cliente
-                </button>
-              </div>
-              <select
-                value={client}
-                onChange={e => handleClientSelectChange(e.target.value)}
-                className={inputClass}
-              >
-                <option value="" disabled>Selecione um cliente...</option>
-                {clients && clients.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
-              <input
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="(DDD) 99999-9999"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
-              <input
-                value={device}
-                onChange={e => setDevice(e.target.value)}
-                placeholder="Ex: Notebook Lenovo, Galaxy S21..."
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
-              <select
-                value={status}
-                onChange={e => setStatus(e.target.value)}
-                className={inputClass}
-              >
-                {statuses && statuses.map(s => (
-                  <option key={s.id} value={s.label}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Técnico Responsável</label>
-            <input
-              value={technician}
-              onChange={e => setTechnician(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Diagnóstico / Defeito</label>
-            <textarea
-              rows={2}
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Relato do problema, observações do aparelho..."
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Serviços & Peças</label>
-              <button
-                type="button"
-                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
-                className="text-xs font-semibold text-[#0066FF] hover:text-[#8A2BE2]"
-              >
-                + Adicionar Item
-              </button>
-            </div>
-
-            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                    <th className="px-3 py-2 text-left">Item (Serviço ou Peça)</th>
-                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
-                    <th className="w-20 px-2 py-2 text-right">Unit</th>
-                    <th className="w-20 px-2 py-2 text-right">Total</th>
-                    <th className="w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, i) => (
-                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
-                      <td className="px-2 py-1.5">
-                        <div className="flex flex-col gap-1 sm:flex-row">
-                          <input
-                            value={item.desc}
-                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
-                            placeholder="Descrição..."
-                            className="w-full bg-transparent outline-none"
-                          />
-                          <select
-                            onChange={e => {
-                              if (e.target.value) handleApplyPreset(e.target.value, i)
-                            }}
-                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Catálogo</option>
-                            <optgroup label="Serviços">
-                              {services && services.map(s => (
-                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Produtos / Peças">
-                              {products && products.map(p => (
-                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </div>
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.qty}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
-                          className="w-full bg-transparent text-center font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-1 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.unit || ''}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
-                          placeholder="0"
-                          className="w-full bg-transparent text-right font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
-                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
-                          className="text-neutral-400 hover:text-red-500"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
-                    <td className="px-2 py-2 text-right font-bold text-[#0066FF]">R$ {total.toFixed(2)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
-            Cancelar
-          </button>
-          <div className="flex w-full gap-2 sm:w-auto">
-            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20 sm:flex-initial">
-              Salvar OS
-            </button>
-            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
-              Salvar & Whats
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-// ─── Modal: Orçamento ─────────────────────────────────────────────────────────
-
-function QuoteModal({
-  onClose,
-  clients,
-  services,
-  products,
-  onSave,
-  onConvertToOrder,
-  onQuickNewClient,
-  quoteToEdit,
-  isDark,
-}: {
-  onClose: () => void
-  clients: Client[]
-  services: CustomService[]
-  products: Product[]
-  onSave: (quote: Quote) => void
-  onConvertToOrder: (quote: Quote) => void
-  onQuickNewClient: () => void
-  quoteToEdit?: Quote | null
-  isDark: boolean
-}) {
-  const [client, setClient] = useState(quoteToEdit?.client || (clients && clients.length > 0 ? clients[0].name : ''))
-  const [phone, setPhone] = useState(quoteToEdit?.phone || '')
-  const [device, setDevice] = useState(quoteToEdit?.device || '')
-  const [description, setDescription] = useState(quoteToEdit?.description || '')
-  const [validDays, setValidDays] = useState('7')
-  const [status, setStatus] = useState<'Pendente' | 'Aprovado' | 'Cancelado'>(quoteToEdit?.status || 'Pendente')
-  const [items, setItems] = useState<OrderItem[]>(
-    quoteToEdit?.items && quoteToEdit.items.length > 0
-      ? quoteToEdit.items
-      : [{ desc: '', qty: 1, unit: 0 }]
-  )
-
-  useEffect(() => {
-    if (!phone && client && clients) {
-      const found = clients.find(c => c.name === client)
-      if (found) setPhone(found.phone)
-    }
-  }, [client, clients])
-
-  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
-
-  const handleClientSelectChange = (name: string) => {
-    setClient(name)
-    if (clients) {
-      const found = clients.find(c => c.name === name)
-      if (found) setPhone(found.phone)
-    }
-  }
-
-  const handleApplyPreset = (value: string, index: number) => {
-    if (services) {
-      const svc = services.find(s => s.name === value)
-      if (svc) {
-        setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
-        return
-      }
-    }
-    if (products) {
-      const prod = products.find(p => p.name === value)
-      if (prod) {
-        setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
-      }
-    }
-  }
-
-  const handleSave = (e: React.FormEvent, sendWhatsApp = false) => {
-    e.preventDefault()
-    if (!client.trim() || !device.trim()) {
-      alert('Selecione o cliente e informe o aparelho!')
-      return
-    }
-
-    const expDate = new Date()
-    expDate.setDate(expDate.getDate() + (Number(validDays) || 7))
-
-    const quoteData: Quote = {
-      id: quoteToEdit?.id || `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
-      client,
-      phone,
-      device,
-      description: description || items[0]?.desc || 'Proposta de serviço',
-      value: total,
-      validUntil: quoteToEdit?.validUntil || expDate.toLocaleDateString('pt-BR'),
-      createdAt: quoteToEdit?.createdAt || new Date().toLocaleDateString('pt-BR'),
-      status,
-      items,
-    }
-
-    onSave(quoteData)
-
-    if (status === 'Aprovado' && (!quoteToEdit || quoteToEdit.status !== 'Aprovado')) {
-      const confirmConvert = confirm('O orçamento foi marcado como Aprovado. Deseja gerar a Ordem de Serviço agora?')
-      if (confirmConvert) {
-        onConvertToOrder(quoteData)
-      }
-    }
-
-    if (sendWhatsApp && phone) {
-      const msg = `*AndradeTech - Proposta de Orçamento #${quoteData.id}*\n\n` +
-                  `Olá, *${client}*!\n` +
-                  `*Aparelho:* ${device}\n` +
-                  `*Situação:* ${status}\n` +
-                  `*Descrição:* ${quoteData.description}\n` +
-                  `*Valor Total:* R$ ${total.toFixed(2)}\n` +
-                  `*Válido até:* ${quoteData.validUntil}\n\n` +
-                  `Aguardamos sua confirmação!`
-      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
-    }
-
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">
-              {quoteToEdit ? `EDITANDO ${quoteToEdit.id}` : 'PROPOSTA COMERCIAL'}
-            </div>
-            <h2 className="text-sm font-bold sm:text-base">
-              {quoteToEdit ? 'Editar Orçamento' : 'Criar Novo Orçamento'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
-                <button
-                  type="button"
-                  onClick={onQuickNewClient}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
-                  title="Cadastrar Novo Cliente"
-                >
-                  <span>+</span> Cliente
-                </button>
-              </div>
-              <select
-                value={client}
-                onChange={e => handleClientSelectChange(e.target.value)}
-                className={inputClass}
-              >
-                <option value="" disabled>Selecione um cliente...</option>
-                {clients && clients.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
-              <input
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="(DDD) 99999-9999"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
-              <input
-                value={device}
-                onChange={e => setDevice(e.target.value)}
-                placeholder="Ex: iPhone 12, Notebook Acer..."
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
-              <select
-                value={status}
-                onChange={e => setStatus(e.target.value as any)}
-                className={`${inputClass} font-semibold ${
-                  status === 'Aprovado' ? 'text-green-500' :
-                  status === 'Cancelado' ? 'text-red-500' : 'text-[#8A2BE2]'
-                }`}
-              >
-                <option value="Pendente">🟡 Pendente</option>
-                <option value="Aprovado">🟢 Aprovado (Vira OS)</option>
-                <option value="Cancelado">🔴 Cancelado</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Validade</label>
-              <select
-                value={validDays}
-                onChange={e => setValidDays(e.target.value)}
-                className={inputClass}
-              >
-                <option value="3">3 dias</option>
-                <option value="7">7 dias (padrão)</option>
-                <option value="15">15 dias</option>
-                <option value="30">30 dias</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Resumo do Diagnóstico</label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Descreva a falha constatada e o que precisa ser substituído..."
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Itens / Peças / Serviços</label>
-              <button
-                type="button"
-                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
-                className="text-xs font-semibold text-[#8A2BE2] hover:text-[#0066FF]"
-              >
-                + Adicionar Item
-              </button>
-            </div>
-
-            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                    <th className="px-3 py-2 text-left">Item</th>
-                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
-                    <th className="w-20 px-2 py-2 text-right">Unit</th>
-                    <th className="w-20 px-2 py-2 text-right">Total</th>
-                    <th className="w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, i) => (
-                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
-                      <td className="px-2 py-1.5">
-                        <div className="flex flex-col gap-1 sm:flex-row">
-                          <input
-                            value={item.desc}
-                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
-                            placeholder="Peça ou mão de obra..."
-                            className="w-full bg-transparent outline-none"
-                          />
-                          <select
-                            onChange={e => {
-                              if (e.target.value) handleApplyPreset(e.target.value, i)
-                            }}
-                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Catálogo</option>
-                            <optgroup label="Serviços">
-                              {services && services.map(s => (
-                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Produtos / Peças">
-                              {products && products.map(p => (
-                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </div>
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.qty}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
-                          className="w-full bg-transparent text-center font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-1 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.unit || ''}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
-                          placeholder="0"
-                          className="w-full bg-transparent text-right font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
-                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
-                          className="text-neutral-400 hover:text-red-500"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
-                    <td className="px-2 py-2 text-right font-bold text-[#8A2BE2]">R$ {total.toFixed(2)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
-            Cancelar
-          </button>
-          <div className="flex w-full gap-2 sm:w-auto">
-            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-purple-500/20 sm:flex-initial">
-              {quoteToEdit ? 'Atualizar Orçamento' : 'Salvar Orçamento'}
-            </button>
-            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
-              Salvar & Whats
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
+    <OrderModal
+      onClose={onClose}
+      clients={clients}
+      statuses={statuses}
+      services={services}
+      products={products}
+      onSave={onSave}
+      onQuickNewClient={onQuickNewClient}
+      orderToEdit={orderToEdit}
+      isDark={isDark}
+    />
   )
 }
 
 // ─── Modal: Cliente ───────────────────────────────────────────────────────────
 
-function ClientModal({
+function ClientModalWrapper({
   onClose,
   onSave,
   clientToEdit,
@@ -1408,87 +854,13 @@ function ClientModal({
   clientToEdit?: Client | null
   isDark: boolean
 }) {
-  const [name, setName] = useState(clientToEdit?.name || '')
-  const [phone, setPhone] = useState(clientToEdit?.phone || '')
-  const [cpf, setCpf] = useState(clientToEdit?.cpf || '')
-  const [address, setAddress] = useState(clientToEdit?.address || '')
-  const [city, setCity] = useState(clientToEdit?.city || '')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Nome do cliente é obrigatório')
-
-    onSave({
-      id: clientToEdit?.id || `CLI-${Math.floor(100 + Math.random() * 900)}`,
-      name,
-      phone,
-      cpf,
-      address,
-      city: city || 'São João do Paraíso',
-      totalOrders: clientToEdit?.totalOrders || 0,
-      totalSpent: clientToEdit?.totalSpent || 0,
-      lastService: clientToEdit?.lastService || 'Cadastrado no sistema',
-      devices: clientToEdit?.devices || [],
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
-              {clientToEdit ? `EDITANDO ${clientToEdit.id}` : 'CADASTRO'}
-            </div>
-            <h2 className="text-base font-bold">
-              {clientToEdit ? 'Editar Cliente' : 'Novo Cliente'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-3 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome Completo *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Rafael Mendonça" className={inputClass} />
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Telefone / WhatsApp *</label>
-              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(DDD) 99999-9999" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">CPF / CNPJ</label>
-              <input value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className={inputClass} />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Endereço</label>
-            <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, bairro..." className={inputClass} />
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cidade / Estado</label>
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Ex: São João do Paraíso, BA" className={inputClass} />
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {clientToEdit ? 'Salvar Alterações' : 'Salvar Cliente'}
-          </button>
-        </div>
-      </form>
-    </div>
+    <ClientModal
+      onClose={onClose}
+      onSave={onSave}
+      clientToEdit={clientToEdit}
+      isDark={isDark}
+    />
   )
 }
 
@@ -1537,7 +909,6 @@ function Topbar({
     }`}>
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
-          type="button"
           onClick={onOpenMobileMenu}
           className={`flex-shrink-0 rounded-lg p-1.5 md:hidden transition-colors ${
             isDark ? 'bg-neutral-900 text-neutral-400 hover:text-white' : 'bg-slate-100 text-slate-600 hover:text-slate-900'
@@ -1555,7 +926,6 @@ function Topbar({
       <div className="flex flex-shrink-0 items-center gap-1.5">
         {onNewClient && (
           <button
-            type="button"
             onClick={onNewClient}
             title="Novo Cliente"
             className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
@@ -1568,7 +938,6 @@ function Topbar({
         )}
         {onNewQuote && (
           <button
-            type="button"
             onClick={onNewQuote}
             title="Novo Orçamento"
             className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-1.5 text-xs font-semibold text-[#8A2BE2] hover:bg-purple-500/20"
@@ -1579,7 +948,6 @@ function Topbar({
         )}
         {onNewOrder && (
           <button
-            type="button"
             onClick={onNewOrder}
             title="Nova OS"
             className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:opacity-95"
@@ -1596,9 +964,9 @@ function Topbar({
 // ─── Tela: Painel ────────────────────────────────────────────────────────────
 
 function DashboardScreen({
-  orders = [],
-  quotes = [],
-  statuses = [],
+  orders,
+  quotes,
+  statuses,
   isDark,
   onNewOrder,
   onNewQuote,
@@ -1622,21 +990,15 @@ function DashboardScreen({
 }) {
   const [search, setSearch] = useState('')
 
-  const safeOrders = Array.isArray(orders) ? orders : []
-  const safeQuotes = Array.isArray(quotes) ? quotes : []
-  const safeStatuses = Array.isArray(statuses) ? statuses : []
+  const openOrders = orders.filter(o => o.status !== 'Concluído' && o.status !== 'Entregue' && o.status !== 'Cancelado').length
+  const completedOrders = orders.filter(o => o.status === 'Concluído' || o.status === 'Entregue').length
+  const pendingQuotes = quotes.filter(q => q.status === 'Pendente').length
+  const totalRevenue = orders.filter(o => o.status !== 'Cancelado').reduce((sum, o) => sum + (o.value || 0), 0)
 
-  const openOrders = safeOrders.filter(o => o && o.status !== 'Concluído' && o.status !== 'Entregue' && o.status !== 'Cancelado').length
-  const completedOrders = safeOrders.filter(o => o && (o.status === 'Concluído' || o.status === 'Entregue')).length
-  const pendingQuotes = safeQuotes.filter(q => q && q.status === 'Pendente').length
-  const totalRevenue = safeOrders.filter(o => o && o.status !== 'Cancelado').reduce((sum, o) => sum + Number(o.value || 0), 0)
-
-  const filteredOrders = safeOrders.filter(o =>
-    o && (
-      (o.client || '').toLowerCase().includes(search.toLowerCase()) ||
-      (o.device || '').toLowerCase().includes(search.toLowerCase()) ||
-      (o.id || '').toLowerCase().includes(search.toLowerCase())
-    )
+  const filteredOrders = orders.filter(o =>
+    o.client.toLowerCase().includes(search.toLowerCase()) ||
+    o.device.toLowerCase().includes(search.toLowerCase()) ||
+    o.id.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -1688,7 +1050,7 @@ function DashboardScreen({
         }`}>
           <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
             <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Ordens de Serviço Recentes</span>
-            <span className="font-mono text-[11px] text-neutral-400">{safeOrders.length} cadastradas</span>
+            <span className="font-mono text-[11px] text-neutral-400">{orders.length} cadastradas</span>
           </div>
 
           <div className="overflow-x-auto">
@@ -1724,14 +1086,13 @@ function DashboardScreen({
                         <div className="font-mono text-[10px] text-neutral-400">{order.phone || 'Sem telefone'}</div>
                       </td>
                       <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
-                      <td className="px-3 py-2.5"><StatusBadge status={order.status} statuses={safeStatuses} /></td>
+                      <td className="px-3 py-2.5"><StatusBadge status={order.status} statuses={statuses} /></td>
                       <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
-                        {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                        {order.value > 0 ? `R$ ${order.value.toFixed(2)}` : '—'}
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <div className="inline-flex items-center gap-1.5">
                           <button
-                            type="button"
                             onClick={() => onPrintOrder(order)}
                             className="p-1 rounded text-neutral-400 hover:text-purple-500"
                             title="Imprimir OS / Cupom"
@@ -1739,7 +1100,6 @@ function DashboardScreen({
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                           </button>
                           <button
-                            type="button"
                             onClick={() => onEditOrder(order)}
                             className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
                             title="Editar OS"
@@ -1764,8 +1124,8 @@ function DashboardScreen({
 // ─── Tela: Ordens de Serviço ──────────────────────────────────────────────────
 
 function OrdersScreen({
-  orders = [],
-  statuses = [],
+  orders,
+  statuses,
   isDark,
   onNewOrder,
   onEditOrder,
@@ -1789,10 +1149,7 @@ function OrdersScreen({
   const [view, setView] = useState<'list' | 'kanban'>('list')
   const [filterStatus, setFilterStatus] = useState<string>('Todos')
 
-  const safeOrders = Array.isArray(orders) ? orders : []
-  const safeStatuses = Array.isArray(statuses) ? statuses : []
-
-  const filtered = filterStatus === 'Todos' ? safeOrders : safeOrders.filter(o => o && o.status === filterStatus)
+  const filtered = filterStatus === 'Todos' ? orders : orders.filter(o => o.status === filterStatus)
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -1801,7 +1158,6 @@ function OrdersScreen({
           {(['list','kanban'] as const).map((v) => (
             <button
               key={v}
-              type="button"
               onClick={() => setView(v)}
               className="rounded px-2 py-1 text-[11px] font-medium transition-all"
               style={{
@@ -1817,12 +1173,11 @@ function OrdersScreen({
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
         <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
-          {['Todos', ...safeStatuses.map(s => s.label)].map(s => {
+          {['Todos', ...statuses.map(s => s.label)].map(s => {
             const isActive = filterStatus === s
             return (
               <button
                 key={s}
-                type="button"
                 onClick={() => setFilterStatus(s)}
                 className="whitespace-nowrap rounded-full border px-3 py-1 font-mono text-xs transition-all"
                 style={{
@@ -1882,18 +1237,17 @@ function OrdersScreen({
                               isDark ? 'border-neutral-800 bg-[#181818] text-neutral-200' : 'border-slate-300 bg-white text-slate-800'
                             }`}
                           >
-                            {safeStatuses.map(st => (
+                            {statuses.map(st => (
                               <option key={st.id} value={st.label}>{st.label}</option>
                             ))}
                           </select>
                         </td>
                         <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
-                          {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                          {order.value > 0 ? `R$ ${order.value.toFixed(2)}` : '—'}
                         </td>
                         <td className="px-3 py-2.5 text-right">
                           <div className="inline-flex items-center gap-1.5">
                             <button
-                              type="button"
                               onClick={() => onPrintOrder(order)}
                               className="p-1 rounded text-neutral-400 hover:text-purple-500"
                               title="Imprimir OS / Cupom"
@@ -1901,7 +1255,6 @@ function OrdersScreen({
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                             </button>
                             <button
-                              type="button"
                               onClick={() => onEditOrder(order)}
                               className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
                               title="Editar OS"
@@ -1910,7 +1263,6 @@ function OrdersScreen({
                             </button>
                             <WhatsAppBtn phone={order.phone} orderDetails={order} />
                             <button
-                              type="button"
                               onClick={() => { if(confirm(`Excluir ${order.id}?`)) onDeleteOrder(order.id) }}
                               className="rounded p-1 text-neutral-400 hover:text-red-500"
                               title="Excluir OS"
@@ -1928,8 +1280,8 @@ function OrdersScreen({
           </div>
         ) : (
           <div className="flex gap-3 overflow-x-auto pb-4">
-            {safeStatuses.map(st => {
-              const colOrders = safeOrders.filter(o => o && (o.status || '').toLowerCase() === (st.label || '').toLowerCase())
+            {statuses.map(st => {
+              const colOrders = orders.filter(o => o.status.toLowerCase() === st.label.toLowerCase())
               return (
                 <div key={st.id} className={`flex w-64 flex-shrink-0 flex-col rounded-xl border transition-colors ${
                   isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
@@ -1956,12 +1308,12 @@ function OrdersScreen({
                           <div className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
                           <div className="text-[11px] text-neutral-400">{order.device}</div>
                           <div className={`flex items-center justify-between border-t pt-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                            <span className="font-mono text-xs font-bold text-[#8A2BE2]">R$ {Number(order.value || 0).toFixed(2)}</span>
+                            <span className="font-mono text-xs font-bold text-[#8A2BE2]">R$ {order.value.toFixed(2)}</span>
                             <div className="flex gap-1">
-                              <button type="button" onClick={() => onPrintOrder(order)} className="p-1 text-neutral-400 hover:text-purple-500" title="Imprimir OS">
+                              <button onClick={() => onPrintOrder(order)} className="p-1 text-neutral-400 hover:text-purple-500" title="Imprimir OS">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                               </button>
-                              <button type="button" onClick={() => onEditOrder(order)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar OS">
+                              <button onClick={() => onEditOrder(order)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar OS">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                               </button>
                               <WhatsAppBtn phone={order.phone} orderDetails={order} />
@@ -1984,7 +1336,7 @@ function OrdersScreen({
 // ─── Tela: Orçamentos ─────────────────────────────────────────────────────────
 
 function QuotesScreen({
-  quotes = [],
+  quotes,
   isDark,
   onNewQuote,
   onEditQuote,
@@ -2002,17 +1354,14 @@ function QuotesScreen({
   onOpenMenu: () => void
   onLogout: () => void
 }) {
-  const safeQuotes = Array.isArray(quotes) ? quotes : []
-
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <Topbar title="Orçamentos & Propostas" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewQuote={onNewQuote} onLogout={onLogout} />
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
         <div className="flex items-center justify-between sm:hidden">
-          <span className="font-mono text-xs text-neutral-400">{safeQuotes.length} orçamentos</span>
+          <span className="font-mono text-xs text-neutral-400">{quotes.length} orçamentos</span>
           <button
-            type="button"
             onClick={onNewQuote}
             className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-1.5 text-xs font-semibold text-white shadow-md"
           >
@@ -2037,7 +1386,7 @@ function QuotesScreen({
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                {safeQuotes.length === 0 ? (
+                {quotes.length === 0 ? (
                   <tr>
                     <td colSpan={7}>
                       <EmptyState
@@ -2049,7 +1398,7 @@ function QuotesScreen({
                     </td>
                   </tr>
                 ) : (
-                  safeQuotes.map(q => (
+                  quotes.map(q => (
                     <tr key={q.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
                       <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">{q.id}</td>
                       <td className="px-3 py-2.5">
@@ -2057,7 +1406,7 @@ function QuotesScreen({
                         <div className="text-[10px] text-neutral-400">{q.device}</div>
                       </td>
                       <td className="max-w-[180px] truncate px-3 py-2.5 text-neutral-400">{q.description}</td>
-                      <td className={`px-3 py-2.5 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ {Number(q.value || 0).toFixed(2)}</td>
+                      <td className={`px-3 py-2.5 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ {q.value.toFixed(2)}</td>
                       <td className="px-3 py-2.5 font-mono text-neutral-400">{q.validUntil}</td>
                       <td className="px-3 py-2.5">
                         <span className={`rounded px-2 py-0.5 font-mono text-[10px] ${
@@ -2071,7 +1420,6 @@ function QuotesScreen({
                       <td className="px-3 py-2.5 text-right">
                         <div className="inline-flex items-center gap-1.5">
                           <button
-                            type="button"
                             onClick={() => onEditQuote(q)}
                             className="rounded p-1 text-neutral-400 hover:text-[#8A2BE2] transition-colors"
                             title="Editar Orçamento"
@@ -2080,7 +1428,6 @@ function QuotesScreen({
                           </button>
                           {q.status !== 'Aprovado' && (
                             <button
-                              type="button"
                               onClick={() => {
                                 if (confirm(`Deseja converter o orçamento ${q.id} em uma Ordem de Serviço?`)) {
                                   onConvertToOrder(q)
@@ -2094,7 +1441,6 @@ function QuotesScreen({
                           )}
                           <WhatsAppBtn phone={q.phone} quoteDetails={q} />
                           <button
-                            type="button"
                             onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
                             className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
                             title="Descartar orçamento"
@@ -2118,7 +1464,7 @@ function QuotesScreen({
 // ─── Tela: Clientes ───────────────────────────────────────────────────────────
 
 function ClientsScreen({
-  clients = [],
+  clients,
   isDark,
   onNewClient,
   onEditClient,
@@ -2135,9 +1481,8 @@ function ClientsScreen({
   onLogout: () => void
 }) {
   const [search, setSearch] = useState('')
-  const safeClients = Array.isArray(clients) ? clients : []
-  const filtered = safeClients.filter(c =>
-    c && ((c.name || '').toLowerCase().includes(search.toLowerCase()) || (c.phone || '').includes(search))
+  const filtered = clients.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
   )
 
   return (
@@ -2160,7 +1505,6 @@ function ClientsScreen({
             />
           </div>
           <button
-            type="button"
             onClick={onNewClient}
             className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-2 text-xs font-semibold text-white shadow-md hover:opacity-95"
           >
@@ -2203,7 +1547,6 @@ function ClientsScreen({
                       <td className="px-3 py-2.5 text-right">
                         <div className="inline-flex items-center gap-1.5">
                           <button
-                            type="button"
                             onClick={() => onEditClient(c)}
                             className="rounded p-1 text-neutral-400 hover:text-[#0066FF] transition-colors"
                             title="Editar Cliente"
@@ -2212,7 +1555,6 @@ function ClientsScreen({
                           </button>
                           <WhatsAppBtn phone={c.phone} label={`Olá ${c.name}!`} />
                           <button
-                            type="button"
                             onClick={() => { if(confirm(`Deseja realmente excluir o cliente ${c.name}?`)) onDeleteClient(c.id) }}
                             className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
                             title="Excluir Cliente"
@@ -2233,6 +1575,146 @@ function ClientsScreen({
   )
 }
 
+// ─── Tela: Configurações & Catálogo (Com botões de modal) ──────────────────────
+
+function SettingsScreen({
+  services,
+  products,
+  statuses,
+  isDark,
+  onOpenProductModal,
+  onOpenServiceModal,
+  onOpenStatusModal,
+  onDeleteProduct,
+  onDeleteService,
+  onDeleteStatus,
+  onOpenMenu,
+  onLogout,
+}: {
+  services: CustomService[]
+  products: Product[]
+  statuses: CustomStatus[]
+  isDark: boolean
+  onOpenProductModal: () => void
+  onOpenServiceModal: () => void
+  onOpenStatusModal: () => void
+  onDeleteProduct: (id: string) => void
+  onDeleteService: (id: string) => void
+  onDeleteStatus: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Configurações, Peças & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} onLogout={onLogout} />
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Card Produtos / Peças */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Produtos & Peças</span>
+              <button
+                onClick={onOpenProductModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Nova Peça
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {products.length === 0 ? (
+                <div className="p-6 text-center text-xs text-neutral-400">Nenhum produto cadastrado</div>
+              ) : (
+                products.map(p => (
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                    <div>
+                      <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</div>
+                      <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
+                        <span>Venda: R$ {p.sale_price.toFixed(2)}</span>
+                        <span>•</span>
+                        <span>Qtd: {p.stock}</span>
+                      </div>
+                    </div>
+                    <button onClick={() => onDeleteProduct(p.id)} className="text-neutral-400 hover:text-red-500">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Card Serviços */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Serviços da Assistência</span>
+              <button
+                onClick={onOpenServiceModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Novo Serviço
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {services.map(s => (
+                <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                  <div>
+                    <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</div>
+                    <div className="font-mono text-neutral-400">R$ {s.default_price.toFixed(2)}</div>
+                  </div>
+                  <button onClick={() => onDeleteService(s.id)} className="text-neutral-400 hover:text-red-500">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Card Situações / Status */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Situações de OS</span>
+              <button
+                onClick={onOpenStatusModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Nova Situação
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {statuses.map(st => (
+                <div key={st.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full" style={{ background: st.dot }} />
+                    <span className={isDark ? 'text-neutral-200' : 'text-slate-800'}>{st.label}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (statuses.length <= 1) return alert('Mantenha ao menos uma situação!')
+                      onDeleteStatus(st.id)
+                    }}
+                    className="text-neutral-400 hover:text-red-500"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Raiz da Aplicação ────────────────────────────────────────────────────────
 
 export default function App() {
@@ -2241,20 +1723,14 @@ export default function App() {
   const [onlineUsers, setOnlineUsers] = useState<any[]>([])
 
   const [isDark, setIsDark] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('andrade_tech_theme')
-      return saved !== null ? saved === 'dark' : true
-    } catch {
-      return true
-    }
+    const saved = localStorage.getItem('andrade_tech_theme')
+    return saved !== null ? saved === 'dark' : true
   })
 
   const toggleTheme = () => {
     setIsDark(prev => {
       const next = !prev
-      try {
-        localStorage.setItem('andrade_tech_theme', next ? 'dark' : 'light')
-      } catch {}
+      localStorage.setItem('andrade_tech_theme', next ? 'dark' : 'light')
       return next
     })
   }
@@ -2264,22 +1740,13 @@ export default function App() {
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [showQuoteModal, setShowQuoteModal] = useState(false)
   const [showClientModal, setShowClientModal] = useState(false)
-
-  // Modais de Ajustes
   const [showProductModal, setShowProductModal] = useState(false)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
-  const [showCategoryModal, setShowCategoryModal] = useState(false)
 
-  // Itens em Edição
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
   const [quoteEditing, setQuoteEditing] = useState<Quote | null>(null)
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
-  const [productEditing, setProductEditing] = useState<Product | null>(null)
-  const [serviceEditing, setServiceEditing] = useState<CustomService | null>(null)
-  const [statusEditing, setStatusEditing] = useState<CustomStatus | null>(null)
-  const [categoryEditing, setCategoryEditing] = useState<CategoryItem | null>(null)
-
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null)
 
   const [clients, setClients] = useState<Client[]>([])
@@ -2288,13 +1755,10 @@ export default function App() {
   const [services, setServices] = useState<CustomService[]>(DEFAULT_SERVICES)
   const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS)
   const [statuses, setStatuses] = useState<CustomStatus[]>(DEFAULT_STATUSES)
-  const [categories, setCategories] = useState<CategoryItem[]>(DEFAULT_CATEGORIES)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      setAuthLoading(false)
-    }).catch(() => {
       setAuthLoading(false)
     })
 
@@ -2302,7 +1766,6 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      setAuthLoading(false)
     })
 
     return () => subscription.unsubscribe()
@@ -2321,21 +1784,17 @@ export default function App() {
 
     room
       .on('presence', { event: 'sync' }, () => {
-        try {
-          const presenceState = room.presenceState()
-          const users = Object.keys(presenceState).map(key => presenceState[key][0] as any)
-          setOnlineUsers(users)
-        } catch {}
+        const presenceState = room.presenceState()
+        const users = Object.keys(presenceState).map(key => presenceState[key][0] as any)
+        setOnlineUsers(users)
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          try {
-            await room.track({
-              user_id: session.user.id,
-              email: session.user.email,
-              online_at: new Date().toISOString(),
-            })
-          } catch {}
+          await room.track({
+            user_id: session.user.id,
+            email: session.user.email,
+            online_at: new Date().toISOString(),
+          })
         }
       })
 
@@ -2361,9 +1820,7 @@ export default function App() {
           devices: Array.isArray(c.devices) ? c.devices : [],
         })))
       }
-    } catch {}
 
-    try {
       const { data: oData } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
       if (oData) {
         setOrders(oData.map(o => ({
@@ -2380,9 +1837,7 @@ export default function App() {
           items: Array.isArray(o.items) ? o.items : [],
         })))
       }
-    } catch {}
 
-    try {
       const { data: qData } = await supabase.from('quotes').select('*').order('created_at', { ascending: false })
       if (qData) {
         setQuotes(qData.map(q => ({
@@ -2398,27 +1853,18 @@ export default function App() {
           items: Array.isArray(q.items) ? q.items : [],
         })))
       }
-    } catch {}
 
-    try {
       const { data: sData } = await supabase.from('services').select('*')
       if (sData && sData.length > 0) setServices(sData)
-    } catch {}
 
-    try {
       const { data: pData } = await supabase.from('products').select('*')
       if (pData && pData.length > 0) setProducts(pData)
-    } catch {}
 
-    try {
       const { data: stData } = await supabase.from('statuses').select('*')
       if (stData && stData.length > 0) setStatuses(stData)
-    } catch {}
-
-    try {
-      const { data: catData } = await supabase.from('categories').select('*')
-      if (catData && catData.length > 0) setCategories(catData)
-    } catch {}
+    } catch (err) {
+      console.error('Erro ao buscar dados do Supabase:', err)
+    }
   }
 
   useEffect(() => {
@@ -2456,6 +1902,16 @@ export default function App() {
   const handleDeleteClient = async (id: string) => {
     setClients(prev => prev.filter(c => c.id !== id))
     await supabase.from('clients').delete().eq('id', id)
+  }
+
+  const handleOpenEditClient = (client: Client) => {
+    setClientEditing(client)
+    setShowClientModal(true)
+  }
+
+  const handleOpenNewClient = () => {
+    setClientEditing(null)
+    setShowClientModal(true)
   }
 
   const handleSaveOrder = async (orderData: Order) => {
@@ -2517,12 +1973,12 @@ export default function App() {
       client: quote.client,
       phone: quote.phone,
       device: quote.device,
-      service: (quote.items && quote.items[0]?.desc) || quote.description || 'Serviço Técnico',
+      service: quote.items[0]?.desc || quote.description,
       status: 'Entrada',
       value: quote.value,
       date: new Date().toLocaleDateString('pt-BR'),
       technician: 'Admin',
-      notes: `Convertido do Orçamento #${quote.id}. ${quote.description || ''}`,
+      notes: `Convertido do Orçamento #${quote.id}. ${quote.description}`,
       items: quote.items,
     }
 
@@ -2562,7 +2018,7 @@ export default function App() {
     return <LoginScreen onLoginSuccess={() => fetchData()} isDark={isDark} />
   }
 
-  const selectedClientForPrint = orderToPrint && clients ? clients.find(c => c.name.toLowerCase() === (orderToPrint.client || '').toLowerCase()) : undefined
+  const selectedClientForPrint = orderToPrint ? clients.find(c => c.name.toLowerCase() === orderToPrint.client.toLowerCase()) : undefined
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-slate-100 text-slate-900'}`}>
@@ -2589,7 +2045,6 @@ export default function App() {
             return (
               <button
                 key={item.id}
-                type="button"
                 onClick={() => setScreen(item.id as Screen)}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs font-semibold transition-all ${
                   isActive
@@ -2613,13 +2068,12 @@ export default function App() {
               <div key={u.user_id} className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
                 <span className={`truncate text-[11px] font-medium ${isDark ? 'text-neutral-300' : 'text-slate-700'}`} title={u.email}>
-                  {u.email ? u.email.split('@')[0] : 'Técnico'}
+                  {u.email.split('@')[0]}
                 </span>
               </div>
             ))}
           </div>
           <button
-            type="button"
             onClick={handleLogout}
             className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors ${
               isDark ? 'text-neutral-400 hover:bg-neutral-800 hover:text-red-400' : 'text-slate-500 hover:bg-slate-100 hover:text-red-500'
@@ -2644,7 +2098,7 @@ export default function App() {
                   AndradeTech
                 </span>
               </div>
-              <button type="button" onClick={() => setMobileMenuOpen(false)} className="p-1 text-neutral-400 hover:text-red-400">
+              <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-neutral-400 hover:text-red-400">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
             </div>
@@ -2657,7 +2111,6 @@ export default function App() {
               {NAV_ITEMS.map(item => (
                 <button
                   key={item.id}
-                  type="button"
                   onClick={() => {
                     setScreen(item.id as Screen)
                     setMobileMenuOpen(false)
@@ -2683,13 +2136,12 @@ export default function App() {
                   <div key={u.user_id} className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
                     <span className={`truncate text-[11px] font-medium ${isDark ? 'text-neutral-300' : 'text-slate-700'}`} title={u.email}>
-                      {u.email ? u.email.split('@')[0] : 'Técnico'}
+                      {u.email.split('@')[0]}
                     </span>
                   </div>
                 ))}
               </div>
               <button
-                type="button"
                 onClick={handleLogout}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-neutral-400 hover:text-red-400"
               >
@@ -2712,9 +2164,9 @@ export default function App() {
             isDark={isDark}
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
             onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
-            onNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
-            onEditOrder={(o: Order) => { setOrderEditing(o); setShowOrderModal(true) }}
-            onPrintOrder={(o: Order) => setOrderToPrint(o)}
+            onNewClient={handleOpenNewClient}
+            onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
+            onPrintOrder={(o) => setOrderToPrint(o)}
             onOpenMenu={() => setMobileMenuOpen(true)}
             onLogout={handleLogout}
           />
@@ -2749,8 +2201,8 @@ export default function App() {
           <ClientsScreen
             clients={clients}
             isDark={isDark}
-            onNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
-            onEditClient={(client: Client) => { setClientEditing(client); setShowClientModal(true) }}
+            onNewClient={handleOpenNewClient}
+            onEditClient={handleOpenEditClient}
             onDeleteClient={handleDeleteClient}
             onOpenMenu={() => setMobileMenuOpen(true)}
             onLogout={handleLogout}
@@ -2761,31 +2213,21 @@ export default function App() {
             services={services}
             products={products}
             statuses={statuses}
-            categories={categories}
             isDark={isDark}
-            onOpenProductModal={() => { setProductEditing(null); setShowProductModal(true) }}
-            onOpenServiceModal={() => { setServiceEditing(null); setShowServiceModal(true) }}
-            onOpenStatusModal={() => { setStatusEditing(null); setShowStatusModal(true) }}
-            onOpenCategoryModal={() => { setCategoryEditing(null); setShowCategoryModal(true) }}
-            onEditProduct={(p) => { setProductEditing(p); setShowProductModal(true) }}
-            onEditService={(s) => { setServiceEditing(s); setShowServiceModal(true) }}
-            onEditStatus={(st) => { setStatusEditing(st); setShowStatusModal(true) }}
-            onEditCategory={(cat) => { setCategoryEditing(cat); setShowCategoryModal(true) }}
+            onOpenProductModal={() => setShowProductModal(true)}
+            onOpenServiceModal={() => setShowServiceModal(true)}
+            onOpenStatusModal={() => setShowStatusModal(true)}
             onDeleteProduct={async (id) => {
               setProducts(prev => prev.filter(p => p.id !== id))
-              try { await supabase.from('products').delete().eq('id', id) } catch {}
+              await supabase.from('products').delete().eq('id', id)
             }}
             onDeleteService={async (id) => {
               setServices(prev => prev.filter(s => s.id !== id))
-              try { await supabase.from('services').delete().eq('id', id) } catch {}
+              await supabase.from('services').delete().eq('id', id)
             }}
             onDeleteStatus={async (id) => {
               setStatuses(prev => prev.filter(s => s.id !== id))
-              try { await supabase.from('statuses').delete().eq('id', id) } catch {}
-            }}
-            onDeleteCategory={async (id) => {
-              setCategories(prev => prev.filter(c => c.id !== id))
-              try { await supabase.from('categories').delete().eq('id', id) } catch {}
+              await supabase.from('statuses').delete().eq('id', id)
             }}
             onOpenMenu={() => setMobileMenuOpen(true)}
             onLogout={handleLogout}
@@ -2802,7 +2244,6 @@ export default function App() {
           return (
             <button
               key={item.id}
-              type="button"
               onClick={() => setScreen(item.id as Screen)}
               className="flex flex-1 flex-col items-center justify-center py-1 transition-colors"
               style={{ color: isActive ? '#0066FF' : (isDark ? '#666' : '#94A3B8') }}
@@ -2816,7 +2257,7 @@ export default function App() {
 
       {/* Modais Globais */}
       {showOrderModal && (
-        <OrderModal
+        <OrderModalWrapper
           onClose={() => {
             setShowOrderModal(false)
             setOrderEditing(null)
@@ -2826,7 +2267,7 @@ export default function App() {
           services={services}
           products={products}
           onSave={handleSaveOrder}
-          onQuickNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
+          onQuickNewClient={handleOpenNewClient}
           orderToEdit={orderEditing}
           isDark={isDark}
         />
@@ -2843,14 +2284,14 @@ export default function App() {
           products={products}
           onSave={handleSaveQuote}
           onConvertToOrder={handleConvertToOrder}
-          onQuickNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
+          onQuickNewClient={handleOpenNewClient}
           quoteToEdit={quoteEditing}
           isDark={isDark}
         />
       )}
 
       {showClientModal && (
-        <ClientModal
+        <ClientModalWrapper
           onClose={() => {
             setShowClientModal(false)
             setClientEditing(null)
@@ -2861,20 +2302,13 @@ export default function App() {
         />
       )}
 
+      {/* Modais de Ajustes com Backdrop Blur */}
       {showProductModal && (
         <ProductModal
-          onClose={() => {
-            setShowProductModal(false)
-            setProductEditing(null)
-          }}
-          productToEdit={productEditing}
-          categories={categories}
+          onClose={() => setShowProductModal(false)}
           onSave={async (prod) => {
-            setProducts(prev => {
-              const exists = prev.some(p => p.id === prod.id)
-              return exists ? prev.map(p => p.id === prod.id ? prod : p) : [prod, ...prev]
-            })
-            try { await supabase.from('products').upsert([prod]) } catch {}
+            setProducts(prev => [prod, ...prev])
+            await supabase.from('products').insert([prod])
           }}
           isDark={isDark}
         />
@@ -2882,18 +2316,10 @@ export default function App() {
 
       {showServiceModal && (
         <ServiceModal
-          onClose={() => {
-            setShowServiceModal(false)
-            setServiceEditing(null)
-          }}
-          serviceToEdit={serviceEditing}
-          categories={categories}
+          onClose={() => setShowServiceModal(false)}
           onSave={async (svc) => {
-            setServices(prev => {
-              const exists = prev.some(s => s.id === svc.id)
-              return exists ? prev.map(s => s.id === svc.id ? svc : s) : [svc, ...prev]
-            })
-            try { await supabase.from('services').upsert([svc]) } catch {}
+            setServices(prev => [svc, ...prev])
+            await supabase.from('services').insert([svc])
           }}
           isDark={isDark}
         />
@@ -2901,35 +2327,10 @@ export default function App() {
 
       {showStatusModal && (
         <StatusModal
-          onClose={() => {
-            setShowStatusModal(false)
-            setStatusEditing(null)
-          }}
-          statusToEdit={statusEditing}
+          onClose={() => setShowStatusModal(false)}
           onSave={async (st) => {
-            setStatuses(prev => {
-              const exists = prev.some(s => s.id === st.id)
-              return exists ? prev.map(s => s.id === st.id ? st : s) : [st, ...prev]
-            })
-            try { await supabase.from('statuses').upsert([st]) } catch {}
-          }}
-          isDark={isDark}
-        />
-      )}
-
-      {showCategoryModal && (
-        <CategoryModal
-          onClose={() => {
-            setShowCategoryModal(false)
-            setCategoryEditing(null)
-          }}
-          categoryToEdit={categoryEditing}
-          onSave={async (cat) => {
-            setCategories(prev => {
-              const exists = prev.some(c => c.id === cat.id)
-              return exists ? prev.map(c => c.id === cat.id ? cat : c) : [...prev, cat]
-            })
-            try { await supabase.from('categories').upsert([cat]) } catch {}
+            setStatuses(prev => [...prev, st])
+            await supabase.from('statuses').insert([st])
           }}
           isDark={isDark}
         />
