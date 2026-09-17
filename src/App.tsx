@@ -145,6 +145,7 @@ function AppLogo({ size = 36 }: { size?: number }) {
 function ThemeToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }) {
   return (
     <button
+      type="button"
       onClick={onToggle}
       className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[11px] font-mono border transition-all ${
         isDark
@@ -202,6 +203,7 @@ function PrintModal({
             <span className="font-bold text-sm sm:text-base">Emissão de Comprovante / OS</span>
             <div className={`flex rounded-lg border p-0.5 ${isDark ? 'border-neutral-700 bg-black' : 'border-slate-300 bg-white'}`}>
               <button
+                type="button"
                 onClick={() => setPrintType('a4')}
                 className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
                   printType === 'a4' ? 'bg-[#0066FF] text-white' : 'text-neutral-400'
@@ -210,6 +212,7 @@ function PrintModal({
                 📄 Folha A4
               </button>
               <button
+                type="button"
                 onClick={() => setPrintType('thermal')}
                 className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
                   printType === 'thermal' ? 'bg-[#8A2BE2] text-white' : 'text-neutral-400'
@@ -222,13 +225,14 @@ function PrintModal({
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={handleTriggerPrint}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] shadow hover:opacity-95"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               <span>Imprimir / PDF</span>
             </button>
-            <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500">
+            <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>
@@ -292,15 +296,15 @@ function PrintModal({
                       <tr key={idx} className="hover:bg-slate-50">
                         <td className="p-2.5 font-medium text-slate-800">{it.desc}</td>
                         <td className="p-2.5 text-center font-mono">{it.qty}</td>
-                        <td className="p-2.5 text-right font-mono">R$ {it.unit.toFixed(2)}</td>
-                        <td className="p-2.5 text-right font-mono font-bold">R$ {(it.qty * it.unit).toFixed(2)}</td>
+                        <td className="p-2.5 text-right font-mono">R$ {Number(it.unit || 0).toFixed(2)}</td>
+                        <td className="p-2.5 text-right font-mono font-bold">R$ {(Number(it.qty || 1) * Number(it.unit || 0)).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr className="bg-slate-100 font-mono border-t-2 border-slate-300">
                       <td colSpan={3} className="p-3 text-right uppercase font-bold text-slate-700">Valor Total a Pagar:</td>
-                      <td className="p-3 text-right text-sm font-black text-blue-600">R$ {order.value.toFixed(2)}</td>
+                      <td className="p-3 text-right text-sm font-black text-blue-600">R$ {Number(order.value || 0).toFixed(2)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -359,14 +363,14 @@ function PrintModal({
                 {items.map((it, i) => (
                   <div key={i} className="flex justify-between text-[10px]">
                     <span className="truncate pr-1">{it.qty}x {it.desc}</span>
-                    <span className="font-bold whitespace-nowrap">R$ {(it.qty * it.unit).toFixed(2)}</span>
+                    <span className="font-bold whitespace-nowrap">R$ {(Number(it.qty || 1) * Number(it.unit || 0)).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
 
               <div className="flex justify-between font-black text-xs py-1 border-b border-dashed border-black mb-3">
                 <span>TOTAL:</span>
-                <span>R$ {order.value.toFixed(2)}</span>
+                <span>R$ {Number(order.value || 0).toFixed(2)}</span>
               </div>
 
               <div className="text-[8px] text-center leading-tight mb-4 text-neutral-600">
@@ -411,17 +415,17 @@ function PrintModal({
 function ProductModal({
   onClose,
   onSave,
-  categories,
+  categories = [],
   productToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (prod: Product) => void
-  categories: CategoryItem[]
+  categories?: CategoryItem[]
   productToEdit?: Product | null
   isDark: boolean
 }) {
-  const safeCats = categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES
+  const safeCats = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES
   const [name, setName] = useState(productToEdit?.name || '')
   const [category, setCategory] = useState(productToEdit?.category || safeCats[0]?.name || 'Geral')
   const [costPrice, setCostPrice] = useState(productToEdit?.cost_price !== undefined ? String(productToEdit.cost_price) : '')
@@ -506,17 +510,17 @@ function ProductModal({
 function ServiceModal({
   onClose,
   onSave,
-  categories,
+  categories = [],
   serviceToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (svc: CustomService) => void
-  categories: CategoryItem[]
+  categories?: CategoryItem[]
   serviceToEdit?: CustomService | null
   isDark: boolean
 }) {
-  const safeCats = categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES
+  const safeCats = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES
   const [name, setName] = useState(serviceToEdit?.name || '')
   const [defaultPrice, setDefaultPrice] = useState(serviceToEdit?.default_price !== undefined ? String(serviceToEdit.default_price) : '')
   const [category, setCategory] = useState(serviceToEdit?.category || safeCats[0]?.name || 'Geral')
@@ -740,12 +744,12 @@ function OrderModal({
   orderToEdit?: Order | null
   isDark: boolean
 }) {
-  const [client, setClient] = useState(orderToEdit?.client || (clients[0]?.name ?? ''))
+  const [client, setClient] = useState(orderToEdit?.client || (clients && clients.length > 0 ? clients[0].name : ''))
   const [phone, setPhone] = useState(orderToEdit?.phone || '')
   const [device, setDevice] = useState(orderToEdit?.device || '')
   const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
   const [notes, setNotes] = useState(orderToEdit?.notes || '')
-  const [status, setStatus] = useState(orderToEdit?.status || (statuses[0]?.label ?? 'Entrada'))
+  const [status, setStatus] = useState(orderToEdit?.status || (statuses && statuses[0] ? statuses[0].label : 'Entrada'))
   const [items, setItems] = useState<OrderItem[]>(
     orderToEdit?.items && orderToEdit.items.length > 0
       ? orderToEdit.items
@@ -753,29 +757,35 @@ function OrderModal({
   )
 
   useEffect(() => {
-    if (!phone && client) {
+    if (!phone && client && clients) {
       const found = clients.find(c => c.name === client)
       if (found) setPhone(found.phone)
     }
   }, [client, clients])
 
-  const total = items.reduce((s, i) => s + (i.qty || 1) * (i.unit || 0), 0)
+  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
 
   const handleClientSelectChange = (name: string) => {
     setClient(name)
-    const found = clients.find(c => c.name === name)
-    if (found) setPhone(found.phone)
+    if (clients) {
+      const found = clients.find(c => c.name === name)
+      if (found) setPhone(found.phone)
+    }
   }
 
   const handleApplyPreset = (value: string, index: number) => {
-    const svc = services.find(s => s.name === value)
-    if (svc) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
-      return
+    if (services) {
+      const svc = services.find(s => s.name === value)
+      if (svc) {
+        setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+        return
+      }
     }
-    const prod = products.find(p => p.name === value)
-    if (prod) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
+    if (products) {
+      const prod = products.find(p => p.name === value)
+      if (prod) {
+        setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
+      }
     }
   }
 
@@ -860,7 +870,7 @@ function OrderModal({
                 className={inputClass}
               >
                 <option value="" disabled>Selecione um cliente...</option>
-                {clients.map(c => (
+                {clients && clients.map(c => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
               </select>
@@ -893,7 +903,7 @@ function OrderModal({
                 onChange={e => setStatus(e.target.value)}
                 className={inputClass}
               >
-                {statuses.map(s => (
+                {statuses && statuses.map(s => (
                   <option key={s.id} value={s.label}>{s.label}</option>
                 ))}
               </select>
@@ -963,12 +973,12 @@ function OrderModal({
                           >
                             <option value="" disabled>Catálogo</option>
                             <optgroup label="Serviços">
-                              {services.map(s => (
+                              {services && services.map(s => (
                                 <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
                               ))}
                             </optgroup>
                             <optgroup label="Produtos / Peças">
-                              {products.map(p => (
+                              {products && products.map(p => (
                                 <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
                               ))}
                             </optgroup>
@@ -996,7 +1006,7 @@ function OrderModal({
                         />
                       </td>
                       <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
-                        R$ {((item.qty || 1) * (item.unit || 0)).toFixed(2)}
+                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
                       </td>
                       <td className="px-1 py-1.5 text-center">
                         <button
@@ -1063,7 +1073,7 @@ function QuoteModal({
   quoteToEdit?: Quote | null
   isDark: boolean
 }) {
-  const [client, setClient] = useState(quoteToEdit?.client || (clients[0]?.name ?? ''))
+  const [client, setClient] = useState(quoteToEdit?.client || (clients && clients.length > 0 ? clients[0].name : ''))
   const [phone, setPhone] = useState(quoteToEdit?.phone || '')
   const [device, setDevice] = useState(quoteToEdit?.device || '')
   const [description, setDescription] = useState(quoteToEdit?.description || '')
@@ -1076,29 +1086,35 @@ function QuoteModal({
   )
 
   useEffect(() => {
-    if (!phone && client) {
+    if (!phone && client && clients) {
       const found = clients.find(c => c.name === client)
       if (found) setPhone(found.phone)
     }
   }, [client, clients])
 
-  const total = items.reduce((s, i) => s + (i.qty || 1) * (i.unit || 0), 0)
+  const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
 
   const handleClientSelectChange = (name: string) => {
     setClient(name)
-    const found = clients.find(c => c.name === name)
-    if (found) setPhone(found.phone)
+    if (clients) {
+      const found = clients.find(c => c.name === name)
+      if (found) setPhone(found.phone)
+    }
   }
 
   const handleApplyPreset = (value: string, index: number) => {
-    const svc = services.find(s => s.name === value)
-    if (svc) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
-      return
+    if (services) {
+      const svc = services.find(s => s.name === value)
+      if (svc) {
+        setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+        return
+      }
     }
-    const prod = products.find(p => p.name === value)
-    if (prod) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
+    if (products) {
+      const prod = products.find(p => p.name === value)
+      if (prod) {
+        setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
+      }
     }
   }
 
@@ -1192,7 +1208,7 @@ function QuoteModal({
                 className={inputClass}
               >
                 <option value="" disabled>Selecione um cliente...</option>
-                {clients.map(c => (
+                {clients && clients.map(c => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
               </select>
@@ -1302,12 +1318,12 @@ function QuoteModal({
                           >
                             <option value="" disabled>Catálogo</option>
                             <optgroup label="Serviços">
-                              {services.map(s => (
+                              {services && services.map(s => (
                                 <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
                               ))}
                             </optgroup>
                             <optgroup label="Produtos / Peças">
-                              {products.map(p => (
+                              {products && products.map(p => (
                                 <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
                               ))}
                             </optgroup>
@@ -1335,7 +1351,7 @@ function QuoteModal({
                         />
                       </td>
                       <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
-                        R$ {((item.qty || 1) * (item.unit || 0)).toFixed(2)}
+                        R$ {((Number(item.qty || 1)) * (Number(item.unit || 0))).toFixed(2)}
                       </td>
                       <td className="px-1 py-1.5 text-center">
                         <button
@@ -1521,6 +1537,7 @@ function Topbar({
     }`}>
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
+          type="button"
           onClick={onOpenMobileMenu}
           className={`flex-shrink-0 rounded-lg p-1.5 md:hidden transition-colors ${
             isDark ? 'bg-neutral-900 text-neutral-400 hover:text-white' : 'bg-slate-100 text-slate-600 hover:text-slate-900'
@@ -1538,6 +1555,7 @@ function Topbar({
       <div className="flex flex-shrink-0 items-center gap-1.5">
         {onNewClient && (
           <button
+            type="button"
             onClick={onNewClient}
             title="Novo Cliente"
             className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
@@ -1550,6 +1568,7 @@ function Topbar({
         )}
         {onNewQuote && (
           <button
+            type="button"
             onClick={onNewQuote}
             title="Novo Orçamento"
             className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-1.5 text-xs font-semibold text-[#8A2BE2] hover:bg-purple-500/20"
@@ -1560,6 +1579,7 @@ function Topbar({
         )}
         {onNewOrder && (
           <button
+            type="button"
             onClick={onNewOrder}
             title="Nova OS"
             className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:opacity-95"
@@ -1575,102 +1595,235 @@ function Topbar({
 
 // ─── Tela: Painel ────────────────────────────────────────────────────────────
 
-function DashboardScreenWrapper(props: any) {
-  return <DashboardScreen {...props} />
-}
-
-// ─── Tela: Configurações, Catálogo & Categorias ───────────────────────────────
-
-function SettingsScreen({
-  services,
-  products,
-  statuses,
-  categories,
+function DashboardScreen({
+  orders = [],
+  quotes = [],
+  statuses = [],
   isDark,
-  onOpenProductModal,
-  onOpenServiceModal,
-  onOpenStatusModal,
-  onOpenCategoryModal,
-  onEditProduct,
-  onEditService,
-  onEditStatus,
-  onEditCategory,
-  onDeleteProduct,
-  onDeleteService,
-  onDeleteStatus,
-  onDeleteCategory,
+  onNewOrder,
+  onNewQuote,
+  onNewClient,
+  onEditOrder,
+  onPrintOrder,
   onOpenMenu,
   onLogout,
 }: {
-  services: CustomService[]
-  products: Product[]
+  orders: Order[]
+  quotes: Quote[]
   statuses: CustomStatus[]
-  categories: CategoryItem[]
   isDark: boolean
-  onOpenProductModal: () => void
-  onOpenServiceModal: () => void
-  onOpenStatusModal: () => void
-  onOpenCategoryModal: () => void
-  onEditProduct: (prod: Product) => void
-  onEditService: (svc: CustomService) => void
-  onEditStatus: (st: CustomStatus) => void
-  onEditCategory: (cat: CategoryItem) => void
-  onDeleteProduct: (id: string) => void
-  onDeleteService: (id: string) => void
-  onDeleteStatus: (id: string) => void
-  onDeleteCategory: (id: string) => void
+  onNewOrder: () => void
+  onNewQuote: () => void
+  onNewClient: () => void
+  onEditOrder: (order: Order) => void
+  onPrintOrder: (order: Order) => void
   onOpenMenu: () => void
   onLogout: () => void
 }) {
-  const [view, setView] = useState<'board' | 'list'>('board')
-  const [selectedCategory, setSelectedCategory] = useState<string>('Todos')
+  const [search, setSearch] = useState('')
 
-  const safeCats = categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES
+  const safeOrders = Array.isArray(orders) ? orders : []
+  const safeQuotes = Array.isArray(quotes) ? quotes : []
+  const safeStatuses = Array.isArray(statuses) ? statuses : []
 
-  const filteredProducts = selectedCategory === 'Todos'
-    ? products
-    : products.filter(p => (p.category || 'Geral').toLowerCase() === selectedCategory.toLowerCase())
+  const openOrders = safeOrders.filter(o => o && o.status !== 'Concluído' && o.status !== 'Entregue' && o.status !== 'Cancelado').length
+  const completedOrders = safeOrders.filter(o => o && (o.status === 'Concluído' || o.status === 'Entregue')).length
+  const pendingQuotes = safeQuotes.filter(q => q && q.status === 'Pendente').length
+  const totalRevenue = safeOrders.filter(o => o && o.status !== 'Cancelado').reduce((sum, o) => sum + Number(o.value || 0), 0)
 
-  const filteredServices = selectedCategory === 'Todos'
-    ? services
-    : services.filter(s => (s.category || 'Geral').toLowerCase() === selectedCategory.toLowerCase())
+  const filteredOrders = safeOrders.filter(o =>
+    o && (
+      (o.client || '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.device || '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.id || '').toLowerCase().includes(search.toLowerCase())
+    )
+  )
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Topbar title="Configurações & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} onLogout={onLogout}>
+      <Topbar
+        title="Visão Geral"
+        isDark={isDark}
+        onOpenMobileMenu={onOpenMenu}
+        onNewOrder={onNewOrder}
+        onNewQuote={onNewQuote}
+        onNewClient={onNewClient}
+        onLogout={onLogout}
+      />
+
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="relative">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Pesquisar por OS, cliente, aparelho..."
+            className={`w-full rounded-xl border py-2.5 pl-9 pr-4 text-xs outline-none transition-colors sm:text-sm ${
+              isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
+            }`}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+          {[
+            { label: 'Em Aberto', value: openOrders.toString(), sub: 'serviços ativos', color: 'text-[#0066FF]' },
+            { label: 'Concluídos', value: completedOrders.toString(), sub: 'finalizados', color: 'text-green-500' },
+            { label: 'Orçamentos', value: pendingQuotes.toString(), sub: 'pendentes', color: 'text-[#8A2BE2]' },
+            { label: 'Previsto', value: `R$ ${totalRevenue.toFixed(0)}`, sub: 'total faturado', color: isDark ? 'text-white' : 'text-slate-800' },
+          ].map(kpi => (
+            <div key={kpi.label} className={`rounded-xl border p-3 sm:p-4 transition-colors ${
+              isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+            }`}>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">{kpi.label}</span>
+              <div className={`mt-1 text-lg font-bold tracking-tight sm:text-2xl ${kpi.color}`}>{kpi.value}</div>
+              <div className="mt-0.5 font-mono text-[10px] text-neutral-400 sm:text-xs">{kpi.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+            <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Ordens de Serviço Recentes</span>
+            <span className="font-mono text-[11px] text-neutral-400">{safeOrders.length} cadastradas</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Contato</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {filteredOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
+                        title="Nenhuma ordem recente"
+                        sub="Registre uma nova OS ou Orçamento"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filteredOrders.slice(0, 10).map(order => (
+                    <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
+                      <td className="px-3 py-2.5">
+                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                        <div className="font-mono text-[10px] text-neutral-400">{order.phone || 'Sem telefone'}</div>
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                      <td className="px-3 py-2.5"><StatusBadge status={order.status} statuses={safeStatuses} /></td>
+                      <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                        {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onPrintOrder(order)}
+                            className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                            title="Imprimir OS / Cupom"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onEditOrder(order)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
+                            title="Editar OS"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tela: Ordens de Serviço ──────────────────────────────────────────────────
+
+function OrdersScreen({
+  orders = [],
+  statuses = [],
+  isDark,
+  onNewOrder,
+  onEditOrder,
+  onPrintOrder,
+  onUpdateStatus,
+  onDeleteOrder,
+  onOpenMenu,
+  onLogout,
+}: {
+  orders: Order[]
+  statuses: CustomStatus[]
+  isDark: boolean
+  onNewOrder: () => void
+  onEditOrder: (order: Order) => void
+  onPrintOrder: (order: Order) => void
+  onUpdateStatus: (id: string, status: string) => void
+  onDeleteOrder: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  const [view, setView] = useState<'list' | 'kanban'>('list')
+  const [filterStatus, setFilterStatus] = useState<string>('Todos')
+
+  const safeOrders = Array.isArray(orders) ? orders : []
+  const safeStatuses = Array.isArray(statuses) ? statuses : []
+
+  const filtered = filterStatus === 'Todos' ? safeOrders : safeOrders.filter(o => o && o.status === filterStatus)
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Ordens de Serviço" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewOrder={onNewOrder} onLogout={onLogout}>
         <div className={`ml-2 flex items-center gap-1 rounded-lg border p-0.5 ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-slate-100'}`}>
-          <button
-            onClick={() => setView('board')}
-            className="rounded px-2 py-1 text-[11px] font-medium transition-all"
-            style={{
-              background: view === 'board' ? 'linear-gradient(to right, #0066FF, #8A2BE2)' : 'transparent',
-              color: view === 'board' ? '#fff' : (isDark ? '#888' : '#555'),
-            }}
-          >
-            Quadro
-          </button>
-          <button
-            onClick={() => setView('list')}
-            className="rounded px-2 py-1 text-[11px] font-medium transition-all"
-            style={{
-              background: view === 'list' ? 'linear-gradient(to right, #0066FF, #8A2BE2)' : 'transparent',
-              color: view === 'list' ? '#fff' : (isDark ? '#888' : '#555'),
-            }}
-          >
-            Lista
-          </button>
+          {(['list','kanban'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              className="rounded px-2 py-1 text-[11px] font-medium transition-all"
+              style={{
+                background: view === v ? 'linear-gradient(to right, #0066FF, #8A2BE2)' : 'transparent',
+                color: view === v ? '#fff' : (isDark ? '#888' : '#555'),
+              }}
+            >
+              {v === 'list' ? 'Lista' : 'Quadro'}
+            </button>
+          ))}
         </div>
       </Topbar>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
         <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
-          <span className="text-[11px] font-mono text-neutral-400 mr-1 uppercase">Filtro:</span>
-          {['Todos', ...safeCats.map(c => c.name)].map(catName => {
-            const isActive = selectedCategory === catName
+          {['Todos', ...safeStatuses.map(s => s.label)].map(s => {
+            const isActive = filterStatus === s
             return (
               <button
-                key={catName}
-                onClick={() => setSelectedCategory(catName)}
+                key={s}
+                type="button"
+                onClick={() => setFilterStatus(s)}
                 className="whitespace-nowrap rounded-full border px-3 py-1 font-mono text-xs transition-all"
                 style={{
                   background: isActive ? 'rgba(0, 102, 255, 0.15)' : 'transparent',
@@ -1678,196 +1831,13 @@ function SettingsScreen({
                   borderColor: isActive ? '#0066FF' : (isDark ? '#262626' : '#E2E8F0'),
                 }}
               >
-                {catName}
+                {s}
               </button>
             )
           })}
         </div>
 
-        {view === 'board' ? (
-          <>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              {/* Card Produtos / Peças */}
-              <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
-                isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-              }`}>
-                <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                  <div>
-                    <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Produtos & Peças</span>
-                    <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({filteredProducts.length})</span>
-                  </div>
-                  <button
-                    onClick={onOpenProductModal}
-                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
-                  >
-                    + Nova Peça
-                  </button>
-                </div>
-
-                <div className={`max-h-72 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                  {filteredProducts.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-neutral-400">Nenhuma peça nesta categoria</div>
-                  ) : (
-                    filteredProducts.map(p => (
-                      <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
-                        <div>
-                          <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</div>
-                          <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
-                            <span className="text-[#0066FF] font-bold">{p.category || 'Geral'}</span>
-                            <span>•</span>
-                            <span>Venda: R$ {p.sale_price.toFixed(2)}</span>
-                            <span>•</span>
-                            <span>Qtd: {p.stock}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => onEditProduct(p)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Peça">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          <button onClick={() => onDeleteProduct(p.id)} className="p-1 text-neutral-400 hover:text-red-500" title="Excluir">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Card Serviços */}
-              <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
-                isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-              }`}>
-                <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                  <div>
-                    <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Serviços da Assistência</span>
-                    <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({filteredServices.length})</span>
-                  </div>
-                  <button
-                    onClick={onOpenServiceModal}
-                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
-                  >
-                    + Novo Serviço
-                  </button>
-                </div>
-
-                <div className={`max-h-72 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                  {filteredServices.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-neutral-400">Nenhum serviço nesta categoria</div>
-                  ) : (
-                    filteredServices.map(s => (
-                      <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
-                        <div>
-                          <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</div>
-                          <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
-                            <span className="text-[#8A2BE2] font-bold">{s.category || 'Geral'}</span>
-                            <span>•</span>
-                            <span>R$ {s.default_price.toFixed(2)}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => onEditService(s)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Serviço">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          <button onClick={() => onDeleteService(s.id)} className="p-1 text-neutral-400 hover:text-red-500" title="Excluir">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Card Situações / Status */}
-              <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
-                isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-              }`}>
-                <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                  <div>
-                    <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Situações de OS</span>
-                    <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({statuses.length})</span>
-                  </div>
-                  <button
-                    onClick={onOpenStatusModal}
-                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
-                  >
-                    + Nova Situação
-                  </button>
-                </div>
-
-                <div className={`max-h-72 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                  {statuses.map(st => (
-                    <div key={st.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full shadow-sm" style={{ background: st.dot }} />
-                        <span className={isDark ? 'text-neutral-200' : 'text-slate-800'}>{st.label}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => onEditStatus(st)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Situação">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (statuses.length <= 1) return alert('Mantenha ao menos uma situação!')
-                            onDeleteStatus(st.id)
-                          }}
-                          className="p-1 text-neutral-400 hover:text-red-500"
-                          title="Excluir"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Linha 2: Categorias */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 pt-2">
-              <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
-                isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-              }`}>
-                <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                  <div>
-                    <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Categorias de Filtro</span>
-                    <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeCats.length})</span>
-                  </div>
-                  <button
-                    onClick={onOpenCategoryModal}
-                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
-                  >
-                    + Nova Categoria
-                  </button>
-                </div>
-
-                <div className={`max-h-56 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                  {safeCats.map(c => (
-                    <div key={c.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
-                      <span className={`font-semibold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>{c.name}</span>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => onEditCategory(c)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Categoria">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (safeCats.length <= 1) return alert('Mantenha ao menos uma categoria!')
-                            onDeleteCategory(c.id)
-                          }}
-                          className="p-1 text-neutral-400 hover:text-red-500"
-                          title="Excluir"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
+        {view === 'list' ? (
           <div className={`overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -1875,58 +1845,389 @@ function SettingsScreen({
               <table className="w-full min-w-[700px] text-xs">
                 <thead>
                   <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
-                    <th className="px-3 py-2.5 font-mono uppercase">Tipo</th>
-                    <th className="px-3 py-2.5 font-mono uppercase">Nome / Descrição</th>
-                    <th className="px-3 py-2.5 font-mono uppercase">Categoria</th>
-                    <th className="px-3 py-2.5 font-mono uppercase">Preço / Venda</th>
-                    <th className="px-3 py-2.5 font-mono uppercase">Estoque</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Cliente</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
                     <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                  {filteredProducts.map(p => (
-                    <tr key={`prod-${p.id}`} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">📦 Peça</td>
-                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</td>
-                      <td className="px-3 py-2.5 font-mono text-neutral-400">{p.category || 'Geral'}</td>
-                      <td className="px-3 py-2.5 font-mono font-bold text-green-500">R$ {p.sale_price.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 font-mono text-neutral-300">{p.stock} un</td>
-                      <td className="px-3 py-2.5 text-right">
-                        <div className="inline-flex items-center gap-1">
-                          <button onClick={() => onEditProduct(p)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Peça">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          <button onClick={() => onDeleteProduct(p.id)} className="p-1 text-neutral-400 hover:text-red-500" title="Excluir">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                          </button>
-                        </div>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>
+                        <EmptyState
+                          icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
+                          title="Nenhuma ordem encontrada"
+                          sub="Crie uma nova OS para começar"
+                          isDark={isDark}
+                        />
                       </td>
                     </tr>
-                  ))}
-                  {filteredServices.map(s => (
-                    <tr key={`svc-${s.id}`} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">🛠️ Serviço</td>
-                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</td>
-                      <td className="px-3 py-2.5 font-mono text-neutral-400">{s.category || 'Geral'}</td>
-                      <td className="px-3 py-2.5 font-mono font-bold text-green-500">R$ {s.default_price.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 font-mono text-neutral-400">—</td>
-                      <td className="px-3 py-2.5 text-right">
-                        <div className="inline-flex items-center gap-1">
-                          <button onClick={() => onEditService(s)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Serviço">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          <button onClick={() => onDeleteService(s.id)} className="p-1 text-neutral-400 hover:text-red-500" title="Excluir">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  ) : (
+                    filtered.map(order => (
+                      <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                        <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
+                        <td className="px-3 py-2.5">
+                          <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                          <div className="font-mono text-[10px] text-neutral-400">{order.phone || '—'}</div>
+                        </td>
+                        <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                        <td className="px-3 py-2.5">
+                          <select
+                            value={order.status}
+                            onChange={e => onUpdateStatus(order.id, e.target.value)}
+                            className={`rounded border px-1.5 py-0.5 font-mono text-xs outline-none ${
+                              isDark ? 'border-neutral-800 bg-[#181818] text-neutral-200' : 'border-slate-300 bg-white text-slate-800'
+                            }`}
+                          >
+                            {safeStatuses.map(st => (
+                              <option key={st.id} value={st.label}>{st.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                          {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => onPrintOrder(order)}
+                              className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                              title="Imprimir OS / Cupom"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onEditOrder(order)}
+                              className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
+                              title="Editar OS"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                            </button>
+                            <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                            <button
+                              type="button"
+                              onClick={() => { if(confirm(`Excluir ${order.id}?`)) onDeleteOrder(order.id) }}
+                              className="rounded p-1 text-neutral-400 hover:text-red-500"
+                              title="Excluir OS"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-4">
+            {safeStatuses.map(st => {
+              const colOrders = safeOrders.filter(o => o && (o.status || '').toLowerCase() === (st.label || '').toLowerCase())
+              return (
+                <div key={st.id} className={`flex w-64 flex-shrink-0 flex-col rounded-xl border transition-colors ${
+                  isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+                }`}>
+                  <div className={`flex items-center justify-between border-b px-3.5 py-2.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ background: st.dot }} />
+                      <span className="font-mono text-xs font-semibold" style={{ color: st.dot }}>{st.label}</span>
+                    </div>
+                    <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500'}`}>{colOrders.length}</span>
+                  </div>
+                  <div className="min-h-[140px] flex-1 space-y-2 p-2">
+                    {colOrders.length === 0 ? (
+                      <div className="py-8 text-center font-mono text-xs text-neutral-400">vazio</div>
+                    ) : (
+                      colOrders.map(order => (
+                        <div key={order.id} className={`space-y-1.5 rounded-lg border p-3 ${
+                          isDark ? 'border-neutral-800/80 bg-[#141414]' : 'border-slate-200 bg-slate-50'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs font-bold text-[#0066FF]">{order.id}</span>
+                            <span className="font-mono text-[10px] text-neutral-400">{order.date}</span>
+                          </div>
+                          <div className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                          <div className="text-[11px] text-neutral-400">{order.device}</div>
+                          <div className={`flex items-center justify-between border-t pt-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                            <span className="font-mono text-xs font-bold text-[#8A2BE2]">R$ {Number(order.value || 0).toFixed(2)}</span>
+                            <div className="flex gap-1">
+                              <button type="button" onClick={() => onPrintOrder(order)} className="p-1 text-neutral-400 hover:text-purple-500" title="Imprimir OS">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                              </button>
+                              <button type="button" onClick={() => onEditOrder(order)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar OS">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                              </button>
+                              <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Tela: Orçamentos ─────────────────────────────────────────────────────────
+
+function QuotesScreen({
+  quotes = [],
+  isDark,
+  onNewQuote,
+  onEditQuote,
+  onConvertToOrder,
+  onDeleteQuote,
+  onOpenMenu,
+  onLogout,
+}: {
+  quotes: Quote[]
+  isDark: boolean
+  onNewQuote: () => void
+  onEditQuote: (quote: Quote) => void
+  onConvertToOrder: (quote: Quote) => void
+  onDeleteQuote: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  const safeQuotes = Array.isArray(quotes) ? quotes : []
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Orçamentos & Propostas" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewQuote={onNewQuote} onLogout={onLogout} />
+
+      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+        <div className="flex items-center justify-between sm:hidden">
+          <span className="font-mono text-xs text-neutral-400">{safeQuotes.length} orçamentos</span>
+          <button
+            type="button"
+            onClick={onNewQuote}
+            className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-1.5 text-xs font-semibold text-white shadow-md"
+          >
+            + Novo Orçamento
+          </button>
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[650px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Aparelho</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Resumo</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Validade</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Status</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {safeQuotes.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /></svg>}
+                        title="Nenhum orçamento cadastrado"
+                        sub="Clique em '+ Orçamento' para gerar uma proposta"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  safeQuotes.map(q => (
+                    <tr key={q.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">{q.id}</td>
+                      <td className="px-3 py-2.5">
+                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{q.client}</div>
+                        <div className="text-[10px] text-neutral-400">{q.device}</div>
+                      </td>
+                      <td className="max-w-[180px] truncate px-3 py-2.5 text-neutral-400">{q.description}</td>
+                      <td className={`px-3 py-2.5 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ {Number(q.value || 0).toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{q.validUntil}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`rounded px-2 py-0.5 font-mono text-[10px] ${
+                          q.status === 'Aprovado' ? 'border border-green-500/30 bg-green-500/10 text-green-500' :
+                          q.status === 'Cancelado' ? 'border border-red-500/30 bg-red-500/10 text-red-500' :
+                          'border border-purple-500/30 bg-purple-500/10 text-[#8A2BE2]'
+                        }`}>
+                          {q.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onEditQuote(q)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#8A2BE2] transition-colors"
+                            title="Editar Orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          {q.status !== 'Aprovado' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Deseja converter o orçamento ${q.id} em uma Ordem de Serviço?`)) {
+                                  onConvertToOrder(q)
+                                }
+                              }}
+                              className="rounded border border-[#0066FF]/30 bg-[#0066FF]/10 px-2 py-1 text-[11px] font-semibold text-[#0066FF] hover:bg-[#0066FF] hover:text-white transition-all"
+                              title="Converter para OS"
+                            >
+                              Virar OS
+                            </button>
+                          )}
+                          <WhatsAppBtn phone={q.phone} quoteDetails={q} />
+                          <button
+                            type="button"
+                            onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
+                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                            title="Descartar orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tela: Clientes ───────────────────────────────────────────────────────────
+
+function ClientsScreen({
+  clients = [],
+  isDark,
+  onNewClient,
+  onEditClient,
+  onDeleteClient,
+  onOpenMenu,
+  onLogout,
+}: {
+  clients: Client[]
+  isDark: boolean
+  onNewClient: () => void
+  onEditClient: (client: Client) => void
+  onDeleteClient: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  const [search, setSearch] = useState('')
+  const safeClients = Array.isArray(clients) ? clients : []
+  const filtered = safeClients.filter(c =>
+    c && ((c.name || '').toLowerCase().includes(search.toLowerCase()) || (c.phone || '').includes(search))
+  )
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Base de Clientes" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewClient={onNewClient} onLogout={onLogout} />
+
+      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar cliente ou tel..."
+              className={`w-full rounded-xl border py-2 pl-9 pr-3 text-xs outline-none transition-colors sm:text-sm ${
+                isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
+              }`}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onNewClient}
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-2 text-xs font-semibold text-white shadow-md hover:opacity-95"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+            <span>+ Cliente</span>
+          </button>
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[550px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">Nome</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Telefone</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cidade</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>}
+                        title="Nenhum cliente cadastrado"
+                        sub="Toque em '+ Cliente' para cadastrar"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map(c => (
+                    <tr key={c.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{c.name}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{c.phone || 'Sem número'}</td>
+                      <td className="px-3 py-2.5 text-neutral-400">{c.city}</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onEditClient(c)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF] transition-colors"
+                            title="Editar Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <WhatsAppBtn phone={c.phone} label={`Olá ${c.name}!`} />
+                          <button
+                            type="button"
+                            onClick={() => { if(confirm(`Deseja realmente excluir o cliente ${c.name}?`)) onDeleteClient(c.id) }}
+                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                            title="Excluir Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -2020,17 +2321,21 @@ export default function App() {
 
     room
       .on('presence', { event: 'sync' }, () => {
-        const presenceState = room.presenceState()
-        const users = Object.keys(presenceState).map(key => presenceState[key][0] as any)
-        setOnlineUsers(users)
+        try {
+          const presenceState = room.presenceState()
+          const users = Object.keys(presenceState).map(key => presenceState[key][0] as any)
+          setOnlineUsers(users)
+        } catch {}
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await room.track({
-            user_id: session.user.id,
-            email: session.user.email,
-            online_at: new Date().toISOString(),
-          })
+          try {
+            await room.track({
+              user_id: session.user.id,
+              email: session.user.email,
+              online_at: new Date().toISOString(),
+            })
+          } catch {}
         }
       })
 
@@ -2212,12 +2517,12 @@ export default function App() {
       client: quote.client,
       phone: quote.phone,
       device: quote.device,
-      service: quote.items[0]?.desc || quote.description,
+      service: (quote.items && quote.items[0]?.desc) || quote.description || 'Serviço Técnico',
       status: 'Entrada',
       value: quote.value,
       date: new Date().toLocaleDateString('pt-BR'),
       technician: 'Admin',
-      notes: `Convertido do Orçamento #${quote.id}. ${quote.description}`,
+      notes: `Convertido do Orçamento #${quote.id}. ${quote.description || ''}`,
       items: quote.items,
     }
 
@@ -2257,7 +2562,7 @@ export default function App() {
     return <LoginScreen onLoginSuccess={() => fetchData()} isDark={isDark} />
   }
 
-  const selectedClientForPrint = orderToPrint ? clients.find(c => c.name.toLowerCase() === orderToPrint.client.toLowerCase()) : undefined
+  const selectedClientForPrint = orderToPrint && clients ? clients.find(c => c.name.toLowerCase() === (orderToPrint.client || '').toLowerCase()) : undefined
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-slate-100 text-slate-900'}`}>
@@ -2284,6 +2589,7 @@ export default function App() {
             return (
               <button
                 key={item.id}
+                type="button"
                 onClick={() => setScreen(item.id as Screen)}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs font-semibold transition-all ${
                   isActive
@@ -2307,12 +2613,13 @@ export default function App() {
               <div key={u.user_id} className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
                 <span className={`truncate text-[11px] font-medium ${isDark ? 'text-neutral-300' : 'text-slate-700'}`} title={u.email}>
-                  {u.email.split('@')[0]}
+                  {u.email ? u.email.split('@')[0] : 'Técnico'}
                 </span>
               </div>
             ))}
           </div>
           <button
+            type="button"
             onClick={handleLogout}
             className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors ${
               isDark ? 'text-neutral-400 hover:bg-neutral-800 hover:text-red-400' : 'text-slate-500 hover:bg-slate-100 hover:text-red-500'
@@ -2337,7 +2644,7 @@ export default function App() {
                   AndradeTech
                 </span>
               </div>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-neutral-400 hover:text-red-400">
+              <button type="button" onClick={() => setMobileMenuOpen(false)} className="p-1 text-neutral-400 hover:text-red-400">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
             </div>
@@ -2350,6 +2657,7 @@ export default function App() {
               {NAV_ITEMS.map(item => (
                 <button
                   key={item.id}
+                  type="button"
                   onClick={() => {
                     setScreen(item.id as Screen)
                     setMobileMenuOpen(false)
@@ -2375,12 +2683,13 @@ export default function App() {
                   <div key={u.user_id} className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
                     <span className={`truncate text-[11px] font-medium ${isDark ? 'text-neutral-300' : 'text-slate-700'}`} title={u.email}>
-                      {u.email.split('@')[0]}
+                      {u.email ? u.email.split('@')[0] : 'Técnico'}
                     </span>
                   </div>
                 ))}
               </div>
               <button
+                type="button"
                 onClick={handleLogout}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-neutral-400 hover:text-red-400"
               >
@@ -2464,19 +2773,19 @@ export default function App() {
             onEditCategory={(cat) => { setCategoryEditing(cat); setShowCategoryModal(true) }}
             onDeleteProduct={async (id) => {
               setProducts(prev => prev.filter(p => p.id !== id))
-              await supabase.from('products').delete().eq('id', id)
+              try { await supabase.from('products').delete().eq('id', id) } catch {}
             }}
             onDeleteService={async (id) => {
               setServices(prev => prev.filter(s => s.id !== id))
-              await supabase.from('services').delete().eq('id', id)
+              try { await supabase.from('services').delete().eq('id', id) } catch {}
             }}
             onDeleteStatus={async (id) => {
               setStatuses(prev => prev.filter(s => s.id !== id))
-              await supabase.from('statuses').delete().eq('id', id)
+              try { await supabase.from('statuses').delete().eq('id', id) } catch {}
             }}
             onDeleteCategory={async (id) => {
               setCategories(prev => prev.filter(c => c.id !== id))
-              await supabase.from('categories').delete().eq('id', id)
+              try { await supabase.from('categories').delete().eq('id', id) } catch {}
             }}
             onOpenMenu={() => setMobileMenuOpen(true)}
             onLogout={handleLogout}
@@ -2493,6 +2802,7 @@ export default function App() {
           return (
             <button
               key={item.id}
+              type="button"
               onClick={() => setScreen(item.id as Screen)}
               className="flex flex-1 flex-col items-center justify-center py-1 transition-colors"
               style={{ color: isActive ? '#0066FF' : (isDark ? '#666' : '#94A3B8') }}
@@ -2564,7 +2874,7 @@ export default function App() {
               const exists = prev.some(p => p.id === prod.id)
               return exists ? prev.map(p => p.id === prod.id ? prod : p) : [prod, ...prev]
             })
-            await supabase.from('products').upsert([prod])
+            try { await supabase.from('products').upsert([prod]) } catch {}
           }}
           isDark={isDark}
         />
@@ -2583,7 +2893,7 @@ export default function App() {
               const exists = prev.some(s => s.id === svc.id)
               return exists ? prev.map(s => s.id === svc.id ? svc : s) : [svc, ...prev]
             })
-            await supabase.from('services').upsert([svc])
+            try { await supabase.from('services').upsert([svc]) } catch {}
           }}
           isDark={isDark}
         />
@@ -2601,7 +2911,7 @@ export default function App() {
               const exists = prev.some(s => s.id === st.id)
               return exists ? prev.map(s => s.id === st.id ? st : s) : [st, ...prev]
             })
-            await supabase.from('statuses').upsert([st])
+            try { await supabase.from('statuses').upsert([st]) } catch {}
           }}
           isDark={isDark}
         />
@@ -2619,7 +2929,7 @@ export default function App() {
               const exists = prev.some(c => c.id === cat.id)
               return exists ? prev.map(c => c.id === cat.id ? cat : c) : [...prev, cat]
             })
-            await supabase.from('categories').upsert([cat])
+            try { await supabase.from('categories').upsert([cat]) } catch {}
           }}
           isDark={isDark}
         />
