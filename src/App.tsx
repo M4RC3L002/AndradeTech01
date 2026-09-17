@@ -184,7 +184,6 @@ function PrintModal({
       <div className={`w-full max-w-3xl max-h-[92vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden ${
         isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
-        {/* Barra superior de controle (não impressa) */}
         <div className={`flex items-center justify-between px-5 py-3.5 border-b print:hidden ${
           isDark ? 'border-neutral-800 bg-[#161616]' : 'border-slate-200 bg-slate-50'
         }`}>
@@ -224,13 +223,9 @@ function PrintModal({
           </div>
         </div>
 
-        {/* Área Visualizada / Impressa */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-neutral-200/50 flex justify-center">
-          
-          {/* FORMATO 1: FOLHA A4 */}
           {printType === 'a4' && (
             <div id="print-area" className="w-full max-w-[210mm] bg-white text-black p-8 sm:p-10 rounded shadow-md border border-neutral-300 font-sans text-xs print:m-0 print:p-0 print:border-none print:shadow-none">
-              {/* Cabeçalho A4 */}
               <div className="flex justify-between items-center border-b-2 border-slate-900 pb-4 mb-5">
                 <div className="flex items-center gap-3">
                   <img src={LOGO_URL} alt="Logo" className="w-14 h-14 object-contain" />
@@ -248,7 +243,6 @@ function PrintModal({
                 </div>
               </div>
 
-              {/* Dados do Cliente e Aparelho */}
               <div className="grid grid-cols-2 gap-4 border border-slate-200 rounded-lg p-4 mb-5 bg-slate-50">
                 <div>
                   <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">DADOS DO CLIENTE</div>
@@ -265,7 +259,6 @@ function PrintModal({
                 </div>
               </div>
 
-              {/* Defeito Relatado */}
               {order.notes && (
                 <div className="border border-slate-200 rounded-lg p-3 mb-5 bg-white">
                   <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">RELATO DO DEFEITO / OBSERVAÇÕES TÉCNICAS</div>
@@ -273,7 +266,6 @@ function PrintModal({
                 </div>
               )}
 
-              {/* Tabela de Serviços e Peças */}
               <div className="border border-slate-200 rounded-lg overflow-hidden mb-6">
                 <table className="w-full text-left">
                   <thead className="bg-slate-100 border-b border-slate-200 font-mono text-[10px] text-slate-600 uppercase">
@@ -303,12 +295,10 @@ function PrintModal({
                 </table>
               </div>
 
-              {/* Termo de Garantia Legal */}
               <div className="border border-slate-200 rounded-lg p-3 text-[9px] text-slate-500 leading-relaxed mb-8">
                 <span className="font-bold text-slate-700 uppercase">Termo de Garantia Legal (Art. 26 do CDC):</span> A garantia para serviços executados e peças substituídas é de 90 (noventa) dias a contar da data de retirada do aparelho, cobrindo exclusivamente o defeito solucionado. A garantia perde sua validade em casos de selo rompido, oxidação por umidade, quedas, trincas ou danos causados por mau uso e sobretensão elétrica.
               </div>
 
-              {/* Campo de Assinaturas */}
               <div className="grid grid-cols-2 gap-10 text-center pt-4">
                 <div>
                   <div className="border-t border-slate-400 w-full mb-1"></div>
@@ -324,7 +314,6 @@ function PrintModal({
             </div>
           )}
 
-          {/* FORMATO 2: CUPOM TÉRMICO (BOBINA 80MM) */}
           {printType === 'thermal' && (
             <div id="print-area" className="w-[80mm] bg-white text-black p-4 rounded shadow-md border border-neutral-300 font-mono text-[11px] leading-tight print:m-0 print:p-0 print:border-none print:shadow-none print:w-[80mm]">
               <div className="text-center pb-2 border-b border-dashed border-black mb-2">
@@ -379,11 +368,9 @@ function PrintModal({
               </div>
             </div>
           )}
-
         </div>
       </div>
 
-      {/* Estilos CSS Nativos de Impressão */}
       <style>{`
         @media print {
           body * {
@@ -597,6 +584,7 @@ function OrderModal({
   services,
   products,
   onSave,
+  onQuickNewClient,
   orderToEdit,
   isDark,
 }: {
@@ -606,10 +594,11 @@ function OrderModal({
   services: CustomService[]
   products: Product[]
   onSave: (order: Order) => void
+  onQuickNewClient: () => void
   orderToEdit?: Order | null
   isDark: boolean
 }) {
-  const [client, setClient] = useState(orderToEdit?.client || '')
+  const [client, setClient] = useState(orderToEdit?.client || (clients[0]?.name ?? ''))
   const [phone, setPhone] = useState(orderToEdit?.phone || '')
   const [device, setDevice] = useState(orderToEdit?.device || '')
   const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
@@ -621,11 +610,18 @@ function OrderModal({
       : [{ desc: orderToEdit?.service || '', qty: 1, unit: orderToEdit?.value || 0 }]
   )
 
+  useEffect(() => {
+    if (!phone && client) {
+      const found = clients.find(c => c.name === client)
+      if (found) setPhone(found.phone)
+    }
+  }, [client, clients])
+
   const total = items.reduce((s, i) => s + (i.qty || 1) * (i.unit || 0), 0)
 
-  const handleClientChange = (name: string) => {
+  const handleClientSelectChange = (name: string) => {
     setClient(name)
-    const found = clients.find(c => c.name.toLowerCase() === name.toLowerCase())
+    const found = clients.find(c => c.name === name)
     if (found) setPhone(found.phone)
   }
 
@@ -644,7 +640,7 @@ function OrderModal({
   const handleSave = (e: React.FormEvent, sendToWhatsApp = false) => {
     e.preventDefault()
     if (!client.trim() || !device.trim()) {
-      alert('Preencha o cliente e o aparelho!')
+      alert('Selecione o cliente e informe o aparelho!')
       return
     }
 
@@ -705,17 +701,29 @@ function OrderModal({
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
-              <input
-                list="client-options"
-                value={client}
-                onChange={e => handleClientChange(e.target.value)}
-                placeholder="Nome do cliente..."
-                className={inputClass}
-              />
-              <datalist id="client-options">
-                {clients.map(c => <option key={c.id} value={c.name} />)}
-              </datalist>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
+                <button
+                  type="button"
+                  onClick={onQuickNewClient}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
+                  title="Cadastrar Novo Cliente"
+                >
+                  <span>+</span> Cliente
+                </button>
+              </div>
+              <div className="flex gap-1.5">
+                <select
+                  value={client}
+                  onChange={e => handleClientSelectChange(e.target.value)}
+                  className={`${inputClass} flex-1`}
+                >
+                  <option value="" disabled>Selecione um cliente...</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
@@ -900,6 +908,9 @@ function QuoteModal({
   services,
   products,
   onSave,
+  onConvertToOrder,
+  onQuickNewClient,
+  quoteToEdit,
   isDark,
 }: {
   onClose: () => void
@@ -907,20 +918,35 @@ function QuoteModal({
   services: CustomService[]
   products: Product[]
   onSave: (quote: Quote) => void
+  onConvertToOrder: (quote: Quote) => void
+  onQuickNewClient: () => void
+  quoteToEdit?: Quote | null
   isDark: boolean
 }) {
-  const [client, setClient] = useState('')
-  const [phone, setPhone] = useState('')
-  const [device, setDevice] = useState('')
-  const [description, setDescription] = useState('')
+  const [client, setClient] = useState(quoteToEdit?.client || (clients[0]?.name ?? ''))
+  const [phone, setPhone] = useState(quoteToEdit?.phone || '')
+  const [device, setDevice] = useState(quoteToEdit?.device || '')
+  const [description, setDescription] = useState(quoteToEdit?.description || '')
   const [validDays, setValidDays] = useState('7')
-  const [items, setItems] = useState<OrderItem[]>([{ desc: '', qty: 1, unit: 0 }])
+  const [status, setStatus] = useState<'Pendente' | 'Aprovado' | 'Cancelado'>(quoteToEdit?.status || 'Pendente')
+  const [items, setItems] = useState<OrderItem[]>(
+    quoteToEdit?.items && quoteToEdit.items.length > 0
+      ? quoteToEdit.items
+      : [{ desc: '', qty: 1, unit: 0 }]
+  )
+
+  useEffect(() => {
+    if (!phone && client) {
+      const found = clients.find(c => c.name === client)
+      if (found) setPhone(found.phone)
+    }
+  }, [client, clients])
 
   const total = items.reduce((s, i) => s + (i.qty || 1) * (i.unit || 0), 0)
 
-  const handleClientChange = (name: string) => {
+  const handleClientSelectChange = (name: string) => {
     setClient(name)
-    const found = clients.find(c => c.name.toLowerCase() === name.toLowerCase())
+    const found = clients.find(c => c.name === name)
     if (found) setPhone(found.phone)
   }
 
@@ -939,36 +965,45 @@ function QuoteModal({
   const handleSave = (e: React.FormEvent, sendWhatsApp = false) => {
     e.preventDefault()
     if (!client.trim() || !device.trim()) {
-      alert('Informe o cliente e o aparelho!')
+      alert('Selecione o cliente e informe o aparelho!')
       return
     }
 
     const expDate = new Date()
     expDate.setDate(expDate.getDate() + (Number(validDays) || 7))
 
-    const newQuote: Quote = {
-      id: `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
+    const quoteData: Quote = {
+      id: quoteToEdit?.id || `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
       client,
       phone,
       device,
       description: description || items[0]?.desc || 'Proposta de serviço',
       value: total,
-      validUntil: expDate.toLocaleDateString('pt-BR'),
-      createdAt: new Date().toLocaleDateString('pt-BR'),
-      status: 'Pendente',
+      validUntil: quoteToEdit?.validUntil || expDate.toLocaleDateString('pt-BR'),
+      createdAt: quoteToEdit?.createdAt || new Date().toLocaleDateString('pt-BR'),
+      status,
       items,
     }
 
-    onSave(newQuote)
+    onSave(quoteData)
+
+    // Se a situação foi colocada como "Aprovado", converte automaticamente em OS
+    if (status === 'Aprovado' && (!quoteToEdit || quoteToEdit.status !== 'Aprovado')) {
+      const confirmConvert = confirm('O orçamento foi marcado como Aprovado. Deseja gerar a Ordem de Serviço agora?')
+      if (confirmConvert) {
+        onConvertToOrder(quoteData)
+      }
+    }
 
     if (sendWhatsApp && phone) {
-      const msg = `*AndradeTech - Proposta de Orçamento #${newQuote.id}*\n\n` +
+      const msg = `*AndradeTech - Proposta de Orçamento #${quoteData.id}*\n\n` +
                   `Olá, *${client}*!\n` +
                   `*Aparelho:* ${device}\n` +
-                  `*Descrição:* ${newQuote.description}\n` +
+                  `*Situação:* ${status}\n` +
+                  `*Descrição:* ${quoteData.description}\n` +
                   `*Valor Total:* R$ ${total.toFixed(2)}\n` +
-                  `*Válido até:* ${newQuote.validUntil}\n\n` +
-                  `Aguardamos sua aprovação para iniciar o trabalho!`
+                  `*Válido até:* ${quoteData.validUntil}\n\n` +
+                  `Aguardamos sua confirmação!`
       window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
     }
 
@@ -986,8 +1021,12 @@ function QuoteModal({
       }`}>
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
-            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">PROPOSTA COMERCIAL</div>
-            <h2 className="text-sm font-bold sm:text-base">Criar Novo Orçamento</h2>
+            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">
+              {quoteToEdit ? `EDITANDO ${quoteToEdit.id}` : 'PROPOSTA COMERCIAL'}
+            </div>
+            <h2 className="text-sm font-bold sm:text-base">
+              {quoteToEdit ? 'Editar Orçamento' : 'Criar Novo Orçamento'}
+            </h2>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -997,17 +1036,29 @@ function QuoteModal({
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
-              <input
-                list="client-options-quote"
-                value={client}
-                onChange={e => handleClientChange(e.target.value)}
-                placeholder="Nome do cliente..."
-                className={inputClass}
-              />
-              <datalist id="client-options-quote">
-                {clients.map(c => <option key={c.id} value={c.name} />)}
-              </datalist>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
+                <button
+                  type="button"
+                  onClick={onQuickNewClient}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
+                  title="Cadastrar Novo Cliente"
+                >
+                  <span>+</span> Cliente
+                </button>
+              </div>
+              <div className="flex gap-1.5">
+                <select
+                  value={client}
+                  onChange={e => handleClientSelectChange(e.target.value)}
+                  className={`${inputClass} flex-1`}
+                >
+                  <option value="" disabled>Selecione um cliente...</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
@@ -1020,7 +1071,7 @@ function QuoteModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
               <input
@@ -1031,7 +1082,22 @@ function QuoteModal({
               />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Validade da Proposta</label>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
+              <select
+                value={status}
+                onChange={e => setStatus(e.target.value as any)}
+                className={`${inputClass} font-semibold ${
+                  status === 'Aprovado' ? 'text-green-500' :
+                  status === 'Cancelado' ? 'text-red-500' : 'text-[#8A2BE2]'
+                }`}
+              >
+                <option value="Pendente">🟡 Pendente</option>
+                <option value="Aprovado">🟢 Aprovado (Vira OS)</option>
+                <option value="Cancelado">🔴 Cancelado</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Validade</label>
               <select
                 value={validDays}
                 onChange={e => setValidDays(e.target.value)}
@@ -1164,7 +1230,7 @@ function QuoteModal({
           </button>
           <div className="flex w-full gap-2 sm:w-auto">
             <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-purple-500/20 sm:flex-initial">
-              Salvar Orçamento
+              {quoteToEdit ? 'Atualizar Orçamento' : 'Salvar Orçamento'}
             </button>
             <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
               Salvar & Whats
@@ -1205,7 +1271,7 @@ function ClientModal({
       phone,
       cpf,
       address,
-      city: city || 'Local',
+      city: city || 'São João do Paraíso',
       totalOrders: clientToEdit?.totalOrders || 0,
       totalSpent: clientToEdit?.totalSpent || 0,
       lastService: clientToEdit?.lastService || 'Cadastrado no sistema',
@@ -1257,7 +1323,7 @@ function ClientModal({
           </div>
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cidade / Estado</label>
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Ex: Eunápolis, BA" className={inputClass} />
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Ex: São João do Paraíso, BA" className={inputClass} />
           </div>
         </div>
         <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
@@ -1748,6 +1814,7 @@ function QuotesScreen({
   quotes,
   isDark,
   onNewQuote,
+  onEditQuote,
   onConvertToOrder,
   onDeleteQuote,
   onOpenMenu,
@@ -1756,6 +1823,7 @@ function QuotesScreen({
   quotes: Quote[]
   isDark: boolean
   onNewQuote: () => void
+  onEditQuote: (quote: Quote) => void
   onConvertToOrder: (quote: Quote) => void
   onDeleteQuote: (id: string) => void
   onOpenMenu: () => void
@@ -1826,6 +1894,13 @@ function QuotesScreen({
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <div className="inline-flex items-center gap-1.5">
+                          <button
+                            onClick={() => onEditQuote(q)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#8A2BE2] transition-colors"
+                            title="Editar Orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
                           {q.status !== 'Aprovado' && (
                             <button
                               onClick={() => {
@@ -2072,7 +2147,6 @@ function SettingsScreen({
       <Topbar title="Configurações, Peças & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} onLogout={onLogout} />
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Card Produtos / Peças */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -2153,7 +2227,6 @@ function SettingsScreen({
             </div>
           </div>
 
-          {/* Card Serviços */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -2204,7 +2277,6 @@ function SettingsScreen({
             </div>
           </div>
 
-          {/* Card Situações / Status */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -2293,6 +2365,7 @@ export default function App() {
   const [showQuoteModal, setShowQuoteModal] = useState(false)
   const [showClientModal, setShowClientModal] = useState(false)
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
+  const [quoteEditing, setQuoteEditing] = useState<Quote | null>(null)
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null)
 
@@ -2493,8 +2566,12 @@ export default function App() {
   }
 
   const handleSaveQuote = async (quoteData: Quote) => {
-    setQuotes(prev => [quoteData, ...prev])
-    await supabase.from('quotes').insert([{
+    setQuotes(prev => {
+      const exists = prev.some(q => q.id === quoteData.id)
+      return exists ? prev.map(q => q.id === quoteData.id ? quoteData : q) : [quoteData, ...prev]
+    })
+
+    await supabase.from('quotes').upsert([{
       id: quoteData.id,
       client: quoteData.client,
       phone: quoteData.phone,
@@ -2565,7 +2642,6 @@ export default function App() {
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-slate-100 text-slate-900'}`}>
-      {/* Sidebar Desktop */}
       <aside className={`hidden h-screen flex-shrink-0 flex-col border-r transition-colors md:flex ${
         isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white'
       }`} style={{ width: 230 }}>
@@ -2707,7 +2783,7 @@ export default function App() {
             statuses={statuses}
             isDark={isDark}
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
-            onNewQuote={() => setShowQuoteModal(true)}
+            onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
             onNewClient={handleOpenNewClient}
             onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
             onPrintOrder={(o) => setOrderToPrint(o)}
@@ -2733,7 +2809,8 @@ export default function App() {
           <QuotesScreen
             quotes={quotes}
             isDark={isDark}
-            onNewQuote={() => setShowQuoteModal(true)}
+            onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
+            onEditQuote={(q) => { setQuoteEditing(q); setShowQuoteModal(true) }}
             onConvertToOrder={handleConvertToOrder}
             onDeleteQuote={handleDeleteQuote}
             onOpenMenu={() => setMobileMenuOpen(true)}
@@ -2819,6 +2896,7 @@ export default function App() {
           services={services}
           products={products}
           onSave={handleSaveOrder}
+          onQuickNewClient={handleOpenNewClient}
           orderToEdit={orderEditing}
           isDark={isDark}
         />
@@ -2826,11 +2904,17 @@ export default function App() {
 
       {showQuoteModal && (
         <QuoteModal
-          onClose={() => setShowQuoteModal(false)}
+          onClose={() => {
+            setShowQuoteModal(false)
+            setQuoteEditing(null)
+          }}
           clients={clients}
           services={services}
           products={products}
           onSave={handleSaveQuote}
+          onConvertToOrder={handleConvertToOrder}
+          onQuickNewClient={handleOpenNewClient}
+          quoteToEdit={quoteEditing}
           isDark={isDark}
         />
       )}
