@@ -575,9 +575,237 @@ function EmptyState({ icon, title, sub, isDark }: { icon: React.ReactNode; title
   )
 }
 
+// ─── Modais Específicos de Configurações ───────────────────────────────────────
+
+function ProductModal({
+  onClose,
+  onSave,
+  isDark,
+}: {
+  onClose: () => void
+  onSave: (prod: Product) => void
+  isDark: boolean
+}) {
+  const [name, setName] = useState('')
+  const [category, setCategory] = useState('Peça')
+  const [costPrice, setCostPrice] = useState('')
+  const [salePrice, setSalePrice] = useState('')
+  const [stock, setStock] = useState('1')
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return alert('Informe o nome da peça/produto!')
+
+    onSave({
+      id: Date.now().toString(),
+      name: name.trim(),
+      category: category.trim() || 'Peça',
+      cost_price: Number(costPrice) || 0,
+      sale_price: Number(salePrice) || 0,
+      stock: Number(stock) || 0,
+    })
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">ESTOQUE & PEÇAS</div>
+            <h2 className="text-base font-bold">Novo Produto / Peça</h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="space-y-3 px-5 py-4">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Descrição do Produto *</label>
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston, Tela iPhone 11..." className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
+            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Telas, Armazenamento, Fontes..." className={inputClass} />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Custo (R$)</label>
+              <input type="number" step="any" value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="0.00" className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Venda (R$) *</label>
+              <input required type="number" step="any" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="0.00" className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Quantidade</label>
+              <input type="number" min="0" value={stock} onChange={e => setStock(e.target.value)} className={inputClass} />
+            </div>
+          </div>
+        </div>
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
+            Cancelar
+          </button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
+            Salvar Peça / Produto
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+function ServiceModal({
+  onClose,
+  onSave,
+  isDark,
+}: {
+  onClose: () => void
+  onSave: (svc: CustomService) => void
+  isDark: boolean
+}) {
+  const [name, setName] = useState('')
+  const [defaultPrice, setDefaultPrice] = useState('')
+  const [category, setCategory] = useState('Hardware')
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return alert('Informe o nome do serviço!')
+
+    onSave({
+      id: Date.now().toString(),
+      name: name.trim(),
+      default_price: Number(defaultPrice) || 0,
+      category: category.trim() || 'Geral',
+    })
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">MÃO DE OBRA</div>
+            <h2 className="text-base font-bold">Novo Serviço Técnico</h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="space-y-3 px-5 py-4">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome do Serviço *</label>
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Limpeza com Pasta Térmica..." className={inputClass} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Padrão (R$) *</label>
+              <input required type="number" step="any" value={defaultPrice} onChange={e => setDefaultPrice(e.target.value)} placeholder="0.00" className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
+              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software, Manutenção..." className={inputClass} />
+            </div>
+          </div>
+        </div>
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
+            Cancelar
+          </button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
+            Salvar Serviço
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+function StatusModal({
+  onClose,
+  onSave,
+  isDark,
+}: {
+  onClose: () => void
+  onSave: (st: CustomStatus) => void
+  isDark: boolean
+}) {
+  const [label, setLabel] = useState('')
+  const [dot, setDot] = useState('#0066FF')
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!label.trim()) return alert('Informe o nome da situação!')
+
+    onSave({
+      id: Date.now().toString(),
+      label: label.trim(),
+      dot,
+    })
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={handleSave} className={`w-full max-w-md rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">FLUXO DE OS</div>
+            <h2 className="text-base font-bold">Nova Situação / Status</h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="space-y-4 px-5 py-4">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome da Situação *</label>
+            <input required value={label} onChange={e => setLabel(e.target.value)} placeholder="Ex: Em Garantia, Aguardando Cliente..." className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cor de Identificação</label>
+            <div className="flex items-center gap-3">
+              <input type="color" value={dot} onChange={e => setDot(e.target.value)} className="h-10 w-16 cursor-pointer rounded-lg border-0 bg-transparent" />
+              <span className="font-mono text-xs uppercase text-neutral-400">{dot}</span>
+            </div>
+          </div>
+        </div>
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
+            Cancelar
+          </button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
+            Salvar Situação
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
 // ─── Modal: Ordem de Serviço ──────────────────────────────────────────────────
 
-function OrderModal({
+function OrderModalWrapper({
   onClose,
   clients,
   statuses,
@@ -598,653 +826,24 @@ function OrderModal({
   orderToEdit?: Order | null
   isDark: boolean
 }) {
-  const [client, setClient] = useState(orderToEdit?.client || (clients[0]?.name ?? ''))
-  const [phone, setPhone] = useState(orderToEdit?.phone || '')
-  const [device, setDevice] = useState(orderToEdit?.device || '')
-  const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
-  const [notes, setNotes] = useState(orderToEdit?.notes || '')
-  const [status, setStatus] = useState(orderToEdit?.status || (statuses[0]?.label ?? 'Entrada'))
-  const [items, setItems] = useState<OrderItem[]>(
-    orderToEdit?.items && orderToEdit.items.length > 0
-      ? orderToEdit.items
-      : [{ desc: orderToEdit?.service || '', qty: 1, unit: orderToEdit?.value || 0 }]
-  )
-
-  useEffect(() => {
-    if (!phone && client) {
-      const found = clients.find(c => c.name === client)
-      if (found) setPhone(found.phone)
-    }
-  }, [client, clients])
-
-  const total = items.reduce((s, i) => s + (i.qty || 1) * (i.unit || 0), 0)
-
-  const handleClientSelectChange = (name: string) => {
-    setClient(name)
-    const found = clients.find(c => c.name === name)
-    if (found) setPhone(found.phone)
-  }
-
-  const handleApplyPreset = (value: string, index: number) => {
-    const svc = services.find(s => s.name === value)
-    if (svc) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
-      return
-    }
-    const prod = products.find(p => p.name === value)
-    if (prod) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
-    }
-  }
-
-  const handleSave = (e: React.FormEvent, sendToWhatsApp = false) => {
-    e.preventDefault()
-    if (!client.trim() || !device.trim()) {
-      alert('Selecione o cliente e informe o aparelho!')
-      return
-    }
-
-    const firstService = items[0]?.desc?.trim() || 'Serviço Técnico'
-    const savedOrder: Order = {
-      id: orderToEdit?.id || `OS-${Math.floor(1000 + Math.random() * 9000)}`,
-      client,
-      phone,
-      device,
-      service: firstService,
-      status,
-      value: total,
-      date: orderToEdit?.date || new Date().toLocaleDateString('pt-BR'),
-      technician: technician || 'Admin',
-      notes,
-      items,
-    }
-
-    onSave(savedOrder)
-
-    if (sendToWhatsApp && phone) {
-      const msg = `*AndradeTech - Ordem de Serviço #${savedOrder.id}*\n\n` +
-                  `Olá, *${client}*!\n` +
-                  `*Aparelho:* ${device}\n` +
-                  `*Serviço:* ${firstService}\n` +
-                  `*Situação:* ${status}\n` +
-                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
-                  `Qualquer dúvida estamos à disposição!`
-      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
-    }
-
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
-              {orderToEdit ? `EDITANDO ${orderToEdit.id}` : 'NOVO REGISTRO'}
-            </div>
-            <h2 className="text-sm font-bold sm:text-base">
-              {orderToEdit ? 'Editar Ordem de Serviço' : 'Registrar Ordem de Serviço'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
-                <button
-                  type="button"
-                  onClick={onQuickNewClient}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
-                  title="Cadastrar Novo Cliente"
-                >
-                  <span>+</span> Cliente
-                </button>
-              </div>
-              <div className="flex gap-1.5">
-                <select
-                  value={client}
-                  onChange={e => handleClientSelectChange(e.target.value)}
-                  className={`${inputClass} flex-1`}
-                >
-                  <option value="" disabled>Selecione um cliente...</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
-              <input
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="(DDD) 99999-9999"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
-              <input
-                value={device}
-                onChange={e => setDevice(e.target.value)}
-                placeholder="Ex: Notebook Lenovo, Galaxy S21..."
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
-              <select
-                value={status}
-                onChange={e => setStatus(e.target.value)}
-                className={inputClass}
-              >
-                {statuses.map(s => (
-                  <option key={s.id} value={s.label}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Técnico Responsável</label>
-            <input
-              value={technician}
-              onChange={e => setTechnician(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Diagnóstico / Defeito</label>
-            <textarea
-              rows={2}
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Relato do problema, observações do aparelho..."
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Serviços & Peças</label>
-              <button
-                type="button"
-                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
-                className="text-xs font-semibold text-[#0066FF] hover:text-[#8A2BE2]"
-              >
-                + Adicionar Item
-              </button>
-            </div>
-
-            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                    <th className="px-3 py-2 text-left">Item (Serviço ou Peça)</th>
-                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
-                    <th className="w-20 px-2 py-2 text-right">Unit</th>
-                    <th className="w-20 px-2 py-2 text-right">Total</th>
-                    <th className="w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, i) => (
-                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
-                      <td className="px-2 py-1.5">
-                        <div className="flex flex-col gap-1 sm:flex-row">
-                          <input
-                            value={item.desc}
-                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
-                            placeholder="Descrição..."
-                            className="w-full bg-transparent outline-none"
-                          />
-                          <select
-                            onChange={e => {
-                              if (e.target.value) handleApplyPreset(e.target.value, i)
-                            }}
-                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Catálogo</option>
-                            <optgroup label="Serviços">
-                              {services.map(s => (
-                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Produtos / Peças">
-                              {products.map(p => (
-                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </div>
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.qty}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
-                          className="w-full bg-transparent text-center font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-1 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.unit || ''}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
-                          placeholder="0"
-                          className="w-full bg-transparent text-right font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
-                        R$ {((item.qty || 1) * (item.unit || 0)).toFixed(2)}
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
-                          className="text-neutral-400 hover:text-red-500"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
-                    <td className="px-2 py-2 text-right font-bold text-[#0066FF]">R$ {total.toFixed(2)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
-            Cancelar
-          </button>
-          <div className="flex w-full gap-2 sm:w-auto">
-            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20 sm:flex-initial">
-              Salvar OS
-            </button>
-            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
-              Salvar & Whats
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-// ─── Modal: Orçamento ─────────────────────────────────────────────────────────
-
-function QuoteModal({
-  onClose,
-  clients,
-  services,
-  products,
-  onSave,
-  onConvertToOrder,
-  onQuickNewClient,
-  quoteToEdit,
-  isDark,
-}: {
-  onClose: () => void
-  clients: Client[]
-  services: CustomService[]
-  products: Product[]
-  onSave: (quote: Quote) => void
-  onConvertToOrder: (quote: Quote) => void
-  onQuickNewClient: () => void
-  quoteToEdit?: Quote | null
-  isDark: boolean
-}) {
-  const [client, setClient] = useState(quoteToEdit?.client || (clients[0]?.name ?? ''))
-  const [phone, setPhone] = useState(quoteToEdit?.phone || '')
-  const [device, setDevice] = useState(quoteToEdit?.device || '')
-  const [description, setDescription] = useState(quoteToEdit?.description || '')
-  const [validDays, setValidDays] = useState('7')
-  const [status, setStatus] = useState<'Pendente' | 'Aprovado' | 'Cancelado'>(quoteToEdit?.status || 'Pendente')
-  const [items, setItems] = useState<OrderItem[]>(
-    quoteToEdit?.items && quoteToEdit.items.length > 0
-      ? quoteToEdit.items
-      : [{ desc: '', qty: 1, unit: 0 }]
-  )
-
-  useEffect(() => {
-    if (!phone && client) {
-      const found = clients.find(c => c.name === client)
-      if (found) setPhone(found.phone)
-    }
-  }, [client, clients])
-
-  const total = items.reduce((s, i) => s + (i.qty || 1) * (i.unit || 0), 0)
-
-  const handleClientSelectChange = (name: string) => {
-    setClient(name)
-    const found = clients.find(c => c.name === name)
-    if (found) setPhone(found.phone)
-  }
-
-  const handleApplyPreset = (value: string, index: number) => {
-    const svc = services.find(s => s.name === value)
-    if (svc) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
-      return
-    }
-    const prod = products.find(p => p.name === value)
-    if (prod) {
-      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
-    }
-  }
-
-  const handleSave = (e: React.FormEvent, sendWhatsApp = false) => {
-    e.preventDefault()
-    if (!client.trim() || !device.trim()) {
-      alert('Selecione o cliente e informe o aparelho!')
-      return
-    }
-
-    const expDate = new Date()
-    expDate.setDate(expDate.getDate() + (Number(validDays) || 7))
-
-    const quoteData: Quote = {
-      id: quoteToEdit?.id || `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
-      client,
-      phone,
-      device,
-      description: description || items[0]?.desc || 'Proposta de serviço',
-      value: total,
-      validUntil: quoteToEdit?.validUntil || expDate.toLocaleDateString('pt-BR'),
-      createdAt: quoteToEdit?.createdAt || new Date().toLocaleDateString('pt-BR'),
-      status,
-      items,
-    }
-
-    onSave(quoteData)
-
-    // Se a situação foi colocada como "Aprovado", converte automaticamente em OS
-    if (status === 'Aprovado' && (!quoteToEdit || quoteToEdit.status !== 'Aprovado')) {
-      const confirmConvert = confirm('O orçamento foi marcado como Aprovado. Deseja gerar a Ordem de Serviço agora?')
-      if (confirmConvert) {
-        onConvertToOrder(quoteData)
-      }
-    }
-
-    if (sendWhatsApp && phone) {
-      const msg = `*AndradeTech - Proposta de Orçamento #${quoteData.id}*\n\n` +
-                  `Olá, *${client}*!\n` +
-                  `*Aparelho:* ${device}\n` +
-                  `*Situação:* ${status}\n` +
-                  `*Descrição:* ${quoteData.description}\n` +
-                  `*Valor Total:* R$ ${total.toFixed(2)}\n` +
-                  `*Válido até:* ${quoteData.validUntil}\n\n` +
-                  `Aguardamos sua confirmação!`
-      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
-    }
-
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">
-              {quoteToEdit ? `EDITANDO ${quoteToEdit.id}` : 'PROPOSTA COMERCIAL'}
-            </div>
-            <h2 className="text-sm font-bold sm:text-base">
-              {quoteToEdit ? 'Editar Orçamento' : 'Criar Novo Orçamento'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
-                <button
-                  type="button"
-                  onClick={onQuickNewClient}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
-                  title="Cadastrar Novo Cliente"
-                >
-                  <span>+</span> Cliente
-                </button>
-              </div>
-              <div className="flex gap-1.5">
-                <select
-                  value={client}
-                  onChange={e => handleClientSelectChange(e.target.value)}
-                  className={`${inputClass} flex-1`}
-                >
-                  <option value="" disabled>Selecione um cliente...</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
-              <input
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="(DDD) 99999-9999"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
-              <input
-                value={device}
-                onChange={e => setDevice(e.target.value)}
-                placeholder="Ex: iPhone 12, Notebook Acer..."
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
-              <select
-                value={status}
-                onChange={e => setStatus(e.target.value as any)}
-                className={`${inputClass} font-semibold ${
-                  status === 'Aprovado' ? 'text-green-500' :
-                  status === 'Cancelado' ? 'text-red-500' : 'text-[#8A2BE2]'
-                }`}
-              >
-                <option value="Pendente">🟡 Pendente</option>
-                <option value="Aprovado">🟢 Aprovado (Vira OS)</option>
-                <option value="Cancelado">🔴 Cancelado</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Validade</label>
-              <select
-                value={validDays}
-                onChange={e => setValidDays(e.target.value)}
-                className={inputClass}
-              >
-                <option value="3">3 dias</option>
-                <option value="7">7 dias (padrão)</option>
-                <option value="15">15 dias</option>
-                <option value="30">30 dias</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Resumo do Diagnóstico</label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Descreva a falha constatada e o que precisa ser substituído..."
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Itens / Peças / Serviços</label>
-              <button
-                type="button"
-                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
-                className="text-xs font-semibold text-[#8A2BE2] hover:text-[#0066FF]"
-              >
-                + Adicionar Item
-              </button>
-            </div>
-
-            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                    <th className="px-3 py-2 text-left">Item</th>
-                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
-                    <th className="w-20 px-2 py-2 text-right">Unit</th>
-                    <th className="w-20 px-2 py-2 text-right">Total</th>
-                    <th className="w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, i) => (
-                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
-                      <td className="px-2 py-1.5">
-                        <div className="flex flex-col gap-1 sm:flex-row">
-                          <input
-                            value={item.desc}
-                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
-                            placeholder="Peça ou mão de obra..."
-                            className="w-full bg-transparent outline-none"
-                          />
-                          <select
-                            onChange={e => {
-                              if (e.target.value) handleApplyPreset(e.target.value, i)
-                            }}
-                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Catálogo</option>
-                            <optgroup label="Serviços">
-                              {services.map(s => (
-                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Produtos / Peças">
-                              {products.map(p => (
-                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </div>
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.qty}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
-                          className="w-full bg-transparent text-center font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-1 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.unit || ''}
-                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
-                          placeholder="0"
-                          className="w-full bg-transparent text-right font-mono outline-none"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
-                        R$ {((item.qty || 1) * (item.unit || 0)).toFixed(2)}
-                      </td>
-                      <td className="px-1 py-1.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
-                          className="text-neutral-400 hover:text-red-500"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
-                    <td className="px-2 py-2 text-right font-bold text-[#8A2BE2]">R$ {total.toFixed(2)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
-            Cancelar
-          </button>
-          <div className="flex w-full gap-2 sm:w-auto">
-            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-purple-500/20 sm:flex-initial">
-              {quoteToEdit ? 'Atualizar Orçamento' : 'Salvar Orçamento'}
-            </button>
-            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
-              Salvar & Whats
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
+    <OrderModal
+      onClose={onClose}
+      clients={clients}
+      statuses={statuses}
+      services={services}
+      products={products}
+      onSave={onSave}
+      onQuickNewClient={onQuickNewClient}
+      orderToEdit={orderToEdit}
+      isDark={isDark}
+    />
   )
 }
 
 // ─── Modal: Cliente ───────────────────────────────────────────────────────────
 
-function ClientModal({
+function ClientModalWrapper({
   onClose,
   onSave,
   clientToEdit,
@@ -1255,87 +854,13 @@ function ClientModal({
   clientToEdit?: Client | null
   isDark: boolean
 }) {
-  const [name, setName] = useState(clientToEdit?.name || '')
-  const [phone, setPhone] = useState(clientToEdit?.phone || '')
-  const [cpf, setCpf] = useState(clientToEdit?.cpf || '')
-  const [address, setAddress] = useState(clientToEdit?.address || '')
-  const [city, setCity] = useState(clientToEdit?.city || '')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Nome do cliente é obrigatório')
-
-    onSave({
-      id: clientToEdit?.id || `CLI-${Math.floor(100 + Math.random() * 900)}`,
-      name,
-      phone,
-      cpf,
-      address,
-      city: city || 'São João do Paraíso',
-      totalOrders: clientToEdit?.totalOrders || 0,
-      totalSpent: clientToEdit?.totalSpent || 0,
-      lastService: clientToEdit?.lastService || 'Cadastrado no sistema',
-      devices: clientToEdit?.devices || [],
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
-              {clientToEdit ? `EDITANDO ${clientToEdit.id}` : 'CADASTRO'}
-            </div>
-            <h2 className="text-base font-bold">
-              {clientToEdit ? 'Editar Cliente' : 'Novo Cliente'}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-3 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome Completo *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Rafael Mendonça" className={inputClass} />
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Telefone / WhatsApp *</label>
-              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(DDD) 99999-9999" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">CPF / CNPJ</label>
-              <input value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className={inputClass} />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Endereço</label>
-            <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, bairro..." className={inputClass} />
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cidade / Estado</label>
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Ex: São João do Paraíso, BA" className={inputClass} />
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {clientToEdit ? 'Salvar Alterações' : 'Salvar Cliente'}
-          </button>
-        </div>
-      </form>
-    </div>
+    <ClientModal
+      onClose={onClose}
+      onSave={onSave}
+      clientToEdit={clientToEdit}
+      isDark={isDark}
+    />
   )
 }
 
@@ -2050,18 +1575,18 @@ function ClientsScreen({
   )
 }
 
-// ─── Tela: Cadastros Rápidos & Estoque ─────────────────────────────────────────
+// ─── Tela: Configurações & Catálogo (Com botões de modal) ──────────────────────
 
 function SettingsScreen({
   services,
   products,
   statuses,
   isDark,
-  onAddService,
-  onDeleteService,
-  onAddProduct,
+  onOpenProductModal,
+  onOpenServiceModal,
+  onOpenStatusModal,
   onDeleteProduct,
-  onAddStatus,
+  onDeleteService,
   onDeleteStatus,
   onOpenMenu,
   onLogout,
@@ -2070,146 +1595,40 @@ function SettingsScreen({
   products: Product[]
   statuses: CustomStatus[]
   isDark: boolean
-  onAddService: (svc: CustomService) => void
-  onDeleteService: (id: string) => void
-  onAddProduct: (prod: Product) => void
+  onOpenProductModal: () => void
+  onOpenServiceModal: () => void
+  onOpenStatusModal: () => void
   onDeleteProduct: (id: string) => void
-  onAddStatus: (st: CustomStatus) => void
+  onDeleteService: (id: string) => void
   onDeleteStatus: (id: string) => void
   onOpenMenu: () => void
   onLogout: () => void
 }) {
-  const [newSvcName, setNewSvcName] = useState('')
-  const [newSvcPrice, setNewSvcPrice] = useState('')
-  const [showAddService, setShowAddService] = useState(false)
-
-  const [newProdName, setNewProdName] = useState('')
-  const [newProdCategory, setNewProdCategory] = useState('Peça')
-  const [newProdCost, setNewProdCost] = useState('')
-  const [newProdSale, setNewProdSale] = useState('')
-  const [newProdStock, setNewProdStock] = useState('')
-  const [showAddProduct, setShowAddProduct] = useState(false)
-
-  const [newStatusLabel, setNewStatusLabel] = useState('')
-  const [newStatusColor, setNewStatusColor] = useState('#0066FF')
-  const [showAddStatus, setShowAddStatus] = useState(false)
-
-  const handleCreateService = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newSvcName.trim()) return
-    onAddService({
-      id: Date.now().toString(),
-      name: newSvcName.trim(),
-      default_price: Number(newSvcPrice) || 0,
-      category: 'Geral',
-    })
-    setNewSvcName('')
-    setNewSvcPrice('')
-    setShowAddService(false)
-  }
-
-  const handleCreateProduct = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newProdName.trim()) return
-    onAddProduct({
-      id: Date.now().toString(),
-      name: newProdName.trim(),
-      category: newProdCategory.trim() || 'Geral',
-      cost_price: Number(newProdCost) || 0,
-      sale_price: Number(newProdSale) || 0,
-      stock: Number(newProdStock) || 0,
-    })
-    setNewProdName('')
-    setNewProdCost('')
-    setNewProdSale('')
-    setNewProdStock('')
-    setShowAddProduct(false)
-  }
-
-  const handleCreateStatus = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newStatusLabel.trim()) return
-    onAddStatus({
-      id: Date.now().toString(),
-      label: newStatusLabel.trim(),
-      dot: newStatusColor,
-    })
-    setNewStatusLabel('')
-    setShowAddStatus(false)
-  }
-
-  const inputClass = `w-full rounded border px-2.5 py-1.5 text-xs outline-none ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
-  }`
-
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <Topbar title="Configurações, Peças & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} onLogout={onLogout} />
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Card Produtos / Peças */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
             <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
               <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Produtos & Peças</span>
               <button
-                onClick={() => setShowAddProduct(!showAddProduct)}
-                className="text-[11px] font-semibold text-[#0066FF] hover:text-[#8A2BE2]"
+                onClick={onOpenProductModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
               >
-                {showAddProduct ? 'Fechar' : '+ Novo Produto'}
+                + Nova Peça
               </button>
             </div>
 
-            {showAddProduct && (
-              <form onSubmit={handleCreateProduct} className={`space-y-2 border-b p-3 ${isDark ? 'border-neutral-800 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                <input
-                  required
-                  placeholder="Nome (Ex: SSD 512GB, Tela A10...)"
-                  value={newProdName}
-                  onChange={e => setNewProdName(e.target.value)}
-                  className={inputClass}
-                />
-                <input
-                  placeholder="Categoria (Ex: Telas, Armazenamento...)"
-                  value={newProdCategory}
-                  onChange={e => setNewProdCategory(e.target.value)}
-                  className={inputClass}
-                />
-                <div className="grid grid-cols-3 gap-1.5">
-                  <input
-                    type="number"
-                    placeholder="Custo (R$)"
-                    value={newProdCost}
-                    onChange={e => setNewProdCost(e.target.value)}
-                    className={inputClass}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Venda (R$)"
-                    value={newProdSale}
-                    onChange={e => setNewProdSale(e.target.value)}
-                    className={inputClass}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Estoque"
-                    value={newProdStock}
-                    onChange={e => setNewProdStock(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <button type="submit" className="w-full rounded bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] py-1.5 text-xs font-bold text-white hover:opacity-95 shadow-sm">
-                  Salvar Produto
-                </button>
-              </form>
-            )}
-
-            <div className={`max-h-72 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
               {products.length === 0 ? (
-                <div className="p-4 text-center text-xs text-neutral-400">Nenhum produto cadastrado</div>
+                <div className="p-6 text-center text-xs text-neutral-400">Nenhum produto cadastrado</div>
               ) : (
                 products.map(p => (
-                  <div key={p.id} className="flex items-center justify-between px-4 py-2 text-xs">
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
                     <div>
                       <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</div>
                       <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
@@ -2219,7 +1638,7 @@ function SettingsScreen({
                       </div>
                     </div>
                     <button onClick={() => onDeleteProduct(p.id)} className="text-neutral-400 hover:text-red-500">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                     </button>
                   </div>
                 ))
@@ -2227,93 +1646,50 @@ function SettingsScreen({
             </div>
           </div>
 
+          {/* Card Serviços */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
             <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
               <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Serviços da Assistência</span>
               <button
-                onClick={() => setShowAddService(!showAddService)}
-                className="text-[11px] font-semibold text-[#0066FF] hover:text-[#8A2BE2]"
+                onClick={onOpenServiceModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
               >
-                {showAddService ? 'Fechar' : '+ Novo Serviço'}
+                + Novo Serviço
               </button>
             </div>
 
-            {showAddService && (
-              <form onSubmit={handleCreateService} className={`space-y-2 border-b p-3 ${isDark ? 'border-neutral-800 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                <input
-                  required
-                  placeholder="Nome do serviço..."
-                  value={newSvcName}
-                  onChange={e => setNewSvcName(e.target.value)}
-                  className={inputClass}
-                />
-                <input
-                  type="number"
-                  placeholder="Preço padrão (R$)"
-                  value={newSvcPrice}
-                  onChange={e => setNewSvcPrice(e.target.value)}
-                  className={inputClass}
-                />
-                <button type="submit" className="w-full rounded bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] py-1.5 text-xs font-bold text-white hover:opacity-95 shadow-sm">
-                  Adicionar
-                </button>
-              </form>
-            )}
-
-            <div className={`max-h-72 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
               {services.map(s => (
-                <div key={s.id} className="flex items-center justify-between px-4 py-2 text-xs">
+                <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
                   <div>
                     <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</div>
                     <div className="font-mono text-neutral-400">R$ {s.default_price.toFixed(2)}</div>
                   </div>
                   <button onClick={() => onDeleteService(s.id)} className="text-neutral-400 hover:text-red-500">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                   </button>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* Card Situações / Status */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
             <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
               <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Situações de OS</span>
               <button
-                onClick={() => setShowAddStatus(!showAddStatus)}
-                className="text-[11px] font-semibold text-[#0066FF] hover:text-[#8A2BE2]"
+                onClick={onOpenStatusModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
               >
-                {showAddStatus ? 'Fechar' : '+ Nova Situação'}
+                + Nova Situação
               </button>
             </div>
 
-            {showAddStatus && (
-              <form onSubmit={handleCreateStatus} className={`space-y-2 border-b p-3 ${isDark ? 'border-neutral-800 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                <div className="flex gap-2">
-                  <input
-                    required
-                    placeholder="Ex: Em Garantia, Retorno..."
-                    value={newStatusLabel}
-                    onChange={e => setNewStatusLabel(e.target.value)}
-                    className={inputClass}
-                  />
-                  <input
-                    type="color"
-                    value={newStatusColor}
-                    onChange={e => setNewStatusColor(e.target.value)}
-                    className="h-8 w-8 cursor-pointer rounded border-0 bg-transparent"
-                  />
-                </div>
-                <button type="submit" className="w-full rounded bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] py-1.5 text-xs font-bold text-white hover:opacity-95 shadow-sm">
-                  Adicionar Situação
-                </button>
-              </form>
-            )}
-
-            <div className={`max-h-72 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
               {statuses.map(st => (
                 <div key={st.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
                   <div className="flex items-center gap-2">
@@ -2327,7 +1703,7 @@ function SettingsScreen({
                     }}
                     className="text-neutral-400 hover:text-red-500"
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                   </button>
                 </div>
               ))}
@@ -2364,6 +1740,10 @@ export default function App() {
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [showQuoteModal, setShowQuoteModal] = useState(false)
   const [showClientModal, setShowClientModal] = useState(false)
+  const [showProductModal, setShowProductModal] = useState(false)
+  const [showServiceModal, setShowServiceModal] = useState(false)
+  const [showStatusModal, setShowStatusModal] = useState(false)
+
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
   const [quoteEditing, setQuoteEditing] = useState<Quote | null>(null)
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
@@ -2834,25 +2214,16 @@ export default function App() {
             products={products}
             statuses={statuses}
             isDark={isDark}
-            onAddService={async (svc) => {
-              setServices(prev => [svc, ...prev])
-              await supabase.from('services').insert([svc])
-            }}
-            onDeleteService={async (id) => {
-              setServices(prev => prev.filter(s => s.id !== id))
-              await supabase.from('services').delete().eq('id', id)
-            }}
-            onAddProduct={async (prod) => {
-              setProducts(prev => [prod, ...prev])
-              await supabase.from('products').insert([prod])
-            }}
+            onOpenProductModal={() => setShowProductModal(true)}
+            onOpenServiceModal={() => setShowServiceModal(true)}
+            onOpenStatusModal={() => setShowStatusModal(true)}
             onDeleteProduct={async (id) => {
               setProducts(prev => prev.filter(p => p.id !== id))
               await supabase.from('products').delete().eq('id', id)
             }}
-            onAddStatus={async (st) => {
-              setStatuses(prev => [...prev, st])
-              await supabase.from('statuses').insert([st])
+            onDeleteService={async (id) => {
+              setServices(prev => prev.filter(s => s.id !== id))
+              await supabase.from('services').delete().eq('id', id)
             }}
             onDeleteStatus={async (id) => {
               setStatuses(prev => prev.filter(s => s.id !== id))
@@ -2886,7 +2257,7 @@ export default function App() {
 
       {/* Modais Globais */}
       {showOrderModal && (
-        <OrderModal
+        <OrderModalWrapper
           onClose={() => {
             setShowOrderModal(false)
             setOrderEditing(null)
@@ -2920,13 +2291,47 @@ export default function App() {
       )}
 
       {showClientModal && (
-        <ClientModal
+        <ClientModalWrapper
           onClose={() => {
             setShowClientModal(false)
             setClientEditing(null)
           }}
           onSave={handleSaveClient}
           clientToEdit={clientEditing}
+          isDark={isDark}
+        />
+      )}
+
+      {/* Modais de Ajustes com Backdrop Blur */}
+      {showProductModal && (
+        <ProductModal
+          onClose={() => setShowProductModal(false)}
+          onSave={async (prod) => {
+            setProducts(prev => [prod, ...prev])
+            await supabase.from('products').insert([prod])
+          }}
+          isDark={isDark}
+        />
+      )}
+
+      {showServiceModal && (
+        <ServiceModal
+          onClose={() => setShowServiceModal(false)}
+          onSave={async (svc) => {
+            setServices(prev => [svc, ...prev])
+            await supabase.from('services').insert([svc])
+          }}
+          isDark={isDark}
+        />
+      )}
+
+      {showStatusModal && (
+        <StatusModal
+          onClose={() => setShowStatusModal(false)}
+          onSave={async (st) => {
+            setStatuses(prev => [...prev, st])
+            await supabase.from('statuses').insert([st])
+          }}
           isDark={isDark}
         />
       )}
