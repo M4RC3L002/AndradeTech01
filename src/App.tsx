@@ -73,7 +73,9 @@ interface CustomStatus {
   dot: string
 }
 
-// ─── Padrões Iniciais ─────────────────────────────────────────────────────────
+// ─── Padrões Iniciais & Navegação ──────────────────────────────────────────────
+
+const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
 
 const DEFAULT_STATUSES: CustomStatus[] = [
   { id: '1', label: 'Entrada', dot: '#64748B' },
@@ -100,9 +102,45 @@ const DEFAULT_PRODUCTS: Product[] = [
   { id: '3', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
 ]
 
-const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
+const NAV_ITEMS = [
+  {
+    id: 'dashboard',
+    label: 'Painel',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>
+    ),
+  },
+  {
+    id: 'orders',
+    label: 'Ordens',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12h6M9 16h4" /></svg>
+    ),
+  },
+  {
+    id: 'quotes',
+    label: 'Orçamentos',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+    ),
+  },
+  {
+    id: 'clients',
+    label: 'Clientes',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>
+    ),
+  },
+  {
+    id: 'settings',
+    label: 'Ajustes',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M20 12h2M2 12h2" /></svg>
+    ),
+  },
+] as const
 
-// ─── Componente de Logotipo ───────────────────────────────────────────────────
+// ─── Componentes Globais ──────────────────────────────────────────────────────
 
 function AppLogo({ size = 36 }: { size?: number }) {
   const [imgError, setImgError] = useState(false)
@@ -128,8 +166,6 @@ function AppLogo({ size = 36 }: { size?: number }) {
     />
   )
 }
-
-// ─── Botão de Tema ────────────────────────────────────────────────────────────
 
 function ThemeToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }) {
   return (
@@ -157,331 +193,9 @@ function ThemeToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () => vo
   )
 }
 
-// ─── Modal de Emissão e Impressão ──────────────────────────────────────────────
-
-function PrintModal({
-  order,
-  client,
-  onClose,
-}: {
-  order: Order
-  client?: Client
-  onClose: () => void
-}) {
-  const [printType, setPrintType] = useState<'a4' | 'thermal'>('a4')
-
-  const items = (order.items && order.items.length > 0)
-    ? order.items
-    : [{ desc: order.service || 'Serviço Técnico Especializado', qty: 1, unit: order.value || 0 }]
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden bg-[#111] border-neutral-800 text-white">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b print:hidden border-neutral-800 bg-[#161616]">
-          <div className="flex items-center gap-3">
-            <span className="font-bold text-sm sm:text-base">Emissão de Comprovante / OS</span>
-            <div className="flex rounded-lg border p-0.5 border-neutral-700 bg-black">
-              <button
-                type="button"
-                onClick={() => setPrintType('a4')}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                  printType === 'a4' ? 'bg-[#0066FF] text-white' : 'text-neutral-400'
-                }`}
-              >
-                Folha A4
-              </button>
-              <button
-                type="button"
-                onClick={() => setPrintType('thermal')}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                  printType === 'thermal' ? 'bg-[#8A2BE2] text-white' : 'text-neutral-400'
-                }`}
-              >
-                Cupom 80mm
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] shadow hover:opacity-95"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-              <span>Imprimir / PDF</span>
-            </button>
-            <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-neutral-200/50 flex justify-center">
-          {printType === 'a4' && (
-            <div id="print-area" className="w-full max-w-[210mm] bg-white text-black p-8 sm:p-10 rounded shadow-md border border-neutral-300 font-sans text-xs print:m-0 print:p-0 print:border-none print:shadow-none">
-              <div className="flex justify-between items-center border-b-2 border-slate-900 pb-4 mb-5">
-                <div className="flex items-center gap-3">
-                  <img src={LOGO_URL} alt="Logo" className="w-14 h-14 object-contain" />
-                  <div>
-                    <h1 className="text-xl font-black tracking-tight text-slate-900">ANDRADETECH</h1>
-                    <p className="text-[11px] font-semibold text-slate-600">Assistência Técnica em Informática e Acessórios</p>
-                    <p className="text-[10px] text-slate-500">São João do Paraíso - BA | WhatsApp / Tel: (73) 98834-3028</p>
-                    <p className="text-[10px] text-slate-500">E-mail: andrade.tech2026@gmail.com</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-mono uppercase bg-slate-100 px-2 py-1 rounded border border-slate-300 font-bold">ORDEM DE SERVIÇO</span>
-                  <div className="text-xl font-mono font-black text-blue-600 mt-1">{order.id}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">Emissão: {order.date}</div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border border-slate-200 rounded-lg p-4 mb-5 bg-slate-50">
-                <div>
-                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">DADOS DO CLIENTE</div>
-                  <div className="font-bold text-sm text-slate-800">{order.client}</div>
-                  <div className="text-[11px] text-slate-600">Telefone: {order.phone || 'Não informado'}</div>
-                  {client?.cpf && <div className="text-[11px] text-slate-600">CPF/CNPJ: {client.cpf}</div>}
-                  {client?.address && <div className="text-[11px] text-slate-600">Endereço: {client.address} - {client.city}</div>}
-                </div>
-                <div>
-                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">EQUIPAMENTO & SITUAÇÃO</div>
-                  <div className="font-bold text-sm text-slate-800">{order.device}</div>
-                  <div className="text-[11px] text-slate-600">Situação Atual: <span className="font-bold text-slate-800">{order.status}</span></div>
-                  <div className="text-[11px] text-slate-600">Técnico Resp.: {order.technician}</div>
-                </div>
-              </div>
-
-              {order.notes && (
-                <div className="border border-slate-200 rounded-lg p-3 mb-5 bg-white">
-                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">RELATO DO DEFEITO / OBSERVAÇÕES TÉCNICAS</div>
-                  <div className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap">{order.notes}</div>
-                </div>
-              )}
-
-              <div className="border border-slate-200 rounded-lg overflow-hidden mb-6">
-                <table className="w-full text-left">
-                  <thead className="bg-slate-100 border-b border-slate-200 font-mono text-[10px] text-slate-600 uppercase">
-                    <tr>
-                      <th className="p-2.5">Descrição do Serviço / Peça</th>
-                      <th className="p-2.5 text-center w-16">Qtd</th>
-                      <th className="p-2.5 text-right w-24">V. Unit</th>
-                      <th className="p-2.5 text-right w-28">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 text-[11px]">
-                    {items.map((it, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-2.5 font-medium text-slate-800">{it.desc}</td>
-                        <td className="p-2.5 text-center font-mono">{it.qty}</td>
-                        <td className="p-2.5 text-right font-mono">R$ {Number(it.unit || 0).toFixed(2)}</td>
-                        <td className="p-2.5 text-right font-mono font-bold">R$ {(Number(it.qty || 1) * Number(it.unit || 0)).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-100 font-mono border-t-2 border-slate-300">
-                      <td colSpan={3} className="p-3 text-right uppercase font-bold text-slate-700">Valor Total a Pagar:</td>
-                      <td className="p-3 text-right text-sm font-black text-blue-600">R$ {Number(order.value || 0).toFixed(2)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-
-              <div className="border border-slate-200 rounded-lg p-3 text-[9px] text-slate-500 leading-relaxed mb-8">
-                <span className="font-bold text-slate-700 uppercase">Termo de Garantia Legal (Art. 26 do CDC):</span> A garantia para serviços executados e peças substituídas é de 90 (noventa) dias a contar da data de retirada do aparelho, cobrindo exclusivamente o defeito solucionado. A garantia perde sua validade em casos de selo rompido, oxidação por umidade, quedas, trincas ou danos causados por mau uso e sobretensão elétrica.
-              </div>
-
-              <div className="grid grid-cols-2 gap-10 text-center pt-4">
-                <div>
-                  <div className="border-t border-slate-400 w-full mb-1"></div>
-                  <div className="font-bold text-[11px] text-slate-800">{order.client}</div>
-                  <div className="text-[10px] text-slate-500">Assinatura do Cliente</div>
-                </div>
-                <div>
-                  <div className="border-t border-slate-400 w-full mb-1"></div>
-                  <div className="font-bold text-[11px] text-slate-800">AndradeTech Assistência Técnica</div>
-                  <div className="text-[10px] text-slate-500">Assinatura do Responsável</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {printType === 'thermal' && (
-            <div id="print-area" className="w-[80mm] bg-white text-black p-4 rounded shadow-md border border-neutral-300 font-mono text-[11px] leading-tight print:m-0 print:p-0 print:border-none print:shadow-none print:w-[80mm]">
-              <div className="text-center pb-2 border-b border-dashed border-black mb-2">
-                <div className="font-black text-sm">ANDRADETECH</div>
-                <div className="text-[9px]">Assistência Técnica Especializada</div>
-                <div className="text-[9px]">São João do Paraíso - Bahia</div>
-                <div className="text-[9px]">Tel/WhatsApp: (73) 98834-3028</div>
-                <div className="text-[8px]">andrade.tech2026@gmail.com</div>
-              </div>
-
-              <div className="text-center font-bold text-xs py-1 border-b border-dashed border-black mb-2">
-                ORDEM DE SERVIÇO #{order.id}
-              </div>
-
-              <div className="space-y-1 mb-2 border-b border-dashed border-black pb-2 text-[10px]">
-                <div><b>Data:</b> {order.date}</div>
-                <div><b>Cliente:</b> {order.client}</div>
-                <div><b>Contato:</b> {order.phone || 'N/A'}</div>
-                <div><b>Aparelho:</b> {order.device}</div>
-                <div><b>Técnico:</b> {order.technician}</div>
-                <div><b>Situação:</b> {order.status}</div>
-              </div>
-
-              {order.notes && (
-                <div className="mb-2 border-b border-dashed border-black pb-2 text-[10px]">
-                  <b>Defeito:</b> {order.notes}
-                </div>
-              )}
-
-              <div className="mb-2 border-b border-dashed border-black pb-2">
-                <div className="font-bold text-[10px] mb-1">ITENS / SERVIÇOS:</div>
-                {items.map((it, i) => (
-                  <div key={i} className="flex justify-between text-[10px]">
-                    <span className="truncate pr-1">{it.qty}x {it.desc}</span>
-                    <span className="font-bold whitespace-nowrap">R$ {(Number(it.qty || 1) * Number(it.unit || 0)).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-between font-black text-xs py-1 border-b border-dashed border-black mb-3">
-                <span>TOTAL:</span>
-                <span>R$ {Number(order.value || 0).toFixed(2)}</span>
-              </div>
-
-              <div className="text-[8px] text-center leading-tight mb-4 text-neutral-600">
-                Garantia legal de 90 dias conforme CDC sobre serviços executados. Não cobre quedas ou umidade.
-              </div>
-
-              <div className="text-center pt-4">
-                <div className="border-t border-black w-4/5 mx-auto mb-1"></div>
-                <div className="text-[9px]">Assinatura do Cliente</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #print-area, #print-area * {
-            visibility: visible;
-          }
-          #print-area {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 15mm !important;
-            background: white !important;
-            color: black !important;
-          }
-        }
-      `}</style>
-    </div>
-  )
-}
-
-// ─── Tela de Login ───────────────────────────────────────────────────────────
-
-function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; isDark: boolean }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [errorMsg, setErrorMsg] = useState('')
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setErrorMsg('')
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: password.trim(),
-    })
-
-    if (error) {
-      setErrorMsg('E-mail ou senha incorretos. Verifique suas credenciais.')
-      setLoading(false)
-    } else {
-      onLoginSuccess()
-    }
-  }
-
-  return (
-    <div className={`flex min-h-screen items-center justify-center p-4 transition-colors ${isDark ? 'bg-[#0a0a0a]' : 'bg-slate-100'}`}>
-      <div className={`w-full max-w-sm rounded-2xl border p-6 shadow-2xl transition-colors ${isDark ? 'bg-[#111] border-neutral-800' : 'bg-white border-slate-200'}`}>
-        <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3">
-            <AppLogo size={56} />
-          </div>
-          <h1 className="text-xl font-extrabold bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] bg-clip-text text-transparent">
-            AndradeTech
-          </h1>
-          <p className="font-mono text-xs text-neutral-400">Acesso Restrito ao Sistema</p>
-        </div>
-
-        {errorMsg && (
-          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-center text-xs text-red-500">
-            {errorMsg}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-neutral-400">E-mail</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="seu-email@exemplo.com"
-              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-                isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#0066FF]'
-              }`}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-neutral-400">Senha</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-                isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#0066FF]'
-              }`}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] hover:opacity-95 shadow-md shadow-blue-500/20 disabled:opacity-50"
-          >
-            {loading ? 'Validando...' : 'Entrar no Painel'}
-          </button>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-// ─── Utilitários ──────────────────────────────────────────────────────────────
-
 function StatusBadge({ status, statuses = [] }: { status: string; statuses?: CustomStatus[] }) {
-  const safeStatuses = Array.isArray(statuses) ? statuses : []
-  const current = safeStatuses.find(s => s && s.label && s.label.toLowerCase() === (status || '').toLowerCase()) || {
-    label: status || 'Indefinido',
+  const current = statuses.find(s => s && s.label && s.label.toLowerCase() === (status || '').toLowerCase()) || {
+    label: status || 'Entrada',
     dot: '#888888',
   }
 
@@ -570,7 +284,174 @@ function EmptyState({ icon, title, sub, isDark }: { icon: React.ReactNode; title
   )
 }
 
-// ─── Modais de Ajustes ────────────────────────────────────────────────────────
+function Topbar({
+  title,
+  isDark,
+  onOpenMobileMenu,
+  onNewOrder,
+  onNewQuote,
+  onNewClient,
+  children,
+}: {
+  title: string
+  isDark: boolean
+  onOpenMobileMenu: () => void
+  onNewOrder?: () => void
+  onNewQuote?: () => void
+  onNewClient?: () => void
+  onLogout?: () => void
+  children?: React.ReactNode
+}) {
+  return (
+    <div className={`flex flex-shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5 sm:px-4 sm:py-3 transition-colors ${
+      isDark ? 'border-neutral-900 bg-[#0c0c0c]' : 'border-slate-200 bg-white'
+    }`}>
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <button
+          type="button"
+          onClick={onOpenMobileMenu}
+          className={`flex-shrink-0 rounded-lg p-1.5 md:hidden transition-colors ${
+            isDark ? 'bg-neutral-900 text-neutral-400 hover:text-white' : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+        </button>
+        <div className="truncate">
+          <div className="font-mono text-[9px] uppercase tracking-widest text-neutral-400 sm:text-[10px]">AndradeTech</div>
+          <div className={`truncate text-xs font-bold sm:text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{title}</div>
+        </div>
+        {children}
+      </div>
+
+      <div className="flex flex-shrink-0 items-center gap-1.5">
+        {onNewClient && (
+          <button
+            type="button"
+            onClick={onNewClient}
+            title="Novo Cliente"
+            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+              isDark ? 'border-neutral-800 bg-[#141414] text-neutral-300 hover:bg-neutral-800' : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /></svg>
+            <span className="text-[11px] sm:text-xs">Cliente</span>
+          </button>
+        )}
+        {onNewQuote && (
+          <button
+            type="button"
+            onClick={onNewQuote}
+            title="Novo Orçamento"
+            className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-1.5 text-xs font-semibold text-[#8A2BE2] hover:bg-purple-500/20"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /></svg>
+            <span className="text-[11px] sm:text-xs">Orçamento</span>
+          </button>
+        )}
+        {onNewOrder && (
+          <button
+            type="button"
+            onClick={onNewOrder}
+            title="Nova OS"
+            className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:opacity-95"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+            <span className="text-[11px] sm:text-xs">Nova OS</span>
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Login Screen ─────────────────────────────────────────────────────────────
+
+function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; isDark: boolean }) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setErrorMsg('')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password.trim(),
+    })
+
+    if (error) {
+      setErrorMsg('E-mail ou senha incorretos.')
+      setLoading(false)
+    } else {
+      onLoginSuccess()
+    }
+  }
+
+  return (
+    <div className={`flex min-h-screen items-center justify-center p-4 transition-colors ${isDark ? 'bg-[#0a0a0a]' : 'bg-slate-100'}`}>
+      <div className={`w-full max-w-sm rounded-2xl border p-6 shadow-2xl transition-colors ${isDark ? 'bg-[#111] border-neutral-800' : 'bg-white border-slate-200'}`}>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="mb-3">
+            <AppLogo size={56} />
+          </div>
+          <h1 className="text-xl font-extrabold bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] bg-clip-text text-transparent">
+            AndradeTech
+          </h1>
+          <p className="font-mono text-xs text-neutral-400">Acesso Restrito ao Sistema</p>
+        </div>
+
+        {errorMsg && (
+          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-center text-xs text-red-500">
+            {errorMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-neutral-400">E-mail</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="seu-email@exemplo.com"
+              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+                isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#0066FF]'
+              }`}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-neutral-400">Senha</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+                isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#0066FF]'
+              }`}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] hover:opacity-95 shadow-md shadow-blue-500/20 disabled:opacity-50"
+          >
+            {loading ? 'Validando...' : 'Entrar no Painel'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Modais de Ajustes (com suporte a Edição) ──────────────────────────────────
 
 function ProductModal({
   onClose,
@@ -616,7 +497,7 @@ function ProductModal({
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
             <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">ESTOQUE & PEÇAS</div>
-            <h2 className="text-base font-bold">{productToEdit ? 'Editar Peça / Produto' : 'Novo Produto / Peça'}</h2>
+            <h2 className="text-base font-bold">{productToEdit ? 'Editar Peça' : 'Nova Peça / Produto'}</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -633,15 +514,15 @@ function ProductModal({
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Custo (R$)</label>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Custo (R$)</label>
               <input type="number" step="any" value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="0.00" className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Venda (R$) *</label>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Venda (R$) *</label>
               <input required type="number" step="any" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="0.00" className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Quantidade</label>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Qtd</label>
               <input type="number" min="0" value={stock} onChange={e => setStock(e.target.value)} className={inputClass} />
             </div>
           </div>
@@ -651,7 +532,7 @@ function ProductModal({
             Cancelar
           </button>
           <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {productToEdit ? 'Atualizar Peça' : 'Salvar Peça / Produto'}
+            {productToEdit ? 'Atualizar Peça' : 'Salvar Peça'}
           </button>
         </div>
       </form>
@@ -717,7 +598,7 @@ function ServiceModal({
             </div>
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software, Manutenção..." className={inputClass} />
+              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software..." className={inputClass} />
             </div>
           </div>
         </div>
@@ -825,17 +706,12 @@ function OrderModal({
   orderToEdit?: Order | null
   isDark: boolean
 }) {
-  const safeClients = Array.isArray(clients) ? clients : []
-  const safeStatuses = Array.isArray(statuses) ? statuses : []
-  const safeServices = Array.isArray(services) ? services : []
-  const safeProducts = Array.isArray(products) ? products : []
-
-  const [client, setClient] = useState(orderToEdit?.client || (safeClients[0]?.name ?? ''))
+  const [client, setClient] = useState(orderToEdit?.client || (clients[0]?.name ?? ''))
   const [phone, setPhone] = useState(orderToEdit?.phone || '')
   const [device, setDevice] = useState(orderToEdit?.device || '')
   const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
   const [notes, setNotes] = useState(orderToEdit?.notes || '')
-  const [status, setStatus] = useState(orderToEdit?.status || (safeStatuses[0]?.label ?? 'Entrada'))
+  const [status, setStatus] = useState(orderToEdit?.status || (statuses[0]?.label ?? 'Entrada'))
   const [items, setItems] = useState<OrderItem[]>(
     orderToEdit?.items && orderToEdit.items.length > 0
       ? orderToEdit.items
@@ -843,27 +719,27 @@ function OrderModal({
   )
 
   useEffect(() => {
-    if (!phone && client && safeClients.length > 0) {
-      const found = safeClients.find(c => c.name === client)
+    if (!phone && client && clients.length > 0) {
+      const found = clients.find(c => c.name === client)
       if (found) setPhone(found.phone)
     }
-  }, [client, safeClients])
+  }, [client, clients])
 
   const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
 
   const handleClientSelectChange = (name: string) => {
     setClient(name)
-    const found = safeClients.find(c => c.name === name)
+    const found = clients.find(c => c.name === name)
     if (found) setPhone(found.phone)
   }
 
   const handleApplyPreset = (value: string, index: number) => {
-    const svc = safeServices.find(s => s.name === value)
+    const svc = services.find(s => s.name === value)
     if (svc) {
       setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
       return
     }
-    const prod = safeProducts.find(p => p.name === value)
+    const prod = products.find(p => p.name === value)
     if (prod) {
       setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
     }
@@ -950,7 +826,7 @@ function OrderModal({
                 className={inputClass}
               >
                 <option value="" disabled>Selecione um cliente...</option>
-                {safeClients.map(c => (
+                {clients.map(c => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
               </select>
@@ -983,7 +859,7 @@ function OrderModal({
                 onChange={e => setStatus(e.target.value)}
                 className={inputClass}
               >
-                {safeStatuses.map(s => (
+                {statuses.map(s => (
                   <option key={s.id} value={s.label}>{s.label}</option>
                 ))}
               </select>
@@ -1053,12 +929,12 @@ function OrderModal({
                           >
                             <option value="" disabled>Catálogo</option>
                             <optgroup label="Serviços">
-                              {safeServices.map(s => (
+                              {services.map(s => (
                                 <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
                               ))}
                             </optgroup>
                             <optgroup label="Produtos / Peças">
-                              {safeProducts.map(p => (
+                              {products.map(p => (
                                 <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
                               ))}
                             </optgroup>
@@ -1153,11 +1029,7 @@ function QuoteModal({
   quoteToEdit?: Quote | null
   isDark: boolean
 }) {
-  const safeClients = Array.isArray(clients) ? clients : []
-  const safeServices = Array.isArray(services) ? services : []
-  const safeProducts = Array.isArray(products) ? products : []
-
-  const [client, setClient] = useState(quoteToEdit?.client || (safeClients[0]?.name ?? ''))
+  const [client, setClient] = useState(quoteToEdit?.client || (clients[0]?.name ?? ''))
   const [phone, setPhone] = useState(quoteToEdit?.phone || '')
   const [device, setDevice] = useState(quoteToEdit?.device || '')
   const [description, setDescription] = useState(quoteToEdit?.description || '')
@@ -1170,27 +1042,27 @@ function QuoteModal({
   )
 
   useEffect(() => {
-    if (!phone && client && safeClients.length > 0) {
-      const found = safeClients.find(c => c.name === client)
+    if (!phone && client && clients.length > 0) {
+      const found = clients.find(c => c.name === client)
       if (found) setPhone(found.phone)
     }
-  }, [client, safeClients])
+  }, [client, clients])
 
   const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
 
   const handleClientSelectChange = (name: string) => {
     setClient(name)
-    const found = safeClients.find(c => c.name === name)
+    const found = clients.find(c => c.name === name)
     if (found) setPhone(found.phone)
   }
 
   const handleApplyPreset = (value: string, index: number) => {
-    const svc = safeServices.find(s => s.name === value)
+    const svc = services.find(s => s.name === value)
     if (svc) {
       setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
       return
     }
-    const prod = safeProducts.find(p => p.name === value)
+    const prod = products.find(p => p.name === value)
     if (prod) {
       setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
     }
@@ -1285,7 +1157,7 @@ function QuoteModal({
                 className={inputClass}
               >
                 <option value="" disabled>Selecione um cliente...</option>
-                {safeClients.map(c => (
+                {clients.map(c => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
               </select>
@@ -1395,12 +1267,12 @@ function QuoteModal({
                           >
                             <option value="" disabled>Catálogo</option>
                             <optgroup label="Serviços">
-                              {safeServices.map(s => (
+                              {services.map(s => (
                                 <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
                               ))}
                             </optgroup>
                             <optgroup label="Produtos / Peças">
-                              {safeProducts.map(p => (
+                              {products.map(p => (
                                 <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
                               ))}
                             </optgroup>
@@ -1569,7 +1441,637 @@ function ClientModal({
   )
 }
 
-// ─── Tela: Configurações & Catálogo (Com Edição de Peças e Serviços) ─────────
+// ─── Tela: Painel ────────────────────────────────────────────────────────────
+
+function DashboardScreen({
+  orders = [],
+  quotes = [],
+  statuses = [],
+  isDark,
+  onNewOrder,
+  onNewQuote,
+  onNewClient,
+  onEditOrder,
+  onPrintOrder,
+  onOpenMenu,
+  onLogout,
+}: {
+  orders: Order[]
+  quotes: Quote[]
+  statuses: CustomStatus[]
+  isDark: boolean
+  onNewOrder: () => void
+  onNewQuote: () => void
+  onNewClient: () => void
+  onEditOrder: (order: Order) => void
+  onPrintOrder: (order: Order) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  const [search, setSearch] = useState('')
+
+  const openOrders = orders.filter(o => o && o.status !== 'Concluído' && o.status !== 'Entregue' && o.status !== 'Cancelado').length
+  const completedOrders = orders.filter(o => o && (o.status === 'Concluído' || o.status === 'Entregue')).length
+  const pendingQuotes = quotes.filter(q => q && q.status === 'Pendente').length
+  const totalRevenue = orders.filter(o => o && o.status !== 'Cancelado').reduce((sum, o) => sum + Number(o.value || 0), 0)
+
+  const filteredOrders = orders.filter(o =>
+    o && (
+      (o.client || '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.device || '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.id || '').toLowerCase().includes(search.toLowerCase())
+    )
+  )
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar
+        title="Visão Geral"
+        isDark={isDark}
+        onOpenMobileMenu={onOpenMenu}
+        onNewOrder={onNewOrder}
+        onNewQuote={onNewQuote}
+        onNewClient={onNewClient}
+        onLogout={onLogout}
+      />
+
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="relative">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Pesquisar por OS, cliente, aparelho..."
+            className={`w-full rounded-xl border py-2.5 pl-9 pr-4 text-xs outline-none transition-colors sm:text-sm ${
+              isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
+            }`}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+          {[
+            { label: 'Em Aberto', value: openOrders.toString(), sub: 'serviços ativos', color: 'text-[#0066FF]' },
+            { label: 'Concluídos', value: completedOrders.toString(), sub: 'finalizados', color: 'text-green-500' },
+            { label: 'Orçamentos', value: pendingQuotes.toString(), sub: 'pendentes', color: 'text-[#8A2BE2]' },
+            { label: 'Previsto', value: `R$ ${totalRevenue.toFixed(0)}`, sub: 'total faturado', color: isDark ? 'text-white' : 'text-slate-800' },
+          ].map(kpi => (
+            <div key={kpi.label} className={`rounded-xl border p-3 sm:p-4 transition-colors ${
+              isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+            }`}>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">{kpi.label}</span>
+              <div className={`mt-1 text-lg font-bold tracking-tight sm:text-2xl ${kpi.color}`}>{kpi.value}</div>
+              <div className="mt-0.5 font-mono text-[10px] text-neutral-400 sm:text-xs">{kpi.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+            <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Ordens de Serviço Recentes</span>
+            <span className="font-mono text-[11px] text-neutral-400">{orders.length} cadastradas</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Contato</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {filteredOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
+                        title="Nenhuma ordem recente"
+                        sub="Registre uma nova OS ou Orçamento"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filteredOrders.slice(0, 10).map(order => (
+                    <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
+                      <td className="px-3 py-2.5">
+                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                        <div className="font-mono text-[10px] text-neutral-400">{order.phone || 'Sem telefone'}</div>
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                      <td className="px-3 py-2.5"><StatusBadge status={order.status} statuses={statuses} /></td>
+                      <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                        {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onPrintOrder(order)}
+                            className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                            title="Imprimir OS / Cupom"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onEditOrder(order)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
+                            title="Editar OS"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tela: Ordens de Serviço ──────────────────────────────────────────────────
+
+function OrdersScreen({
+  orders = [],
+  statuses = [],
+  isDark,
+  onNewOrder,
+  onEditOrder,
+  onPrintOrder,
+  onUpdateStatus,
+  onDeleteOrder,
+  onOpenMenu,
+  onLogout,
+}: {
+  orders: Order[]
+  statuses: CustomStatus[]
+  isDark: boolean
+  onNewOrder: () => void
+  onEditOrder: (order: Order) => void
+  onPrintOrder: (order: Order) => void
+  onUpdateStatus: (id: string, status: string) => void
+  onDeleteOrder: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  const [view, setView] = useState<'list' | 'kanban'>('list')
+  const [filterStatus, setFilterStatus] = useState<string>('Todos')
+
+  const filtered = filterStatus === 'Todos' ? orders : orders.filter(o => o && o.status === filterStatus)
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Ordens de Serviço" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewOrder={onNewOrder} onLogout={onLogout}>
+        <div className={`ml-2 flex items-center gap-1 rounded-lg border p-0.5 ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-slate-100'}`}>
+          {(['list','kanban'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              className="rounded px-2 py-1 text-[11px] font-medium transition-all"
+              style={{
+                background: view === v ? 'linear-gradient(to right, #0066FF, #8A2BE2)' : 'transparent',
+                color: view === v ? '#fff' : (isDark ? '#888' : '#555'),
+              }}
+            >
+              {v === 'list' ? 'Lista' : 'Quadro'}
+            </button>
+          ))}
+        </div>
+      </Topbar>
+
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
+          {['Todos', ...statuses.map(s => s.label)].map(s => {
+            const isActive = filterStatus === s
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setFilterStatus(s)}
+                className="whitespace-nowrap rounded-full border px-3 py-1 font-mono text-xs transition-all"
+                style={{
+                  background: isActive ? 'rgba(0, 102, 255, 0.15)' : 'transparent',
+                  color: isActive ? '#0066FF' : (isDark ? '#777' : '#555'),
+                  borderColor: isActive ? '#0066FF' : (isDark ? '#262626' : '#E2E8F0'),
+                }}
+              >
+                {s}
+              </button>
+            )
+          })}
+        </div>
+
+        {view === 'list' ? (
+          <div className={`overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px] text-xs">
+                <thead>
+                  <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                    <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Cliente</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                    <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>
+                        <EmptyState
+                          icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
+                          title="Nenhuma ordem encontrada"
+                          sub="Crie uma nova OS para começar"
+                          isDark={isDark}
+                        />
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map(order => (
+                      <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                        <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
+                        <td className="px-3 py-2.5">
+                          <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                          <div className="font-mono text-[10px] text-neutral-400">{order.phone || '—'}</div>
+                        </td>
+                        <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                        <td className="px-3 py-2.5">
+                          <select
+                            value={order.status}
+                            onChange={e => onUpdateStatus(order.id, e.target.value)}
+                            className={`rounded border px-1.5 py-0.5 font-mono text-xs outline-none ${
+                              isDark ? 'border-neutral-800 bg-[#181818] text-neutral-200' : 'border-slate-300 bg-white text-slate-800'
+                            }`}
+                          >
+                            {statuses.map(st => (
+                              <option key={st.id} value={st.label}>{st.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                          {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => onPrintOrder(order)}
+                              className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                              title="Imprimir OS / Cupom"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onEditOrder(order)}
+                              className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
+                              title="Editar OS"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                            </button>
+                            <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                            <button
+                              type="button"
+                              onClick={() => { if(confirm(`Excluir ${order.id}?`)) onDeleteOrder(order.id) }}
+                              className="rounded p-1 text-neutral-400 hover:text-red-500"
+                              title="Excluir OS"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-4">
+            {statuses.map(st => {
+              const colOrders = orders.filter(o => o && (o.status || '').toLowerCase() === (st.label || '').toLowerCase())
+              return (
+                <div key={st.id} className={`flex w-64 flex-shrink-0 flex-col rounded-xl border transition-colors ${
+                  isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+                }`}>
+                  <div className={`flex items-center justify-between border-b px-3.5 py-2.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ background: st.dot }} />
+                      <span className="font-mono text-xs font-semibold" style={{ color: st.dot }}>{st.label}</span>
+                    </div>
+                    <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500'}`}>{colOrders.length}</span>
+                  </div>
+                  <div className="min-h-[140px] flex-1 space-y-2 p-2">
+                    {colOrders.length === 0 ? (
+                      <div className="py-8 text-center font-mono text-xs text-neutral-400">vazio</div>
+                    ) : (
+                      colOrders.map(order => (
+                        <div key={order.id} className={`space-y-1.5 rounded-lg border p-3 ${
+                          isDark ? 'border-neutral-800/80 bg-[#141414]' : 'border-slate-200 bg-slate-50'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs font-bold text-[#0066FF]">{order.id}</span>
+                            <span className="font-mono text-[10px] text-neutral-400">{order.date}</span>
+                          </div>
+                          <div className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                          <div className="text-[11px] text-neutral-400">{order.device}</div>
+                          <div className={`flex items-center justify-between border-t pt-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                            <span className="font-mono text-xs font-bold text-[#8A2BE2]">R$ {Number(order.value || 0).toFixed(2)}</span>
+                            <div className="flex gap-1">
+                              <button type="button" onClick={() => onPrintOrder(order)} className="p-1 text-neutral-400 hover:text-purple-500" title="Imprimir OS">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                              </button>
+                              <button type="button" onClick={() => onEditOrder(order)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar OS">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                              </button>
+                              <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Tela: Orçamentos ─────────────────────────────────────────────────────────
+
+function QuotesScreen({
+  quotes = [],
+  isDark,
+  onNewQuote,
+  onEditQuote,
+  onConvertToOrder,
+  onDeleteQuote,
+  onOpenMenu,
+  onLogout,
+}: {
+  quotes: Quote[]
+  isDark: boolean
+  onNewQuote: () => void
+  onEditQuote: (quote: Quote) => void
+  onConvertToOrder: (quote: Quote) => void
+  onDeleteQuote: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Orçamentos & Propostas" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewQuote={onNewQuote} onLogout={onLogout} />
+
+      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+        <div className="flex items-center justify-between sm:hidden">
+          <span className="font-mono text-xs text-neutral-400">{quotes.length} orçamentos</span>
+          <button
+            type="button"
+            onClick={onNewQuote}
+            className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-1.5 text-xs font-semibold text-white shadow-md"
+          >
+            + Novo Orçamento
+          </button>
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[650px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Aparelho</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Resumo</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Validade</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Status</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {quotes.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /></svg>}
+                        title="Nenhum orçamento cadastrado"
+                        sub="Clique em '+ Orçamento' para gerar uma proposta"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  quotes.map(q => (
+                    <tr key={q.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">{q.id}</td>
+                      <td className="px-3 py-2.5">
+                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{q.client}</div>
+                        <div className="text-[10px] text-neutral-400">{q.device}</div>
+                      </td>
+                      <td className="max-w-[180px] truncate px-3 py-2.5 text-neutral-400">{q.description}</td>
+                      <td className={`px-3 py-2.5 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ {Number(q.value || 0).toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{q.validUntil}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`rounded px-2 py-0.5 font-mono text-[10px] ${
+                          q.status === 'Aprovado' ? 'border border-green-500/30 bg-green-500/10 text-green-500' :
+                          q.status === 'Cancelado' ? 'border border-red-500/30 bg-red-500/10 text-red-500' :
+                          'border border-purple-500/30 bg-purple-500/10 text-[#8A2BE2]'
+                        }`}>
+                          {q.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onEditQuote(q)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#8A2BE2] transition-colors"
+                            title="Editar Orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          {q.status !== 'Aprovado' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Deseja converter o orçamento ${q.id} em uma Ordem de Serviço?`)) {
+                                  onConvertToOrder(q)
+                                }
+                              }}
+                              className="rounded border border-[#0066FF]/30 bg-[#0066FF]/10 px-2 py-1 text-[11px] font-semibold text-[#0066FF] hover:bg-[#0066FF] hover:text-white transition-all"
+                              title="Converter para OS"
+                            >
+                              Virar OS
+                            </button>
+                          )}
+                          <WhatsAppBtn phone={q.phone} quoteDetails={q} />
+                          <button
+                            type="button"
+                            onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
+                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                            title="Descartar orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tela: Clientes ───────────────────────────────────────────────────────────
+
+function ClientsScreen({
+  clients = [],
+  isDark,
+  onNewClient,
+  onEditClient,
+  onDeleteClient,
+  onOpenMenu,
+  onLogout,
+}: {
+  clients: Client[]
+  isDark: boolean
+  onNewClient: () => void
+  onEditClient: (client: Client) => void
+  onDeleteClient: (id: string) => void
+  onOpenMenu: () => void
+  onLogout: () => void
+}) {
+  const [search, setSearch] = useState('')
+  const filtered = clients.filter(c =>
+    c && ((c.name || '').toLowerCase().includes(search.toLowerCase()) || (c.phone || '').includes(search))
+  )
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Base de Clientes" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewClient={onNewClient} onLogout={onLogout} />
+
+      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar cliente ou tel..."
+              className={`w-full rounded-xl border py-2 pl-9 pr-3 text-xs outline-none transition-colors sm:text-sm ${
+                isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
+              }`}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onNewClient}
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-2 text-xs font-semibold text-white shadow-md hover:opacity-95"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+            <span>+ Cliente</span>
+          </button>
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[550px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">Nome</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Telefone</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cidade</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>}
+                        title="Nenhum cliente cadastrado"
+                        sub="Toque em '+ Cliente' para cadastrar"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map(c => (
+                    <tr key={c.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{c.name}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{c.phone || 'Sem número'}</td>
+                      <td className="px-3 py-2.5 text-neutral-400">{c.city}</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onEditClient(c)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF] transition-colors"
+                            title="Editar Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <WhatsAppBtn phone={c.phone} label={`Olá ${c.name}!`} />
+                          <button
+                            type="button"
+                            onClick={() => { if(confirm(`Deseja realmente excluir o cliente ${c.name}?`)) onDeleteClient(c.id) }}
+                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                            title="Excluir Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tela: Configurações & Catálogo (Com Edição) ──────────────────────────────
 
 function SettingsScreen({
   services = [],
@@ -1602,10 +2104,6 @@ function SettingsScreen({
   onOpenMenu: () => void
   onLogout: () => void
 }) {
-  const safeProducts = Array.isArray(products) ? products : []
-  const safeServices = Array.isArray(services) ? services : []
-  const safeStatuses = Array.isArray(statuses) ? statuses : []
-
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <Topbar title="Configurações, Peças & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} onLogout={onLogout} />
@@ -1618,7 +2116,7 @@ function SettingsScreen({
             <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
               <div>
                 <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Produtos & Peças</span>
-                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeProducts.length})</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({products.length})</span>
               </div>
               <button
                 type="button"
@@ -1630,11 +2128,11 @@ function SettingsScreen({
             </div>
 
             <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-              {safeProducts.length === 0 ? (
+              {products.length === 0 ? (
                 <div className="p-6 text-center text-xs text-neutral-400">Nenhum produto cadastrado</div>
               ) : (
-                safeProducts.map(p => (
-                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                products.map(p => (
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
                     <div>
                       <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</div>
                       <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
@@ -1674,7 +2172,7 @@ function SettingsScreen({
             <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
               <div>
                 <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Serviços da Assistência</span>
-                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeServices.length})</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({services.length})</span>
               </div>
               <button
                 type="button"
@@ -1686,11 +2184,11 @@ function SettingsScreen({
             </div>
 
             <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-              {safeServices.length === 0 ? (
+              {services.length === 0 ? (
                 <div className="p-6 text-center text-xs text-neutral-400">Nenhum serviço cadastrado</div>
               ) : (
-                safeServices.map(s => (
-                  <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                services.map(s => (
+                  <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
                     <div>
                       <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</div>
                       <div className="font-mono text-neutral-400">R$ {Number(s.default_price || 0).toFixed(2)}</div>
@@ -1726,7 +2224,7 @@ function SettingsScreen({
             <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
               <div>
                 <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Situações de OS</span>
-                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeStatuses.length})</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({statuses.length})</span>
               </div>
               <button
                 type="button"
@@ -1738,8 +2236,8 @@ function SettingsScreen({
             </div>
 
             <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-              {safeStatuses.map(st => (
-                <div key={st.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+              {statuses.map(st => (
+                <div key={st.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full shadow-sm" style={{ background: st.dot }} />
                     <span className={isDark ? 'text-neutral-200' : 'text-slate-800'}>{st.label}</span>
@@ -1747,7 +2245,7 @@ function SettingsScreen({
                   <button
                     type="button"
                     onClick={() => {
-                      if (safeStatuses.length <= 1) return alert('Mantenha ao menos uma situação!')
+                      if (statuses.length <= 1) return alert('Mantenha ao menos uma situação!')
                       onDeleteStatus(st.id)
                     }}
                     className="p-1 rounded text-neutral-400 hover:text-red-500"
@@ -2091,8 +2589,7 @@ export default function App() {
     return <LoginScreen onLoginSuccess={() => fetchData()} isDark={isDark} />
   }
 
-  const safeClients = Array.isArray(clients) ? clients : []
-  const selectedClientForPrint = orderToPrint ? safeClients.find(c => c.name.toLowerCase() === (orderToPrint.client || '').toLowerCase()) : undefined
+  const selectedClientForPrint = orderToPrint ? clients.find(c => c.name.toLowerCase() === (orderToPrint.client || '').toLowerCase()) : undefined
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-slate-100 text-slate-900'}`}>
@@ -2348,7 +2845,7 @@ export default function App() {
           services={services}
           products={products}
           onSave={handleSaveOrder}
-          onQuickNewClient={handleOpenNewClient}
+          onQuickNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
           orderToEdit={orderEditing}
           isDark={isDark}
         />
@@ -2365,7 +2862,7 @@ export default function App() {
           products={products}
           onSave={handleSaveQuote}
           onConvertToOrder={handleConvertToOrder}
-          onQuickNewClient={handleOpenNewClient}
+          onQuickNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
           quoteToEdit={quoteEditing}
           isDark={isDark}
         />
@@ -2383,6 +2880,7 @@ export default function App() {
         />
       )}
 
+      {/* Modais de Ajustes com Edição e Backdrop Blur */}
       {showProductModal && (
         <ProductModal
           onClose={() => {
