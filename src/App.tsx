@@ -159,7 +159,7 @@ const NAV_ITEMS = [
   },
 ] as const
 
-// ─── Componentes Auxiliares ───────────────────────────────────────────────────
+// ─── Componentes de UI Auxiliares ─────────────────────────────────────────────
 
 function AppLogo({ size = 36 }: { size?: number }) {
   const [imgError, setImgError] = useState(false)
@@ -363,7 +363,7 @@ function Topbar({
   )
 }
 
-// ─── Login Screen ─────────────────────────────────────────────────────────────
+// ─── Telas de Autenticação e Impressão ─────────────────────────────────────────
 
 function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; isDark: boolean }) {
   const [email, setEmail] = useState('')
@@ -449,8 +449,6 @@ function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; i
     </div>
   )
 }
-
-// ─── Modal de Emissão de OS / Cupom Fiscal ───────────────────────────────────
 
 function PrintModal({
   order,
@@ -674,7 +672,7 @@ function PrintModal({
   )
 }
 
-// ─── Modal de Ajustes: Produto ────────────────────────────────────────────────
+// ─── Modais de Ajustes ────────────────────────────────────────────────────────
 
 function ProductModal({
   onClose,
@@ -734,24 +732,24 @@ function ProductModal({
             </div>
             <div className="col-span-2">
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Descrição do Produto *</label>
-              <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston..." className={inputClass} />
+              <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB..." className={inputClass} />
             </div>
           </div>
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Telas, Armazenamento, Fontes..." className={inputClass} />
+            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Telas, Armazenamento..." className={inputClass} />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Custo (R$)</label>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Custo</label>
               <input type="number" step="any" value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="0.00" className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Venda (R$) *</label>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Venda *</label>
               <input required type="number" step="any" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="0.00" className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Quantidade</label>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Qtd Estoque</label>
               <input type="number" min="0" value={stock} onChange={e => setStock(e.target.value)} className={inputClass} />
             </div>
           </div>
@@ -816,7 +814,7 @@ function ServiceModal({
         <div className="space-y-3 px-5 py-4">
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome do Serviço *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Limpeza com Pasta Térmica..." className={inputClass} />
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela..." className={inputClass} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -825,7 +823,7 @@ function ServiceModal({
             </div>
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software, Manutenção..." className={inputClass} />
+              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software..." className={inputClass} />
             </div>
           </div>
         </div>
@@ -887,7 +885,7 @@ function StatusModal({
         <div className="space-y-4 px-5 py-4">
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome da Situação *</label>
-            <input required value={label} onChange={e => setLabel(e.target.value)} placeholder="Ex: Em Garantia, Aguardando Cliente..." className={inputClass} />
+            <input required value={label} onChange={e => setLabel(e.target.value)} placeholder="Ex: Em Garantia..." className={inputClass} />
           </div>
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cor de Identificação</label>
@@ -910,7 +908,7 @@ function StatusModal({
   )
 }
 
-// ─── Modal de OS e Cliente ────────────────────────────────────────────────────
+// ─── Modal de Ordem de Serviço ────────────────────────────────────────────────
 
 function OrderModal({
   onClose,
@@ -1640,7 +1638,7 @@ function ClientModal({
   )
 }
 
-// ─── Modal de Venda do PDV (Com Backdrop e Blur) ──────────────────────────────
+// ─── Modal de Venda PDV (Com Backdrop e Blur) ─────────────────────────────────
 
 function PDVSaleModal({
   onClose,
@@ -1768,7 +1766,6 @@ function PDVSaleModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Lado Esquerdo: Busca e Itens */}
           <div className="lg:col-span-7 space-y-3">
             <div className="relative">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
@@ -1806,7 +1803,7 @@ function PDVSaleModal({
                       <div className="text-[10px] text-neutral-400">{p.category}</div>
                     </div>
                     <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-neutral-500/20">
-                      <span className="font-mono text-xs font-bold text-green-500">R$ {p.sale_price.toFixed(2)}</span>
+                      <span className="font-mono text-xs font-bold text-green-500">R$ {Number(p.sale_price || 0).toFixed(2)}</span>
                       <span className="text-[10px] font-mono text-neutral-400">Estoque: {p.stock}</span>
                     </div>
                   </div>
@@ -1815,7 +1812,6 @@ function PDVSaleModal({
             </div>
           </div>
 
-          {/* Lado Direito: Carrinho e Fechamento */}
           <div className="lg:col-span-5 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-neutral-500/20 pt-4 lg:pt-0 lg:pl-5 space-y-3">
             <div className="space-y-3">
               <h3 className="font-bold text-xs uppercase tracking-wider text-neutral-400">Cliente & Pagamento</h3>
@@ -1824,7 +1820,7 @@ function PDVSaleModal({
                 list="modal-pdv-clients"
                 value={selectedClient}
                 onChange={e => handleSelectClient(e.target.value)}
-                placeholder="Nome do cliente (opcional)"
+                placeholder="Cliente (opcional, padrão: Consumidor Final)"
                 className={inputClass}
               />
               <datalist id="modal-pdv-clients">
@@ -1854,7 +1850,7 @@ function PDVSaleModal({
                     <div key={item.product.id} className="py-1.5 flex items-center justify-between text-xs">
                       <div className="pr-1 flex-1">
                         <div className="font-semibold text-[11px]">{item.product.name}</div>
-                        <div className="text-[9px] text-neutral-400">R$ {item.product.sale_price.toFixed(2)} un</div>
+                        <div className="text-[9px] text-neutral-400">R$ {Number(item.product.sale_price || 0).toFixed(2)} un</div>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <input
@@ -1865,7 +1861,7 @@ function PDVSaleModal({
                           onChange={e => updateCartQty(item.product.id, Number(e.target.value), item.product.stock)}
                           className="w-10 text-center rounded border border-neutral-700 bg-transparent text-xs py-0.5"
                         />
-                        <span className="font-mono font-bold w-14 text-right text-[11px]">R$ {(item.product.sale_price * item.qty).toFixed(2)}</span>
+                        <span className="font-mono font-bold w-14 text-right text-[11px]">R$ {(Number(item.product.sale_price || 0) * item.qty).toFixed(2)}</span>
                         <button
                           type="button"
                           onClick={() => updateCartQty(item.product.id, 0, item.product.stock)}
@@ -1924,17 +1920,13 @@ function PDVSaleModal({
   )
 }
 
-// ─── Tela de PDV ──────────────────────────────────────────────────────────────
-
 function PDVScreen({
-  products = [],
   sales = [],
   isDark,
   onOpenNewSale,
   onPrintSale,
   onOpenMenu,
 }: {
-  products: Product[]
   sales: Sale[]
   isDark: boolean
   onOpenNewSale: () => void
@@ -1942,11 +1934,13 @@ function PDVScreen({
   onOpenMenu: () => void
 }) {
   const [searchTerm, setSearchTerm] = useState('')
-
-  const filteredSales = sales.filter(s =>
-    s.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.payment_method.toLowerCase().includes(searchTerm.toLowerCase())
+  const safeSales = Array.isArray(sales) ? sales : []
+  const filteredSales = safeSales.filter(s =>
+    s && (
+      (s.client || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.payment_method || '').toLowerCase().includes(searchTerm.toLowerCase())
+    )
   )
 
   return (
@@ -1982,7 +1976,7 @@ function PDVScreen({
         }`}>
           <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
             <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Histórico de Vendas</span>
-            <span className="font-mono text-[11px] text-neutral-400">{sales.length} registradas</span>
+            <span className="font-mono text-[11px] text-neutral-400">{safeSales.length} registradas</span>
           </div>
 
           <div className="overflow-x-auto">
@@ -2020,7 +2014,7 @@ function PDVScreen({
                           {s.payment_method}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 font-mono font-bold text-green-500">R$ {s.total.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-green-500">R$ {Number(s.total || 0).toFixed(2)}</td>
                       <td className="px-3 py-2.5 text-right">
                         <button
                           type="button"
@@ -2043,7 +2037,291 @@ function PDVScreen({
   )
 }
 
-// ─── Raiz da Aplicação ────────────────────────────────────────────────────────
+function ClientsScreen({
+  clients = [],
+  isDark,
+  onNewClient,
+  onEditClient,
+  onDeleteClient,
+  onOpenMenu,
+}: {
+  clients: Client[]
+  isDark: boolean
+  onNewClient: () => void
+  onEditClient: (client: Client) => void
+  onDeleteClient: (id: string) => void
+  onOpenMenu: () => void
+}) {
+  const [search, setSearch] = useState('')
+  const safeClients = Array.isArray(clients) ? clients : []
+  const filtered = safeClients.filter(c =>
+    c && ((c.name || '').toLowerCase().includes(search.toLowerCase()) || (c.phone || '').includes(search))
+  )
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Base de Clientes" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewClient={onNewClient} />
+
+      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar cliente ou tel..."
+              className={`w-full rounded-xl border py-2 pl-9 pr-3 text-xs outline-none transition-colors sm:text-sm ${
+                isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
+              }`}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onNewClient}
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-2 text-xs font-semibold text-white shadow-md hover:opacity-95"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+            <span>+ Cliente</span>
+          </button>
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[550px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">Nome</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Telefone</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cidade</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>}
+                        title="Nenhum cliente cadastrado"
+                        sub="Toque em '+ Cliente' para cadastrar"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map(c => (
+                    <tr key={c.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{c.name}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{c.phone || 'Sem número'}</td>
+                      <td className="px-3 py-2.5 text-neutral-400">{c.city}</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onEditClient(c)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF] transition-colors"
+                            title="Editar Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <WhatsAppBtn phone={c.phone} label={`Olá ${c.name}!`} />
+                          <button
+                            type="button"
+                            onClick={() => { if(confirm(`Deseja realmente excluir o cliente ${c.name}?`)) onDeleteClient(c.id) }}
+                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                            title="Excluir Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SettingsScreen({
+  services = [],
+  products = [],
+  statuses = [],
+  isDark,
+  onOpenProductModal,
+  onOpenServiceModal,
+  onOpenStatusModal,
+  onDeleteProduct,
+  onDeleteService,
+  onDeleteStatus,
+  onOpenMenu,
+}: {
+  services: CustomService[]
+  products: Product[]
+  statuses: CustomStatus[]
+  isDark: boolean
+  onOpenProductModal: () => void
+  onOpenServiceModal: () => void
+  onOpenStatusModal: () => void
+  onDeleteProduct: (id: string) => void
+  onDeleteService: (id: string) => void
+  onDeleteStatus: (id: string) => void
+  onOpenMenu: () => void
+}) {
+  const safeProducts = Array.isArray(products) ? products : []
+  const safeServices = Array.isArray(services) ? services : []
+  const safeStatuses = Array.isArray(statuses) ? statuses : []
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Configurações, Peças & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Card Produtos / Peças */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div>
+                <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Produtos & Peças</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeProducts.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenProductModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Nova Peça
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {safeProducts.length === 0 ? (
+                <div className="p-6 text-center text-xs text-neutral-400">Nenhum produto cadastrado</div>
+              ) : (
+                safeProducts.map(p => (
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                    <div>
+                      <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                        {p.code ? `[${p.code}] ` : ''}{p.name}
+                      </div>
+                      <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
+                        <span>Venda: R$ {Number(p.sale_price || 0).toFixed(2)}</span>
+                        <span>•</span>
+                        <span>Qtd: {p.stock}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteProduct(p.id)}
+                      className="p-1 rounded text-neutral-400 hover:text-red-500"
+                      title="Excluir"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Card Serviços */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div>
+                <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Serviços da Assistência</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeServices.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenServiceModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Novo Serviço
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {safeServices.length === 0 ? (
+                <div className="p-6 text-center text-xs text-neutral-400">Nenhum serviço cadastrado</div>
+              ) : (
+                safeServices.map(s => (
+                  <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                    <div>
+                      <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</div>
+                      <div className="font-mono text-neutral-400">R$ {Number(s.default_price || 0).toFixed(2)}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteService(s.id)}
+                      className="p-1 rounded text-neutral-400 hover:text-red-500"
+                      title="Excluir"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Card Situações / Status */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div>
+                <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Situações de OS</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeStatuses.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenStatusModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Nova Situação
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {safeStatuses.map(st => (
+                <div key={st.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full shadow-sm" style={{ background: st.dot }} />
+                    <span className={isDark ? 'text-neutral-200' : 'text-slate-800'}>{st.label}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (safeStatuses.length <= 1) return alert('Mantenha ao menos uma situação!')
+                      onDeleteStatus(st.id)
+                    }}
+                    className="p-1 rounded text-neutral-400 hover:text-red-500"
+                    title="Excluir"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Componente Raiz App ──────────────────────────────────────────────────────
 
 export default function App() {
   const [session, setSession] = useState<any>(null)
@@ -2280,6 +2558,16 @@ export default function App() {
     await supabase.from('clients').delete().eq('id', id)
   }
 
+  const handleOpenEditClient = (client: Client) => {
+    setClientEditing(client)
+    setShowClientModal(true)
+  }
+
+  const handleOpenNewClient = () => {
+    setClientEditing(null)
+    setShowClientModal(true)
+  }
+
   const handleSaveOrder = async (orderData: Order) => {
     setOrders(prev => {
       const exists = prev.some(o => o.id === orderData.id)
@@ -2368,8 +2656,6 @@ export default function App() {
     await supabase.from('quotes').delete().eq('id', id)
   }
 
-  // ─── Lógica de PDV ──────────────────────────────────────────────────────────
-
   const handleCompleteSale = async (saleData: Sale) => {
     setSales(prev => [saleData, ...prev])
 
@@ -2383,7 +2669,6 @@ export default function App() {
       total: saleData.total,
     }])
 
-    // Baixa de estoque
     for (const item of saleData.items) {
       const prod = products.find(p => p.name === item.desc)
       if (prod) {
@@ -2404,7 +2689,7 @@ export default function App() {
         value: saleData.total,
         date: saleData.date,
         technician: 'Frente de Caixa',
-        notes: `Comprovante de Compra emitido no PDV. Pagamento efetuado via ${saleData.payment_method}.`,
+        notes: `Comprovante de Compra no PDV. Pagamento via ${saleData.payment_method}.`,
         items: saleData.items,
       })
     }
@@ -2573,9 +2858,9 @@ export default function App() {
             isDark={isDark}
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
             onNewQuote={() => { setShowQuoteModal(true) }}
-            onNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
-            onEditOrder={(o: Order) => { setOrderEditing(o); setShowOrderModal(true) }}
-            onPrintOrder={(o: Order) => setOrderToPrint(o)}
+            onNewClient={handleOpenNewClient}
+            onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
+            onPrintOrder={(o) => setOrderToPrint(o)}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
         )}
@@ -2607,7 +2892,6 @@ export default function App() {
         )}
         {screen === 'pdv' && (
           <PDVScreen
-            products={products}
             sales={sales}
             isDark={isDark}
             onOpenNewSale={() => setShowPDVSaleModal(true)}
@@ -2633,8 +2917,8 @@ export default function App() {
           <ClientsScreen
             clients={clients}
             isDark={isDark}
-            onNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
-            onEditClient={(client: Client) => { setClientEditing(client); setShowClientModal(true) }}
+            onNewClient={handleOpenNewClient}
+            onEditClient={handleOpenEditClient}
             onDeleteClient={handleDeleteClient}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
@@ -2698,7 +2982,7 @@ export default function App() {
           services={services}
           products={products}
           onSave={handleSaveOrder}
-          onQuickNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
+          onQuickNewClient={handleOpenNewClient}
           orderToEdit={orderEditing}
           isDark={isDark}
         />
@@ -2712,7 +2996,7 @@ export default function App() {
           products={products}
           onSave={handleSaveQuote}
           onConvertToOrder={handleConvertToOrder}
-          onQuickNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
+          onQuickNewClient={handleOpenNewClient}
           isDark={isDark}
         />
       )}
@@ -2729,7 +3013,7 @@ export default function App() {
         />
       )}
 
-      {/* Modal de Nova Venda do PDV com Backdrop Blur */}
+      {/* Modal de Nova Venda do PDV */}
       {showPDVSaleModal && (
         <PDVSaleModal
           onClose={() => setShowPDVSaleModal(false)}
