@@ -1,0 +1,10 @@
+{
+  "description": "Streamline service order management with an intuitive dashboard, enabling efficient tracking of work orders, customer interactions, and quotes for technicians.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
