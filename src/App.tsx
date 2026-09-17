@@ -987,15 +987,6 @@ function Topbar({
             <span className="text-[11px] sm:text-xs">Nova OS</span>
           </button>
         )}
-        {onLogout && (
-          <button
-            onClick={onLogout}
-            title="Sair do Sistema"
-            className="inline-flex items-center rounded-lg border border-neutral-800 bg-[#141414] p-1.5 text-neutral-400 hover:text-red-400"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-          </button>
-        )}
       </div>
     </div>
   )
@@ -1722,6 +1713,7 @@ function SettingsScreen({
 export default function App() {
   const [session, setSession] = useState<any>(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [onlineUsers, setOnlineUsers] = useState<any[]>([])
 
   const [screen, setScreen] = useState<Screen>('dashboard')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -1753,7 +1745,41 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // 2. Carregar dados da Nuvem
+  // 2. Rastreador em Tempo Real de Presença (Técnicos Online)
+  useEffect(() => {
+    if (!session?.user) return
+
+    const room = supabase.channel('online-users', {
+      config: {
+        presence: {
+          key: session.user.id,
+        },
+      },
+    })
+
+    room
+      .on('presence', { event: 'sync' }, () => {
+        const presenceState = room.presenceState()
+        // Extrai a primeira conexão de cada ID agrupado
+        const users = Object.keys(presenceState).map(key => presenceState[key][0] as any)
+        setOnlineUsers(users)
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await room.track({
+            user_id: session.user.id,
+            email: session.user.email,
+            online_at: new Date().toISOString(),
+          })
+        }
+      })
+
+    return () => {
+      supabase.removeChannel(room)
+    }
+  }, [session])
+
+  // 3. Carregar dados da Nuvem
   const fetchData = async () => {
     try {
       const { data: cData } = await supabase.from('clients').select('*')
@@ -1957,8 +1983,8 @@ export default function App() {
   // Se estiver verificando autenticação
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#0a0a0a] text-xs font-mono text-neutral-500">
-        Carregando sistema...
+      <div className="flex h-screen items-center justify-center bg-[#0a0a0a] font-mono text-xs text-neutral-500">
+        Conectando com o banco de dados...
       </div>
     )
   }
@@ -2002,7 +2028,17 @@ export default function App() {
           })}
         </nav>
 
-        <div className="border-t border-neutral-900 p-3">
+        {/* Indicador de Técnicos Online - PC */}
+        <div className="border-t border-neutral-900 p-3 pb-0">
+          <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-widest text-neutral-500">Técnicos Online ({onlineUsers.length})</div>
+          <div className="mb-3 max-h-24 space-y-1.5 overflow-y-auto px-1">
+            {onlineUsers.map(u => (
+              <div key={u.user_id} className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
+                <span className="truncate text-[11px] font-semibold text-neutral-300" title={u.email}>{u.email.split('@')[0]}</span>
+              </div>
+            ))}
+          </div>
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-neutral-400 transition-colors hover:bg-neutral-900 hover:text-red-400"
@@ -2040,13 +2076,26 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <button
-              onClick={handleLogout}
-              className="mt-auto flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs text-neutral-400 hover:bg-neutral-900 hover:text-red-400"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-              <span>Sair da Conta</span>
-            </button>
+
+            {/* Indicador de Técnicos Online - Mobile */}
+            <div className="mt-auto border-t border-neutral-800 pt-3">
+              <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-widest text-neutral-500">Técnicos Online ({onlineUsers.length})</div>
+              <div className="mb-3 max-h-24 space-y-1.5 overflow-y-auto px-1">
+                {onlineUsers.map(u => (
+                  <div key={u.user_id} className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
+                    <span className="truncate text-[11px] font-semibold text-neutral-300" title={u.email}>{u.email.split('@')[0]}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-neutral-400 hover:bg-neutral-900 hover:text-red-400"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                <span>Sair da Conta</span>
+              </button>
+            </div>
           </div>
           <div className="flex-1" onClick={() => setMobileMenuOpen(false)} />
         </div>
