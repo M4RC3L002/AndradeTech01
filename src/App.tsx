@@ -406,187 +406,7 @@ function PrintModal({
   )
 }
 
-// ─── Tela de Login ───────────────────────────────────────────────────────────
-
-function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; isDark: boolean }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [errorMsg, setErrorMsg] = useState('')
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setErrorMsg('')
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: password.trim(),
-    })
-
-    if (error) {
-      setErrorMsg('E-mail ou senha incorretos. Verifique suas credenciais.')
-      setLoading(false)
-    } else {
-      onLoginSuccess()
-    }
-  }
-
-  return (
-    <div className={`flex min-h-screen items-center justify-center p-4 transition-colors ${isDark ? 'bg-[#0a0a0a]' : 'bg-slate-100'}`}>
-      <div className={`w-full max-w-sm rounded-2xl border p-6 shadow-2xl transition-colors ${isDark ? 'bg-[#111] border-neutral-800' : 'bg-white border-slate-200'}`}>
-        <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3">
-            <AppLogo size={56} />
-          </div>
-          <h1 className="text-xl font-extrabold bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] bg-clip-text text-transparent">
-            AndradeTech
-          </h1>
-          <p className="font-mono text-xs text-neutral-400">Acesso Restrito ao Sistema</p>
-        </div>
-
-        {errorMsg && (
-          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-center text-xs text-red-500">
-            {errorMsg}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-neutral-400">E-mail</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="seu-email@exemplo.com"
-              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-                isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#0066FF]'
-              }`}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-neutral-400">Senha</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-                isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#0066FF]'
-              }`}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] hover:opacity-95 shadow-md shadow-blue-500/20 disabled:opacity-50"
-          >
-            {loading ? 'Validando...' : 'Entrar no Painel'}
-          </button>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-// ─── Utilitários ──────────────────────────────────────────────────────────────
-
-function StatusBadge({ status, statuses }: { status: string; statuses: CustomStatus[] }) {
-  const current = statuses.find(s => s.label.toLowerCase() === status.toLowerCase()) || {
-    label: status,
-    dot: '#888888',
-  }
-
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 font-mono text-xs font-medium"
-      style={{
-        color: current.dot,
-        background: `${current.dot}18`,
-        border: `1px solid ${current.dot}33`,
-      }}
-    >
-      <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: current.dot }} />
-      {current.label}
-    </span>
-  )
-}
-
-function WhatsAppBtn({
-  phone,
-  label = '',
-  orderDetails,
-  quoteDetails,
-}: {
-  phone: string
-  label?: string
-  orderDetails?: Partial<Order>
-  quoteDetails?: Partial<Quote>
-}) {
-  let msg = `Olá! Passando para falar sobre seu atendimento na AndradeTech.`
-
-  if (orderDetails) {
-    msg = `*AndradeTech - Atualização de OS*\n\n` +
-          `Olá, *${orderDetails.client || 'Cliente'}*!\n` +
-          `*OS:* #${orderDetails.id || '---'}\n` +
-          `*Aparelho:* ${orderDetails.device || 'N/A'}\n` +
-          `*Serviço:* ${orderDetails.service || 'Em diagnóstico'}\n` +
-          `*Situação Atual:* ${orderDetails.status || 'Em andamento'}\n` +
-          (orderDetails.value ? `*Valor Total:* R$ ${orderDetails.value.toFixed(2)}\n\n` : '\n') +
-          `Estamos à disposição!`
-  } else if (quoteDetails) {
-    msg = `*AndradeTech - Proposta de Orçamento*\n\n` +
-          `Olá, *${quoteDetails.client || 'Cliente'}*!\n` +
-          `*Orçamento:* #${quoteDetails.id || '---'}\n` +
-          `*Aparelho:* ${quoteDetails.device || 'N/A'}\n` +
-          `*Descrição:* ${quoteDetails.description || 'Reparo técnico'}\n` +
-          `*Valor Total:* R$ ${(quoteDetails.value || 0).toFixed(2)}\n` +
-          `*Validade da proposta:* ${quoteDetails.validUntil || '7 dias'}\n\n` +
-          `Podemos confirmar a aprovação do serviço?`
-  } else if (label) {
-    msg = `Olá! ${label}`
-  }
-
-  const cleanPhone = phone ? phone.replace(/\D/g, '') : ''
-  const href = cleanPhone ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(msg)}` : '#'
-
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={(e) => {
-        if (!cleanPhone) {
-          e.preventDefault()
-          alert('Telefone do cliente não informado!')
-        }
-      }}
-      title="Enviar WhatsApp"
-      className="inline-flex flex-shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-white transition-all bg-[#25D366] hover:opacity-90 active:scale-95 shadow-sm"
-    >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-      </svg>
-      <span className="hidden sm:inline">{label || 'WhatsApp'}</span>
-    </a>
-  )
-}
-
-function EmptyState({ icon, title, sub, isDark }: { icon: React.ReactNode; title: string; sub: string; isDark: boolean }) {
-  return (
-    <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="mb-3 opacity-25 text-neutral-400">{icon}</div>
-      <div className={`mb-1 text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>{title}</div>
-      <div className={`text-xs ${isDark ? 'text-neutral-600' : 'text-slate-400'}`}>{sub}</div>
-    </div>
-  )
-}
-
-// ─── Modais de Ajustes (Com Edição e Backdrop Blur) ───────────────────────────
+// ─── Modais de Ajustes ────────────────────────────────────────────────────────
 
 function ProductModal({
   onClose,
@@ -601,10 +421,11 @@ function ProductModal({
   productToEdit?: Product | null
   isDark: boolean
 }) {
+  const safeCats = categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES
   const [name, setName] = useState(productToEdit?.name || '')
-  const [category, setCategory] = useState(productToEdit?.category || categories[0]?.name || 'Geral')
-  const [costPrice, setCostPrice] = useState(productToEdit?.cost_price ? String(productToEdit.cost_price) : '')
-  const [salePrice, setSalePrice] = useState(productToEdit?.sale_price ? String(productToEdit.sale_price) : '')
+  const [category, setCategory] = useState(productToEdit?.category || safeCats[0]?.name || 'Geral')
+  const [costPrice, setCostPrice] = useState(productToEdit?.cost_price !== undefined ? String(productToEdit.cost_price) : '')
+  const [salePrice, setSalePrice] = useState(productToEdit?.sale_price !== undefined ? String(productToEdit.sale_price) : '')
   const [stock, setStock] = useState(productToEdit?.stock !== undefined ? String(productToEdit.stock) : '1')
 
   const handleSave = (e: React.FormEvent) => {
@@ -648,7 +469,7 @@ function ProductModal({
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria de Filtro</label>
             <select value={category} onChange={e => setCategory(e.target.value)} className={inputClass}>
-              {categories.map(cat => (
+              {safeCats.map(cat => (
                 <option key={cat.id} value={cat.name}>{cat.name}</option>
               ))}
               <option value="Geral">Geral</option>
@@ -695,9 +516,10 @@ function ServiceModal({
   serviceToEdit?: CustomService | null
   isDark: boolean
 }) {
+  const safeCats = categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES
   const [name, setName] = useState(serviceToEdit?.name || '')
-  const [defaultPrice, setDefaultPrice] = useState(serviceToEdit?.default_price ? String(serviceToEdit.default_price) : '')
-  const [category, setCategory] = useState(serviceToEdit?.category || categories[0]?.name || 'Geral')
+  const [defaultPrice, setDefaultPrice] = useState(serviceToEdit?.default_price !== undefined ? String(serviceToEdit.default_price) : '')
+  const [category, setCategory] = useState(serviceToEdit?.category || safeCats[0]?.name || 'Geral')
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
@@ -743,7 +565,7 @@ function ServiceModal({
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria de Filtro</label>
               <select value={category} onChange={e => setCategory(e.target.value)} className={inputClass}>
-                {categories.map(cat => (
+                {safeCats.map(cat => (
                   <option key={cat.id} value={cat.name}>{cat.name}</option>
                 ))}
                 <option value="Geral">Geral</option>
@@ -1753,619 +1575,11 @@ function Topbar({
 
 // ─── Tela: Painel ────────────────────────────────────────────────────────────
 
-function DashboardScreen({
-  orders,
-  quotes,
-  statuses,
-  isDark,
-  onNewOrder,
-  onNewQuote,
-  onNewClient,
-  onEditOrder,
-  onPrintOrder,
-  onOpenMenu,
-  onLogout,
-}: {
-  orders: Order[]
-  quotes: Quote[]
-  statuses: CustomStatus[]
-  isDark: boolean
-  onNewOrder: () => void
-  onNewQuote: () => void
-  onNewClient: () => void
-  onEditOrder: (order: Order) => void
-  onPrintOrder: (order: Order) => void
-  onOpenMenu: () => void
-  onLogout: () => void
-}) {
-  const [search, setSearch] = useState('')
-
-  const openOrders = orders.filter(o => o.status !== 'Concluído' && o.status !== 'Entregue' && o.status !== 'Cancelado').length
-  const completedOrders = orders.filter(o => o.status === 'Concluído' || o.status === 'Entregue').length
-  const pendingQuotes = quotes.filter(q => q.status === 'Pendente').length
-  const totalRevenue = orders.filter(o => o.status !== 'Cancelado').reduce((sum, o) => sum + (o.value || 0), 0)
-
-  const filteredOrders = orders.filter(o =>
-    o.client.toLowerCase().includes(search.toLowerCase()) ||
-    o.device.toLowerCase().includes(search.toLowerCase()) ||
-    o.id.toLowerCase().includes(search.toLowerCase())
-  )
-
-  return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <Topbar
-        title="Visão Geral"
-        isDark={isDark}
-        onOpenMobileMenu={onOpenMenu}
-        onNewOrder={onNewOrder}
-        onNewQuote={onNewQuote}
-        onNewClient={onNewClient}
-        onLogout={onLogout}
-      />
-
-      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
-        <div className="relative">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
-            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-          </svg>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Pesquisar por OS, cliente, aparelho..."
-            className={`w-full rounded-xl border py-2.5 pl-9 pr-4 text-xs outline-none transition-colors sm:text-sm ${
-              isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
-            }`}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-          {[
-            { label: 'Em Aberto', value: openOrders.toString(), sub: 'serviços ativos', color: 'text-[#0066FF]' },
-            { label: 'Concluídos', value: completedOrders.toString(), sub: 'finalizados', color: 'text-green-500' },
-            { label: 'Orçamentos', value: pendingQuotes.toString(), sub: 'pendentes', color: 'text-[#8A2BE2]' },
-            { label: 'Previsto', value: `R$ ${totalRevenue.toFixed(0)}`, sub: 'total faturado', color: isDark ? 'text-white' : 'text-slate-800' },
-          ].map(kpi => (
-            <div key={kpi.label} className={`rounded-xl border p-3 sm:p-4 transition-colors ${
-              isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-            }`}>
-              <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">{kpi.label}</span>
-              <div className={`mt-1 text-lg font-bold tracking-tight sm:text-2xl ${kpi.color}`}>{kpi.value}</div>
-              <div className="mt-0.5 font-mono text-[10px] text-neutral-400 sm:text-xs">{kpi.sub}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className={`overflow-hidden rounded-xl border transition-colors ${
-          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-        }`}>
-          <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-            <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Ordens de Serviço Recentes</span>
-            <span className="font-mono text-[11px] text-neutral-400">{orders.length} cadastradas</span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[620px] text-xs">
-              <thead>
-                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Contato</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
-                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={6}>
-                      <EmptyState
-                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
-                        title="Nenhuma ordem recente"
-                        sub="Registre uma nova OS ou Orçamento"
-                        isDark={isDark}
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  filteredOrders.slice(0, 10).map(order => (
-                    <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
-                      <td className="px-3 py-2.5">
-                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
-                        <div className="font-mono text-[10px] text-neutral-400">{order.phone || 'Sem telefone'}</div>
-                      </td>
-                      <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
-                      <td className="px-3 py-2.5"><StatusBadge status={order.status} statuses={statuses} /></td>
-                      <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
-                        {order.value > 0 ? `R$ ${order.value.toFixed(2)}` : '—'}
-                      </td>
-                      <td className="px-3 py-2.5 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            onClick={() => onPrintOrder(order)}
-                            className="p-1 rounded text-neutral-400 hover:text-purple-500"
-                            title="Imprimir OS / Cupom"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                          </button>
-                          <button
-                            onClick={() => onEditOrder(order)}
-                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
-                            title="Editar OS"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          <WhatsAppBtn phone={order.phone} orderDetails={order} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+function DashboardScreenWrapper(props: any) {
+  return <DashboardScreen {...props} />
 }
 
-// ─── Tela: Ordens de Serviço ──────────────────────────────────────────────────
-
-function OrdersScreen({
-  orders,
-  statuses,
-  isDark,
-  onNewOrder,
-  onEditOrder,
-  onPrintOrder,
-  onUpdateStatus,
-  onDeleteOrder,
-  onOpenMenu,
-  onLogout,
-}: {
-  orders: Order[]
-  statuses: CustomStatus[]
-  isDark: boolean
-  onNewOrder: () => void
-  onEditOrder: (order: Order) => void
-  onPrintOrder: (order: Order) => void
-  onUpdateStatus: (id: string, status: string) => void
-  onDeleteOrder: (id: string) => void
-  onOpenMenu: () => void
-  onLogout: () => void
-}) {
-  const [view, setView] = useState<'list' | 'kanban'>('list')
-  const [filterStatus, setFilterStatus] = useState<string>('Todos')
-
-  const filtered = filterStatus === 'Todos' ? orders : orders.filter(o => o.status === filterStatus)
-
-  return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <Topbar title="Ordens de Serviço" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewOrder={onNewOrder} onLogout={onLogout}>
-        <div className={`ml-2 flex items-center gap-1 rounded-lg border p-0.5 ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-slate-100'}`}>
-          {(['list','kanban'] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className="rounded px-2 py-1 text-[11px] font-medium transition-all"
-              style={{
-                background: view === v ? 'linear-gradient(to right, #0066FF, #8A2BE2)' : 'transparent',
-                color: view === v ? '#fff' : (isDark ? '#888' : '#555'),
-              }}
-            >
-              {v === 'list' ? 'Lista' : 'Quadro'}
-            </button>
-          ))}
-        </div>
-      </Topbar>
-
-      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
-        <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
-          {['Todos', ...statuses.map(s => s.label)].map(s => {
-            const isActive = filterStatus === s
-            return (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className="whitespace-nowrap rounded-full border px-3 py-1 font-mono text-xs transition-all"
-                style={{
-                  background: isActive ? 'rgba(0, 102, 255, 0.15)' : 'transparent',
-                  color: isActive ? '#0066FF' : (isDark ? '#777' : '#555'),
-                  borderColor: isActive ? '#0066FF' : (isDark ? '#262626' : '#E2E8F0'),
-                }}
-              >
-                {s}
-              </button>
-            )
-          })}
-        </div>
-
-        {view === 'list' ? (
-          <div className={`overflow-hidden rounded-xl border transition-colors ${
-            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-          }`}>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px] text-xs">
-                <thead>
-                  <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
-                    <th className="px-3 py-2.5 font-mono uppercase">ID</th>
-                    <th className="px-3 py-2.5 font-mono uppercase">Cliente</th>
-                    <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
-                    <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
-                    <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
-                    <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                  {filtered.length === 0 ? (
-                    <tr>
-                      <td colSpan={6}>
-                        <EmptyState
-                          icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
-                          title="Nenhuma ordem encontrada"
-                          sub="Crie uma nova OS para começar"
-                          isDark={isDark}
-                        />
-                      </td>
-                    </tr>
-                  ) : (
-                    filtered.map(order => (
-                      <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                        <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
-                        <td className="px-3 py-2.5">
-                          <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
-                          <div className="font-mono text-[10px] text-neutral-400">{order.phone || '—'}</div>
-                        </td>
-                        <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
-                        <td className="px-3 py-2.5">
-                          <select
-                            value={order.status}
-                            onChange={e => onUpdateStatus(order.id, e.target.value)}
-                            className={`rounded border px-1.5 py-0.5 font-mono text-xs outline-none ${
-                              isDark ? 'border-neutral-800 bg-[#181818] text-neutral-200' : 'border-slate-300 bg-white text-slate-800'
-                            }`}
-                          >
-                            {statuses.map(st => (
-                              <option key={st.id} value={st.label}>{st.label}</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
-                          {order.value > 0 ? `R$ ${order.value.toFixed(2)}` : '—'}
-                        </td>
-                        <td className="px-3 py-2.5 text-right">
-                          <div className="inline-flex items-center gap-1.5">
-                            <button
-                              onClick={() => onPrintOrder(order)}
-                              className="p-1 rounded text-neutral-400 hover:text-purple-500"
-                              title="Imprimir OS / Cupom"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                            </button>
-                            <button
-                              onClick={() => onEditOrder(order)}
-                              className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
-                              title="Editar OS"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                            </button>
-                            <WhatsAppBtn phone={order.phone} orderDetails={order} />
-                            <button
-                              onClick={() => { if(confirm(`Excluir ${order.id}?`)) onDeleteOrder(order.id) }}
-                              className="rounded p-1 text-neutral-400 hover:text-red-500"
-                              title="Excluir OS"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : (
-          <div className="flex gap-3 overflow-x-auto pb-4">
-            {statuses.map(st => {
-              const colOrders = orders.filter(o => o.status.toLowerCase() === st.label.toLowerCase())
-              return (
-                <div key={st.id} className={`flex w-64 flex-shrink-0 flex-col rounded-xl border transition-colors ${
-                  isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-                }`}>
-                  <div className={`flex items-center justify-between border-b px-3.5 py-2.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full" style={{ background: st.dot }} />
-                      <span className="font-mono text-xs font-semibold" style={{ color: st.dot }}>{st.label}</span>
-                    </div>
-                    <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500'}`}>{colOrders.length}</span>
-                  </div>
-                  <div className="min-h-[140px] flex-1 space-y-2 p-2">
-                    {colOrders.length === 0 ? (
-                      <div className="py-8 text-center font-mono text-xs text-neutral-400">vazio</div>
-                    ) : (
-                      colOrders.map(order => (
-                        <div key={order.id} className={`space-y-1.5 rounded-lg border p-3 ${
-                          isDark ? 'border-neutral-800/80 bg-[#141414]' : 'border-slate-200 bg-slate-50'
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono text-xs font-bold text-[#0066FF]">{order.id}</span>
-                            <span className="font-mono text-[10px] text-neutral-400">{order.date}</span>
-                          </div>
-                          <div className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
-                          <div className="text-[11px] text-neutral-400">{order.device}</div>
-                          <div className={`flex items-center justify-between border-t pt-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                            <span className="font-mono text-xs font-bold text-[#8A2BE2]">R$ {order.value.toFixed(2)}</span>
-                            <div className="flex gap-1">
-                              <button onClick={() => onPrintOrder(order)} className="p-1 text-neutral-400 hover:text-purple-500" title="Imprimir OS">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                              </button>
-                              <button onClick={() => onEditOrder(order)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar OS">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                              </button>
-                              <WhatsAppBtn phone={order.phone} orderDetails={order} />
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Tela: Orçamentos ─────────────────────────────────────────────────────────
-
-function QuotesScreen({
-  quotes,
-  isDark,
-  onNewQuote,
-  onEditQuote,
-  onConvertToOrder,
-  onDeleteQuote,
-  onOpenMenu,
-  onLogout,
-}: {
-  quotes: Quote[]
-  isDark: boolean
-  onNewQuote: () => void
-  onEditQuote: (quote: Quote) => void
-  onConvertToOrder: (quote: Quote) => void
-  onDeleteQuote: (id: string) => void
-  onOpenMenu: () => void
-  onLogout: () => void
-}) {
-  return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <Topbar title="Orçamentos & Propostas" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewQuote={onNewQuote} onLogout={onLogout} />
-
-      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
-        <div className="flex items-center justify-between sm:hidden">
-          <span className="font-mono text-xs text-neutral-400">{quotes.length} orçamentos</span>
-          <button
-            onClick={onNewQuote}
-            className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-1.5 text-xs font-semibold text-white shadow-md"
-          >
-            + Novo Orçamento
-          </button>
-        </div>
-
-        <div className={`overflow-hidden rounded-xl border transition-colors ${
-          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-        }`}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[650px] text-xs">
-              <thead>
-                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Aparelho</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Resumo</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Validade</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Status</th>
-                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                {quotes.length === 0 ? (
-                  <tr>
-                    <td colSpan={7}>
-                      <EmptyState
-                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /></svg>}
-                        title="Nenhum orçamento cadastrado"
-                        sub="Clique em '+ Orçamento' para gerar uma proposta"
-                        isDark={isDark}
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  quotes.map(q => (
-                    <tr key={q.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">{q.id}</td>
-                      <td className="px-3 py-2.5">
-                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{q.client}</div>
-                        <div className="text-[10px] text-neutral-400">{q.device}</div>
-                      </td>
-                      <td className="max-w-[180px] truncate px-3 py-2.5 text-neutral-400">{q.description}</td>
-                      <td className={`px-3 py-2.5 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ {q.value.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 font-mono text-neutral-400">{q.validUntil}</td>
-                      <td className="px-3 py-2.5">
-                        <span className={`rounded px-2 py-0.5 font-mono text-[10px] ${
-                          q.status === 'Aprovado' ? 'border border-green-500/30 bg-green-500/10 text-green-500' :
-                          q.status === 'Cancelado' ? 'border border-red-500/30 bg-red-500/10 text-red-500' :
-                          'border border-purple-500/30 bg-purple-500/10 text-[#8A2BE2]'
-                        }`}>
-                          {q.status}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            onClick={() => onEditQuote(q)}
-                            className="rounded p-1 text-neutral-400 hover:text-[#8A2BE2] transition-colors"
-                            title="Editar Orçamento"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          {q.status !== 'Aprovado' && (
-                            <button
-                              onClick={() => {
-                                if (confirm(`Deseja converter o orçamento ${q.id} em uma Ordem de Serviço?`)) {
-                                  onConvertToOrder(q)
-                                }
-                              }}
-                              className="rounded border border-[#0066FF]/30 bg-[#0066FF]/10 px-2 py-1 text-[11px] font-semibold text-[#0066FF] hover:bg-[#0066FF] hover:text-white transition-all"
-                              title="Converter para OS"
-                            >
-                              Virar OS
-                            </button>
-                          )}
-                          <WhatsAppBtn phone={q.phone} quoteDetails={q} />
-                          <button
-                            onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
-                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
-                            title="Descartar orçamento"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Tela: Clientes ───────────────────────────────────────────────────────────
-
-function ClientsScreen({
-  clients,
-  isDark,
-  onNewClient,
-  onEditClient,
-  onDeleteClient,
-  onOpenMenu,
-  onLogout,
-}: {
-  clients: Client[]
-  isDark: boolean
-  onNewClient: () => void
-  onEditClient: (client: Client) => void
-  onDeleteClient: (id: string) => void
-  onOpenMenu: () => void
-  onLogout: () => void
-}) {
-  const [search, setSearch] = useState('')
-  const filtered = clients.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
-  )
-
-  return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <Topbar title="Base de Clientes" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewClient={onNewClient} onLogout={onLogout} />
-
-      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-            </svg>
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar cliente ou tel..."
-              className={`w-full rounded-xl border py-2 pl-9 pr-3 text-xs outline-none transition-colors sm:text-sm ${
-                isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
-              }`}
-            />
-          </div>
-          <button
-            onClick={onNewClient}
-            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-2 text-xs font-semibold text-white shadow-md hover:opacity-95"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
-            <span>+ Cliente</span>
-          </button>
-        </div>
-
-        <div className={`overflow-hidden rounded-xl border transition-colors ${
-          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-        }`}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[550px] text-xs">
-              <thead>
-                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <th className="px-3 py-2.5 font-mono uppercase">Nome</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Telefone</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Cidade</th>
-                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={4}>
-                      <EmptyState
-                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>}
-                        title="Nenhum cliente cadastrado"
-                        sub="Toque em '+ Cliente' para cadastrar"
-                        isDark={isDark}
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map(c => (
-                    <tr key={c.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{c.name}</td>
-                      <td className="px-3 py-2.5 font-mono text-neutral-400">{c.phone || 'Sem número'}</td>
-                      <td className="px-3 py-2.5 text-neutral-400">{c.city}</td>
-                      <td className="px-3 py-2.5 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            onClick={() => onEditClient(c)}
-                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF] transition-colors"
-                            title="Editar Cliente"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          <WhatsAppBtn phone={c.phone} label={`Olá ${c.name}!`} />
-                          <button
-                            onClick={() => { if(confirm(`Deseja realmente excluir o cliente ${c.name}?`)) onDeleteClient(c.id) }}
-                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
-                            title="Excluir Cliente"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Tela: Configurações, Catálogo & Categorias (Com Filtros e Lista/Quadro) ──
+// ─── Tela: Configurações, Catálogo & Categorias ───────────────────────────────
 
 function SettingsScreen({
   services,
@@ -2411,18 +1625,19 @@ function SettingsScreen({
   const [view, setView] = useState<'board' | 'list'>('board')
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos')
 
+  const safeCats = categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES
+
   const filteredProducts = selectedCategory === 'Todos'
     ? products
-    : products.filter(p => p.category?.toLowerCase() === selectedCategory.toLowerCase())
+    : products.filter(p => (p.category || 'Geral').toLowerCase() === selectedCategory.toLowerCase())
 
   const filteredServices = selectedCategory === 'Todos'
     ? services
-    : services.filter(s => s.category?.toLowerCase() === selectedCategory.toLowerCase())
+    : services.filter(s => (s.category || 'Geral').toLowerCase() === selectedCategory.toLowerCase())
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <Topbar title="Configurações & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} onLogout={onLogout}>
-        {/* Alternador Lista / Quadro */}
         <div className={`ml-2 flex items-center gap-1 rounded-lg border p-0.5 ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-slate-100'}`}>
           <button
             onClick={() => setView('board')}
@@ -2448,10 +1663,9 @@ function SettingsScreen({
       </Topbar>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
-        {/* Barra de Filtros de Categoria */}
         <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
           <span className="text-[11px] font-mono text-neutral-400 mr-1 uppercase">Filtro:</span>
-          {['Todos', ...categories.map(c => c.name)].map(catName => {
+          {['Todos', ...safeCats.map(c => c.name)].map(catName => {
             const isActive = selectedCategory === catName
             return (
               <button
@@ -2472,7 +1686,6 @@ function SettingsScreen({
 
         {view === 'board' ? (
           <>
-            {/* Linha 1: Peças, Serviços e Situações */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               {/* Card Produtos / Peças */}
               <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
@@ -2611,7 +1824,7 @@ function SettingsScreen({
               </div>
             </div>
 
-            {/* Linha 2: Quadro de Categorias / Filtros */}
+            {/* Linha 2: Categorias */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 pt-2">
               <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
                 isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
@@ -2619,7 +1832,7 @@ function SettingsScreen({
                 <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
                   <div>
                     <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Categorias de Filtro</span>
-                    <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({categories.length})</span>
+                    <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeCats.length})</span>
                   </div>
                   <button
                     onClick={onOpenCategoryModal}
@@ -2630,7 +1843,7 @@ function SettingsScreen({
                 </div>
 
                 <div className={`max-h-56 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                  {categories.map(c => (
+                  {safeCats.map(c => (
                     <div key={c.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
                       <span className={`font-semibold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>{c.name}</span>
                       <div className="flex items-center gap-1">
@@ -2639,7 +1852,7 @@ function SettingsScreen({
                         </button>
                         <button
                           onClick={() => {
-                            if (categories.length <= 1) return alert('Mantenha ao menos uma categoria!')
+                            if (safeCats.length <= 1) return alert('Mantenha ao menos uma categoria!')
                             onDeleteCategory(c.id)
                           }}
                           className="p-1 text-neutral-400 hover:text-red-500"
@@ -2655,7 +1868,6 @@ function SettingsScreen({
             </div>
           </>
         ) : (
-          /* MODO LISTA INTEGRADA */
           <div className={`overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -2676,7 +1888,7 @@ function SettingsScreen({
                     <tr key={`prod-${p.id}`} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
                       <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">📦 Peça</td>
                       <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</td>
-                      <td className="px-3 py-2.5 font-mono text-neutral-400">{p.category}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{p.category || 'Geral'}</td>
                       <td className="px-3 py-2.5 font-mono font-bold text-green-500">R$ {p.sale_price.toFixed(2)}</td>
                       <td className="px-3 py-2.5 font-mono text-neutral-300">{p.stock} un</td>
                       <td className="px-3 py-2.5 text-right">
@@ -2695,7 +1907,7 @@ function SettingsScreen({
                     <tr key={`svc-${s.id}`} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
                       <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">🛠️ Serviço</td>
                       <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</td>
-                      <td className="px-3 py-2.5 font-mono text-neutral-400">{s.category}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{s.category || 'Geral'}</td>
                       <td className="px-3 py-2.5 font-mono font-bold text-green-500">R$ {s.default_price.toFixed(2)}</td>
                       <td className="px-3 py-2.5 font-mono text-neutral-400">—</td>
                       <td className="px-3 py-2.5 text-right">
@@ -2728,14 +1940,20 @@ export default function App() {
   const [onlineUsers, setOnlineUsers] = useState<any[]>([])
 
   const [isDark, setIsDark] = useState<boolean>(() => {
-    const saved = localStorage.getItem('andrade_tech_theme')
-    return saved !== null ? saved === 'dark' : true
+    try {
+      const saved = localStorage.getItem('andrade_tech_theme')
+      return saved !== null ? saved === 'dark' : true
+    } catch {
+      return true
+    }
   })
 
   const toggleTheme = () => {
     setIsDark(prev => {
       const next = !prev
-      localStorage.setItem('andrade_tech_theme', next ? 'dark' : 'light')
+      try {
+        localStorage.setItem('andrade_tech_theme', next ? 'dark' : 'light')
+      } catch {}
       return next
     })
   }
@@ -2775,12 +1993,15 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setAuthLoading(false)
+    }).catch(() => {
+      setAuthLoading(false)
     })
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
+      setAuthLoading(false)
     })
 
     return () => subscription.unsubscribe()
@@ -2835,7 +2056,9 @@ export default function App() {
           devices: Array.isArray(c.devices) ? c.devices : [],
         })))
       }
+    } catch {}
 
+    try {
       const { data: oData } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
       if (oData) {
         setOrders(oData.map(o => ({
@@ -2852,7 +2075,9 @@ export default function App() {
           items: Array.isArray(o.items) ? o.items : [],
         })))
       }
+    } catch {}
 
+    try {
       const { data: qData } = await supabase.from('quotes').select('*').order('created_at', { ascending: false })
       if (qData) {
         setQuotes(qData.map(q => ({
@@ -2868,21 +2093,27 @@ export default function App() {
           items: Array.isArray(q.items) ? q.items : [],
         })))
       }
+    } catch {}
 
+    try {
       const { data: sData } = await supabase.from('services').select('*')
       if (sData && sData.length > 0) setServices(sData)
+    } catch {}
 
+    try {
       const { data: pData } = await supabase.from('products').select('*')
       if (pData && pData.length > 0) setProducts(pData)
+    } catch {}
 
+    try {
       const { data: stData } = await supabase.from('statuses').select('*')
       if (stData && stData.length > 0) setStatuses(stData)
+    } catch {}
 
+    try {
       const { data: catData } = await supabase.from('categories').select('*')
       if (catData && catData.length > 0) setCategories(catData)
-    } catch (err) {
-      console.error('Erro ao buscar dados do Supabase:', err)
-    }
+    } catch {}
   }
 
   useEffect(() => {
@@ -3030,7 +2261,6 @@ export default function App() {
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-slate-100 text-slate-900'}`}>
-      {/* Sidebar Desktop */}
       <aside className={`hidden h-screen flex-shrink-0 flex-col border-r transition-colors md:flex ${
         isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white'
       }`} style={{ width: 230 }}>
@@ -3173,9 +2403,9 @@ export default function App() {
             isDark={isDark}
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
             onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
-            onNewClient={handleOpenNewClient}
-            onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
-            onPrintOrder={(o) => setOrderToPrint(o)}
+            onNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
+            onEditOrder={(o: Order) => { setOrderEditing(o); setShowOrderModal(true) }}
+            onPrintOrder={(o: Order) => setOrderToPrint(o)}
             onOpenMenu={() => setMobileMenuOpen(true)}
             onLogout={handleLogout}
           />
@@ -3210,8 +2440,8 @@ export default function App() {
           <ClientsScreen
             clients={clients}
             isDark={isDark}
-            onNewClient={handleOpenNewClient}
-            onEditClient={handleOpenEditClient}
+            onNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
+            onEditClient={(client: Client) => { setClientEditing(client); setShowClientModal(true) }}
             onDeleteClient={handleDeleteClient}
             onOpenMenu={() => setMobileMenuOpen(true)}
             onLogout={handleLogout}
@@ -3286,7 +2516,7 @@ export default function App() {
           services={services}
           products={products}
           onSave={handleSaveOrder}
-          onQuickNewClient={handleOpenNewClient}
+          onQuickNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
           orderToEdit={orderEditing}
           isDark={isDark}
         />
@@ -3303,7 +2533,7 @@ export default function App() {
           products={products}
           onSave={handleSaveQuote}
           onConvertToOrder={handleConvertToOrder}
-          onQuickNewClient={handleOpenNewClient}
+          onQuickNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
           quoteToEdit={quoteEditing}
           isDark={isDark}
         />
@@ -3321,7 +2551,6 @@ export default function App() {
         />
       )}
 
-      {/* Modais de Ajustes com Edição e Backdrop Blur */}
       {showProductModal && (
         <ProductModal
           onClose={() => {
