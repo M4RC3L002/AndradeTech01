@@ -615,470 +615,6 @@ function DashboardScreen({
   )
 }
 
-// ─── Print Modal ──────────────────────────────────────────────────────────────
-
-function PrintModal({
-  order,
-  client,
-  onClose,
-}: {
-  order: Order
-  client?: Client
-  onClose: () => void
-}) {
-  const [printType, setPrintType] = useState<'a4' | 'thermal'>('a4')
-
-  const items = (order.items && order.items.length > 0)
-    ? order.items
-    : [{ desc: order.service || 'Serviço Técnico Especializado', qty: 1, unit: order.value || 0 }]
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden bg-[#111] border-neutral-800 text-white">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b print:hidden border-neutral-800 bg-[#161616]">
-          <div className="flex items-center gap-3">
-            <span className="font-bold text-sm sm:text-base">Emissão de Comprovante / OS</span>
-            <div className="flex rounded-lg border p-0.5 border-neutral-700 bg-black">
-              <button
-                type="button"
-                onClick={() => setPrintType('a4')}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                  printType === 'a4' ? 'bg-[#0066FF] text-white' : 'text-neutral-400'
-                }`}
-              >
-                Folha A4
-              </button>
-              <button
-                type="button"
-                onClick={() => setPrintType('thermal')}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                  printType === 'thermal' ? 'bg-[#8A2BE2] text-white' : 'text-neutral-400'
-                }`}
-              >
-                Cupom 80mm
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] shadow hover:opacity-95"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-              <span>Imprimir / PDF</span>
-            </button>
-            <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-neutral-200/50 flex justify-center">
-          {printType === 'a4' && (
-            <div id="print-area" className="w-full max-w-[210mm] bg-white text-black p-8 sm:p-10 rounded shadow-md border border-neutral-300 font-sans text-xs print:m-0 print:p-0 print:border-none print:shadow-none">
-              <div className="flex justify-between items-center border-b-2 border-slate-900 pb-4 mb-5">
-                <div className="flex items-center gap-3">
-                  <img src={LOGO_URL} alt="Logo" className="w-14 h-14 object-contain" />
-                  <div>
-                    <h1 className="text-xl font-black tracking-tight text-slate-900">ANDRADETECH</h1>
-                    <p className="text-[11px] font-semibold text-slate-600">Assistência Técnica em Informática e Acessórios</p>
-                    <p className="text-[10px] text-slate-500">São João do Paraíso - BA | WhatsApp / Tel: (73) 98834-3028</p>
-                    <p className="text-[10px] text-slate-500">E-mail: andrade.tech2026@gmail.com</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-mono uppercase bg-slate-100 px-2 py-1 rounded border border-slate-300 font-bold">ORDEM DE SERVIÇO</span>
-                  <div className="text-xl font-mono font-black text-blue-600 mt-1">{order.id}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">Emissão: {order.date}</div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border border-slate-200 rounded-lg p-4 mb-5 bg-slate-50">
-                <div>
-                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">DADOS DO CLIENTE</div>
-                  <div className="font-bold text-sm text-slate-800">{order.client}</div>
-                  <div className="text-[11px] text-slate-600">Telefone: {order.phone || 'Não informado'}</div>
-                  {client?.cpf && <div className="text-[11px] text-slate-600">CPF/CNPJ: {client.cpf}</div>}
-                  {client?.address && <div className="text-[11px] text-slate-600">Endereço: {client.address} - {client.city}</div>}
-                </div>
-                <div>
-                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">EQUIPAMENTO & SITUAÇÃO</div>
-                  <div className="font-bold text-sm text-slate-800">{order.device}</div>
-                  <div className="text-[11px] text-slate-600">Situação Atual: <span className="font-bold text-slate-800">{order.status}</span></div>
-                  <div className="text-[11px] text-slate-600">Técnico Resp.: {order.technician}</div>
-                </div>
-              </div>
-
-              {order.notes && (
-                <div className="border border-slate-200 rounded-lg p-3 mb-5 bg-white">
-                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">RELATO DO DEFEITO / OBSERVAÇÕES TÉCNICAS</div>
-                  <div className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap">{order.notes}</div>
-                </div>
-              )}
-
-              <div className="border border-slate-200 rounded-lg overflow-hidden mb-6">
-                <table className="w-full text-left">
-                  <thead className="bg-slate-100 border-b border-slate-200 font-mono text-[10px] text-slate-600 uppercase">
-                    <tr>
-                      <th className="p-2.5">Descrição do Serviço / Peça</th>
-                      <th className="p-2.5 text-center w-16">Qtd</th>
-                      <th className="p-2.5 text-right w-24">V. Unit</th>
-                      <th className="p-2.5 text-right w-28">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 text-[11px]">
-                    {items.map((it, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-2.5 font-medium text-slate-800">{it.desc}</td>
-                        <td className="p-2.5 text-center font-mono">{it.qty}</td>
-                        <td className="p-2.5 text-right font-mono">R$ {Number(it.unit || 0).toFixed(2)}</td>
-                        <td className="p-2.5 text-right font-mono font-bold">R$ {(Number(it.qty || 1) * Number(it.unit || 0)).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-100 font-mono border-t-2 border-slate-300">
-                      <td colSpan={3} className="p-3 text-right uppercase font-bold text-slate-700">Valor Total a Pagar:</td>
-                      <td className="p-3 text-right text-sm font-black text-blue-600">R$ {Number(order.value || 0).toFixed(2)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-
-              <div className="border border-slate-200 rounded-lg p-3 text-[9px] text-slate-500 leading-relaxed mb-8">
-                <span className="font-bold text-slate-700 uppercase">Termo de Garantia Legal (Art. 26 do CDC):</span> A garantia para serviços executados e peças substituídas é de 90 (noventa) dias a contar da data de retirada do aparelho, cobrindo exclusivamente o defeito solucionado. A garantia perde sua validade em casos de selo rompido, oxidação por umidade, quedas, trincas ou danos causados por mau uso e sobretensão elétrica.
-              </div>
-
-              <div className="grid grid-cols-2 gap-10 text-center pt-4">
-                <div>
-                  <div className="border-t border-slate-400 w-full mb-1"></div>
-                  <div className="font-bold text-[11px] text-slate-800">{order.client}</div>
-                  <div className="text-[10px] text-slate-500">Assinatura do Cliente</div>
-                </div>
-                <div>
-                  <div className="border-t border-slate-400 w-full mb-1"></div>
-                  <div className="font-bold text-[11px] text-slate-800">AndradeTech Assistência Técnica</div>
-                  <div className="text-[10px] text-slate-500">Assinatura do Responsável</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {printType === 'thermal' && (
-            <div id="print-area" className="w-[80mm] bg-white text-black p-4 rounded shadow-md border border-neutral-300 font-mono text-[11px] leading-tight print:m-0 print:p-0 print:border-none print:shadow-none print:w-[80mm]">
-              <div className="text-center pb-2 border-b border-dashed border-black mb-2">
-                <div className="font-black text-sm">ANDRADETECH</div>
-                <div className="text-[9px]">Assistência Técnica Especializada</div>
-                <div className="text-[9px]">São João do Paraíso - Bahia</div>
-                <div className="text-[9px]">Tel/WhatsApp: (73) 98834-3028</div>
-                <div className="text-[8px]">andrade.tech2026@gmail.com</div>
-              </div>
-
-              <div className="text-center font-bold text-xs py-1 border-b border-dashed border-black mb-2">
-                ORDEM DE SERVIÇO #{order.id}
-              </div>
-
-              <div className="space-y-1 mb-2 border-b border-dashed border-black pb-2 text-[10px]">
-                <div><b>Data:</b> {order.date}</div>
-                <div><b>Cliente:</b> {order.client}</div>
-                <div><b>Contato:</b> {order.phone || 'N/A'}</div>
-                <div><b>Aparelho:</b> {order.device}</div>
-                <div><b>Técnico:</b> {order.technician}</div>
-                <div><b>Situação:</b> {order.status}</div>
-              </div>
-
-              {order.notes && (
-                <div className="mb-2 border-b border-dashed border-black pb-2 text-[10px]">
-                  <b>Defeito:</b> {order.notes}
-                </div>
-              )}
-
-              <div className="mb-2 border-b border-dashed border-black pb-2">
-                <div className="font-bold text-[10px] mb-1">ITENS / SERVIÇOS:</div>
-                {items.map((it, i) => (
-                  <div key={i} className="flex justify-between text-[10px]">
-                    <span className="truncate pr-1">{it.qty}x {it.desc}</span>
-                    <span className="font-bold whitespace-nowrap">R$ {(Number(it.qty || 1) * Number(it.unit || 0)).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-between font-black text-xs py-1 border-b border-dashed border-black mb-3">
-                <span>TOTAL:</span>
-                <span>R$ {Number(order.value || 0).toFixed(2)}</span>
-              </div>
-
-              <div className="text-[8px] text-center leading-tight mb-4 text-neutral-600">
-                Garantia legal de 90 dias conforme CDC sobre serviços executados. Não cobre quedas ou umidade.
-              </div>
-
-              <div className="text-center pt-4">
-                <div className="border-t border-black w-4/5 mx-auto mb-1"></div>
-                <div className="text-[9px]">Assinatura do Cliente</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #print-area, #print-area * {
-            visibility: visible;
-          }
-          #print-area {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 15mm !important;
-            background: white !important;
-            color: black !important;
-          }
-        }
-      `}</style>
-    </div>
-  )
-}
-
-// ─── Modais de Ajustes ────────────────────────────────────────────────────────
-
-function ProductModal({
-  onClose,
-  onSave,
-  productToEdit,
-  isDark,
-}: {
-  onClose: () => void
-  onSave: (prod: Product) => void
-  productToEdit?: Product | null
-  isDark: boolean
-}) {
-  const [name, setName] = useState(productToEdit?.name || '')
-  const [category, setCategory] = useState(productToEdit?.category || 'Peça')
-  const [costPrice, setCostPrice] = useState(productToEdit?.cost_price !== undefined ? String(productToEdit.cost_price) : '')
-  const [salePrice, setSalePrice] = useState(productToEdit?.sale_price !== undefined ? String(productToEdit.sale_price) : '')
-  const [stock, setStock] = useState(productToEdit?.stock !== undefined ? String(productToEdit.stock) : '1')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Informe o nome da peça/produto!')
-
-    onSave({
-      id: productToEdit?.id || Date.now().toString(),
-      name: name.trim(),
-      category: category.trim() || 'Peça',
-      cost_price: Number(costPrice) || 0,
-      sale_price: Number(salePrice) || 0,
-      stock: Number(stock) || 0,
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">ESTOQUE & PEÇAS</div>
-            <h2 className="text-base font-bold">{productToEdit ? 'Editar Peça / Produto' : 'Novo Produto / Peça'}</h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-3 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Descrição do Produto *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston, Tela iPhone 11..." className={inputClass} />
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Telas, Armazenamento, Fontes..." className={inputClass} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Custo (R$)</label>
-              <input type="number" step="any" value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="0.00" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Venda (R$) *</label>
-              <input required type="number" step="any" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="0.00" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Quantidade</label>
-              <input type="number" min="0" value={stock} onChange={e => setStock(e.target.value)} className={inputClass} />
-            </div>
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {productToEdit ? 'Atualizar Peça' : 'Salvar Peça / Produto'}
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-function ServiceModal({
-  onClose,
-  onSave,
-  serviceToEdit,
-  isDark,
-}: {
-  onClose: () => void
-  onSave: (svc: CustomService) => void
-  serviceToEdit?: CustomService | null
-  isDark: boolean
-}) {
-  const [name, setName] = useState(serviceToEdit?.name || '')
-  const [defaultPrice, setDefaultPrice] = useState(serviceToEdit?.default_price !== undefined ? String(serviceToEdit.default_price) : '')
-  const [category, setCategory] = useState(serviceToEdit?.category || 'Hardware')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Informe o nome do serviço!')
-
-    onSave({
-      id: serviceToEdit?.id || Date.now().toString(),
-      name: name.trim(),
-      default_price: Number(defaultPrice) || 0,
-      category: category.trim() || 'Geral',
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">MÃO DE OBRA</div>
-            <h2 className="text-base font-bold">{serviceToEdit ? 'Editar Serviço' : 'Novo Serviço Técnico'}</h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-3 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome do Serviço *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Limpeza com Pasta Térmica..." className={inputClass} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Padrão (R$) *</label>
-              <input required type="number" step="any" value={defaultPrice} onChange={e => setDefaultPrice(e.target.value)} placeholder="0.00" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software, Manutenção..." className={inputClass} />
-            </div>
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            {serviceToEdit ? 'Atualizar Serviço' : 'Salvar Serviço'}
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-function StatusModal({
-  onClose,
-  onSave,
-  isDark,
-}: {
-  onClose: () => void
-  onSave: (st: CustomStatus) => void
-  isDark: boolean
-}) {
-  const [label, setLabel] = useState('')
-  const [dot, setDot] = useState('#0066FF')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!label.trim()) return alert('Informe o nome da situação!')
-
-    onSave({
-      id: Date.now().toString(),
-      label: label.trim(),
-      dot,
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-md rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">FLUXO DE OS</div>
-            <h2 className="text-base font-bold">Nova Situação / Status</h2>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-4 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome da Situação *</label>
-            <input required value={label} onChange={e => setLabel(e.target.value)} placeholder="Ex: Em Garantia, Aguardando Cliente..." className={inputClass} />
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cor de Identificação</label>
-            <div className="flex items-center gap-3">
-              <input type="color" value={dot} onChange={e => setDot(e.target.value)} className="h-10 w-16 cursor-pointer rounded-lg border-0 bg-transparent" />
-              <span className="font-mono text-xs uppercase text-neutral-400">{dot}</span>
-            </div>
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            Salvar Situação
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
 // ─── Orders Screen ────────────────────────────────────────────────────────────
 
 function OrdersScreen({
@@ -1296,7 +832,7 @@ function OrdersScreen({
   )
 }
 
-// ─── Quotes Screen ────────────────────────────────────────────────────────────
+// ─── Quotes Screen (Com botão de Impressão) ───────────────────────────────────
 
 function QuotesScreen({
   quotes = [],
@@ -1305,6 +841,7 @@ function QuotesScreen({
   onEditQuote,
   onConvertToOrder,
   onDeleteQuote,
+  onPrintQuote,
   onOpenMenu,
   onLogout,
 }: {
@@ -1314,6 +851,7 @@ function QuotesScreen({
   onEditQuote: (quote: Quote) => void
   onConvertToOrder: (quote: Quote) => void
   onDeleteQuote: (id: string) => void
+  onPrintQuote: (quote: Quote) => void
   onOpenMenu: () => void
   onLogout: () => void
 }) {
@@ -1383,6 +921,14 @@ function QuotesScreen({
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onPrintQuote(q)}
+                            className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                            title="Imprimir Orçamento / Proposta"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                          </button>
                           <button
                             type="button"
                             onClick={() => onEditQuote(q)}
@@ -1782,6 +1328,7 @@ export default function App() {
   const [productEditing, setProductEditing] = useState<Product | null>(null)
   const [serviceEditing, setServiceEditing] = useState<CustomService | null>(null)
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null)
+  const [quoteToPrint, setQuoteToPrint] = useState<Quote | null>(null)
 
   const [clients, setClients] = useState<Client[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -2022,12 +1569,12 @@ export default function App() {
       client: quote.client,
       phone: quote.phone,
       device: quote.device,
-      service: quote.items[0]?.desc || quote.description,
+      service: (quote.items && quote.items[0]?.desc) || quote.description || 'Serviço Técnico',
       status: 'Entrada',
       value: quote.value,
       date: new Date().toLocaleDateString('pt-BR'),
       technician: 'Admin',
-      notes: `Convertido do Orçamento #${quote.id}. ${quote.description}`,
+      notes: `Convertido do Orçamento #${quote.id}. ${quote.description || ''}`,
       items: quote.items,
     }
 
@@ -2069,6 +1616,7 @@ export default function App() {
 
   const safeClients = Array.isArray(clients) ? clients : []
   const selectedClientForPrint = orderToPrint ? safeClients.find(c => c.name.toLowerCase() === (orderToPrint.client || '').toLowerCase()) : undefined
+  const selectedClientForQuotePrint = quoteToPrint ? safeClients.find(c => c.name.toLowerCase() === (quoteToPrint.client || '').toLowerCase()) : undefined
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-slate-100 text-slate-900'}`}>
@@ -2247,6 +1795,22 @@ export default function App() {
             onEditQuote={(q) => { setQuoteEditing(q); setShowQuoteModal(true) }}
             onConvertToOrder={handleConvertToOrder}
             onDeleteQuote={handleDeleteQuote}
+            onPrintQuote={(q) => {
+              // Converte o orçamento temporariamente para o formato de OS para poder imprimir usando o mesmo PrintModal
+              setOrderToPrint({
+                id: q.id,
+                client: q.client,
+                phone: q.phone,
+                device: q.device,
+                service: q.description,
+                status: `Orçamento (${q.status})`,
+                value: q.value,
+                date: q.createdAt,
+                technician: 'Proposta Comercial',
+                notes: q.description,
+                items: q.items
+              })
+            }}
             onOpenMenu={() => setMobileMenuOpen(true)}
             onLogout={handleLogout}
           />
