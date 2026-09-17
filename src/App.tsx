@@ -34,7 +34,7 @@ interface Quote {
   value: number
   validUntil: string
   createdAt: string
-  status: 'Pendente' | 'Aprovado' | 'Cancelado'
+  status: 'Pendente' | 'Aprovado' | 'Reprovado' | 'Cancelado'
   items: OrderItem[]
 }
 
@@ -456,11 +456,13 @@ function PrintModal({
   client,
   onClose,
   isDark,
+  documentKind = 'order',
 }: {
   order: Order
   client?: Client
   onClose: () => void
   isDark: boolean
+  documentKind?: 'order' | 'sale' | 'quote'
 }) {
   const [printType, setPrintType] = useState<'a4' | 'thermal'>('a4')
 
@@ -468,7 +470,9 @@ function PrintModal({
     ? order.items
     : [{ desc: order.service || 'Item de Serviço / Venda', qty: 1, unit: order.value || 0 }]
 
-  const isSale = order.id.startsWith('VD-')
+  const isSale = documentKind === 'sale' || order.id.startsWith('VD-')
+  const isQuote = documentKind === 'quote'
+  const documentTitle = isQuote ? 'ORÇAMENTO' : isSale ? 'CUPOM NÃO FISCAL DE VENDA' : 'ORDEM DE SERVIÇO'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
@@ -532,7 +536,7 @@ function PrintModal({
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] font-mono uppercase bg-slate-100 px-2 py-1 rounded border border-slate-300 font-bold">
-                    {isSale ? 'CUPOM NÃO FISCAL DE VENDA' : 'ORDEM DE SERVIÇO'}
+                    {documentTitle}
                   </span>
                   <div className="text-xl font-mono font-black text-blue-600 mt-1">{order.id}</div>
                   <div className="text-[10px] text-slate-500 font-mono">Data: {order.date}</div>
@@ -584,11 +588,19 @@ function PrintModal({
                   </tbody>
                   <tfoot>
                     <tr className="bg-slate-100 font-mono border-t-2 border-slate-300">
-                      <td colSpan={3} className="p-3 text-right uppercase font-bold text-slate-700">Valor Total Pago:</td>
+                      <td colSpan={3} className="p-3 text-right uppercase font-bold text-slate-700">{isQuote ? 'Valor Total do Orçamento:' : 'Valor Total Pago:'}</td>
                       <td className="p-3 text-right text-sm font-black text-blue-600">R$ {Number(order.value || 0).toFixed(2)}</td>
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+
+              <div className="mt-6 border-t-2 border-slate-300 pt-4 text-[10px] text-slate-700 leading-relaxed">
+                <div className="font-mono uppercase font-black text-slate-800 mb-1">TERMO DE GARANTIA (Art. 26, II, Lei 8.078/90 - CDC)</div>
+                <p>Este serviço e as peças substituídas possuem garantia legal de 90 (noventa) dias, contados a partir da data de entrega do produto.</p>
+                <p>A garantia cobre exclusivamente defeitos no reparo realizado ou nas peças trocadas sob condições normais de uso.</p>
+                <p>A garantia será anulada em caso de mau uso, quedas, contato com líquidos/oxidação, variações elétricas ou caso o aparelho seja aberto por terceiros sem nossa autorização.</p>
+                <p>Em caso de nova falha coberta, a assistência tem o prazo legal de até 30 dias para sanar o vício (Art. 18, CDC).</p>
               </div>
 
               <div className="grid grid-cols-2 gap-10 text-center pt-8">
@@ -603,14 +615,6 @@ function PrintModal({
                   <div className="text-[10px] text-slate-500">Vendedor / Responsável</div>
                 </div>
               </div>
-
-              <div className="mt-8 border-t-2 border-slate-300 pt-4 text-[10px] text-slate-700 leading-relaxed">
-                <div className="font-mono uppercase font-black text-slate-800 mb-1">TERMO DE GARANTIA (Art. 26, II, Lei 8.078/90 - CDC)</div>
-                <p>Este serviço e as peças substituídas possuem garantia legal de 90 (noventa) dias, contados a partir da data de entrega do produto.</p>
-                <p>A garantia cobre exclusivamente defeitos no reparo realizado ou nas peças trocadas sob condições normais de uso.</p>
-                <p>A garantia será anulada em caso de mau uso, quedas, contato com líquidos/oxidação, variações elétricas ou caso o aparelho seja aberto por terceiros sem nossa autorização.</p>
-                <p>Em caso de nova falha coberta, a assistência tem o prazo legal de até 30 dias para sanar o vício (Art. 18, CDC).</p>
-              </div>
             </div>
           )}
 
@@ -618,19 +622,19 @@ function PrintModal({
             <div id="print-area" className="w-[80mm] bg-white text-black p-4 rounded shadow-md border border-neutral-300 font-mono text-[11px] leading-tight print:m-0 print:p-0 print:border-none print:shadow-none print:w-[80mm]">
               <div className="text-center pb-2 border-b border-dashed border-black mb-2">
                 <div className="font-black text-sm">ANDRADETECH</div>
-                <div className="text-[9px]">Comprovante de Venda / PDV</div>
+                <div className="text-[9px]">{isQuote ? 'Orçamento / Proposta Comercial' : 'Comprovante de Venda / PDV'}</div>
                 <div className="text-[9px]">São João do Paraíso - Bahia</div>
                 <div className="text-[9px]">WhatsApp: (73) 98834-3028</div>
               </div>
 
               <div className="text-center font-bold text-xs py-1 border-b border-dashed border-black mb-2">
-                VENDA #{order.id}
+                {isQuote ? 'ORÇAMENTO' : 'VENDA'} #{order.id}
               </div>
 
               <div className="space-y-1 mb-2 border-b border-dashed border-black pb-2 text-[10px]">
                 <div><b>Data:</b> {order.date}</div>
                 <div><b>Cliente:</b> {order.client}</div>
-                <div><b>Pagamento:</b> {order.status}</div>
+                <div><b>{isQuote ? 'Status:' : 'Pagamento:'}</b> {order.status}</div>
               </div>
 
               <div className="mb-2 border-b border-dashed border-black pb-2">
@@ -644,7 +648,7 @@ function PrintModal({
               </div>
 
               <div className="flex justify-between font-black text-xs py-1 border-b border-dashed border-black mb-3">
-                <span>TOTAL PAGO:</span>
+                <span>{isQuote ? 'VALOR TOTAL:' : 'TOTAL PAGO:'}</span>
                 <span>R$ {Number(order.value || 0).toFixed(2)}</span>
               </div>
 
@@ -1074,6 +1078,8 @@ function QuotesScreen({
   onNewQuote,
   onEditQuote,
   onConvertToOrder,
+  onUpdateStatus,
+  onPrintQuote,
   onDeleteQuote,
   onOpenMenu,
 }: {
@@ -1082,6 +1088,8 @@ function QuotesScreen({
   onNewQuote: () => void
   onEditQuote: (quote: Quote) => void
   onConvertToOrder: (quote: Quote) => void
+  onUpdateStatus: (quote: Quote, status: Quote['status']) => void
+  onPrintQuote: (quote: Quote) => void
   onDeleteQuote: (id: string) => void
   onOpenMenu: () => void
 }) {
@@ -1143,16 +1151,30 @@ function QuotesScreen({
                       <td className={`px-3 py-2.5 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ {Number(q.value || 0).toFixed(2)}</td>
                       <td className="px-3 py-2.5 font-mono text-neutral-400">{q.validUntil}</td>
                       <td className="px-3 py-2.5">
-                        <span className={`rounded px-2 py-0.5 font-mono text-[10px] ${
-                          q.status === 'Aprovado' ? 'border border-green-500/30 bg-green-500/10 text-green-500' :
-                          q.status === 'Cancelado' ? 'border border-red-500/30 bg-red-500/10 text-red-500' :
-                          'border border-purple-500/30 bg-purple-500/10 text-[#8A2BE2]'
-                        }`}>
-                          {q.status}
-                        </span>
+                        <select
+                          value={q.status}
+                          onChange={e => onUpdateStatus(q, e.target.value as Quote['status'])}
+                          className={`rounded-lg border px-2 py-1 font-mono text-[10px] font-bold outline-none cursor-pointer transition-colors ${
+                            q.status === 'Aprovado' ? 'border-green-500/40 bg-green-500/10 text-green-600' :
+                            q.status === 'Reprovado' || q.status === 'Cancelado' ? 'border-red-500/40 bg-red-500/10 text-red-600' :
+                            'border-yellow-500/40 bg-yellow-500/10 text-yellow-600'
+                          }`}
+                        >
+                          <option value="Pendente">Pendente</option>
+                          <option value="Aprovado">Aprovado</option>
+                          <option value="Reprovado">Reprovado</option>
+                        </select>
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onPrintQuote(q)}
+                            className="rounded p-1 text-neutral-400 hover:text-purple-500 transition-colors"
+                            title="Imprimir Orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                          </button>
                           <button
                             type="button"
                             onClick={() => onEditQuote(q)}
@@ -1603,6 +1625,7 @@ function SettingsScreen({
   statuses = [],
   isDark,
   onOpenProductModal,
+  onEditProduct,
   onOpenServiceModal,
   onOpenStatusModal,
   onDeleteProduct,
@@ -1615,6 +1638,7 @@ function SettingsScreen({
   statuses: CustomStatus[]
   isDark: boolean
   onOpenProductModal: () => void
+  onEditProduct: (product: Product) => void
   onOpenServiceModal: () => void
   onOpenStatusModal: () => void
   onDeleteProduct: (id: string) => void
@@ -1663,14 +1687,24 @@ function SettingsScreen({
                         <span>Qtd: {p.stock}</span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteProduct(p.id)}
-                      className="p-1 rounded text-neutral-400 hover:text-red-500"
-                      title="Excluir"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onEditProduct(p)}
+                        className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm hover:opacity-95"
+                        title="Editar produto"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteProduct(p.id)}
+                        className="p-1 rounded text-neutral-400 hover:text-red-500"
+                        title="Excluir"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -2514,17 +2548,19 @@ function ClientModal({
 function ProductModal({
   onClose,
   onSave,
+  productToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (product: Product) => void
+  productToEdit?: Product | null
   isDark: boolean
 }) {
-  const [name, setName] = useState('')
-  const [category, setCategory] = useState('Geral')
-  const [costPrice, setCostPrice] = useState('')
-  const [salePrice, setSalePrice] = useState('')
-  const [stock, setStock] = useState('0')
+  const [name, setName] = useState(productToEdit?.name || '')
+  const [category, setCategory] = useState(productToEdit?.category || 'Geral')
+  const [costPrice, setCostPrice] = useState(productToEdit ? String(productToEdit.cost_price) : '')
+  const [salePrice, setSalePrice] = useState(productToEdit ? String(productToEdit.sale_price) : '')
+  const [stock, setStock] = useState(productToEdit ? String(productToEdit.stock) : '0')
 
   const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
     isDark
@@ -2538,7 +2574,7 @@ function ProductModal({
     if (!trimmedName) return alert('Nome do produto é obrigatório')
 
     onSave({
-      id: `PROD-${Date.now()}`,
+      id: productToEdit?.id || `PROD-${Date.now()}`,
       name: trimmedName,
       category: category.trim() || 'Geral',
       cost_price: Math.max(0, Number(costPrice.replace(',', '.')) || 0),
@@ -2558,8 +2594,8 @@ function ProductModal({
       >
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
-            <div className="font-mono text-[10px] font-bold uppercase text-[#0066FF]">CATÁLOGO</div>
-            <h2 className="text-base font-bold">Nova Peça / Produto</h2>
+            <div className="font-mono text-[10px] font-bold uppercase text-[#0066FF]">{productToEdit ? `EDITANDO ${productToEdit.id}` : 'CATÁLOGO'}</div>
+            <h2 className="text-base font-bold">{productToEdit ? 'Editar Produto / Peça' : 'Nova Peça / Produto'}</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400" aria-label="Fechar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -2593,7 +2629,7 @@ function ProductModal({
 
         <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">Cancelar</button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:opacity-95">Salvar Produto</button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:opacity-95">{productToEdit ? 'Salvar Alterações' : 'Salvar Produto'}</button>
         </div>
       </form>
     </div>
@@ -2779,12 +2815,14 @@ export default function App() {
   const [showQuoteModal, setShowQuoteModal] = useState(false)
   const [showClientModal, setShowClientModal] = useState(false)
   const [showProductModal, setShowProductModal] = useState(false)
+  const [productEditing, setProductEditing] = useState<Product | null>(null)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
 
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null)
+  const [printDocumentKind, setPrintDocumentKind] = useState<'order' | 'sale' | 'quote'>('order')
 
   const [clients, setClients] = useState<Client[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -3066,6 +3104,22 @@ export default function App() {
     alert(`Orçamento #${quote.id} convertido com sucesso na Ordem #${newOrder.id}!`)
   }
 
+  const handleUpdateQuoteStatus = async (quote: Quote, nextStatus: Quote['status']) => {
+    if (nextStatus === 'Aprovado') {
+      if (quote.status === 'Aprovado') return
+      if (!confirm(`Aprovar o orçamento ${quote.id} e transformá-lo imediatamente em uma Ordem de Serviço?`)) return
+      await handleConvertToOrder(quote)
+      return
+    }
+
+    setQuotes(prev => prev.map(q => q.id === quote.id ? { ...q, status: nextStatus } : q))
+    const { error } = await supabase.from('quotes').update({ status: nextStatus }).eq('id', quote.id)
+    if (error) {
+      await fetchData()
+      alert('Não foi possível atualizar o status do orçamento.')
+    }
+  }
+
   const handleDeleteQuote = async (id: string) => {
     setQuotes(prev => prev.filter(q => q.id !== id))
     await supabase.from('quotes').delete().eq('id', id)
@@ -3129,6 +3183,7 @@ export default function App() {
 
     // Pergunta se deseja imprimir o comprovante/cupom fiscal da venda imediatamente
     if (confirm(`Venda #${saleData.id} concluída com sucesso!\nDeseja imprimir o cupom da venda?`)) {
+      setPrintDocumentKind('sale')
       setOrderToPrint({
         id: saleData.id,
         client: saleData.client,
@@ -3310,7 +3365,7 @@ export default function App() {
             onNewQuote={() => { setShowQuoteModal(true) }}
             onNewClient={handleOpenNewClient}
             onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
-            onPrintOrder={(o) => setOrderToPrint(o)}
+            onPrintOrder={(o) => { setOrderToPrint(o); setPrintDocumentKind('order') }}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
         )}
@@ -3321,7 +3376,7 @@ export default function App() {
             isDark={isDark}
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
             onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
-            onPrintOrder={(o) => setOrderToPrint(o)}
+            onPrintOrder={(o) => { setOrderToPrint(o); setPrintDocumentKind('order') }}
             onUpdateStatus={handleUpdateOrderStatus}
             onDeleteOrder={handleDeleteOrder}
             onOpenMenu={() => setMobileMenuOpen(true)}
@@ -3336,6 +3391,23 @@ export default function App() {
               handleConvertToOrder(q)
             }}
             onConvertToOrder={handleConvertToOrder}
+            onUpdateStatus={handleUpdateQuoteStatus}
+            onPrintQuote={(q) => {
+              setOrderToPrint({
+                id: q.id,
+                client: q.client,
+                phone: q.phone,
+                device: q.device,
+                service: q.description,
+                status: q.status,
+                value: q.value,
+                date: q.createdAt,
+                technician: 'AndradeTech',
+                notes: q.description,
+                items: q.items,
+              })
+              setPrintDocumentKind('quote')
+            }}
             onDeleteQuote={handleDeleteQuote}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
@@ -3349,6 +3421,7 @@ export default function App() {
             onCompleteSale={handleCompleteSale}
             onDeleteSale={handleDeleteSale}
             onPrintSale={(sale) => {
+              setPrintDocumentKind('sale')
               setOrderToPrint({
                 id: sale.id,
                 client: sale.client,
@@ -3382,7 +3455,8 @@ export default function App() {
             products={products}
             statuses={statuses}
             isDark={isDark}
-            onOpenProductModal={() => setShowProductModal(true)}
+            onOpenProductModal={() => { setProductEditing(null); setShowProductModal(true) }}
+            onEditProduct={(p) => { setProductEditing(p); setShowProductModal(true) }}
             onOpenServiceModal={() => setShowServiceModal(true)}
             onOpenStatusModal={() => setShowStatusModal(true)}
             onDeleteProduct={async (id) => {
@@ -3469,10 +3543,22 @@ export default function App() {
       {/* Modais de Ajustes */}
       {showProductModal && (
         <ProductModal
-          onClose={() => setShowProductModal(false)}
+          onClose={() => { setShowProductModal(false); setProductEditing(null) }}
+          productToEdit={productEditing}
           onSave={async (prod) => {
-            setProducts(prev => [prod, ...prev])
-            await supabase.from('products').insert([prod])
+            const exists = products.some(p => p.id === prod.id)
+            setProducts(prev => exists ? prev.map(p => p.id === prod.id ? prod : p) : [prod, ...prev])
+            if (exists) {
+              await supabase.from('products').update({
+                name: prod.name,
+                category: prod.category,
+                cost_price: prod.cost_price,
+                sale_price: prod.sale_price,
+                stock: prod.stock,
+              }).eq('id', prod.id)
+            } else {
+              await supabase.from('products').insert([prod])
+            }
           }}
           isDark={isDark}
         />
@@ -3504,8 +3590,9 @@ export default function App() {
         <PrintModal
           order={orderToPrint}
           client={selectedClientForPrint}
-          onClose={() => setOrderToPrint(null)}
+          onClose={() => { setOrderToPrint(null); setPrintDocumentKind('order') }}
           isDark={isDark}
+          documentKind={printDocumentKind}
         />
       )}
     </div>
