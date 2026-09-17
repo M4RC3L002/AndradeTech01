@@ -28,11 +28,12 @@ interface Quote {
   id: string
   client: string
   phone: string
+  device: string
   description: string
   value: number
   validUntil: string
   createdAt: string
-  status: 'Pendente' | 'Aprovado' | 'Expirado' | 'Cancelado'
+  status: 'Pendente' | 'Aprovado' | 'Cancelado'
   items: OrderItem[]
 }
 
@@ -62,7 +63,7 @@ interface CustomStatus {
   dot: string
 }
 
-// ─── Configurações Padrão ─────────────────────────────────────────────────────
+// ─── Padrões Iniciais ─────────────────────────────────────────────────────────
 
 const DEFAULT_STATUSES: CustomStatus[] = [
   { id: '1', label: 'Entrada', dot: '#64748B' },
@@ -106,8 +107,19 @@ function StatusBadge({ status, statuses }: { status: string; statuses: CustomSta
   )
 }
 
-function WhatsAppBtn({ phone, label = '', orderDetails }: { phone: string; label?: string; orderDetails?: Partial<Order> }) {
-  let msg = `Olá! Passando para informar sobre seu serviço na AndradeTech.`
+function WhatsAppBtn({
+  phone,
+  label = '',
+  orderDetails,
+  quoteDetails,
+}: {
+  phone: string
+  label?: string
+  orderDetails?: Partial<Order>
+  quoteDetails?: Partial<Quote>
+}) {
+  let msg = `Olá! Passando para falar sobre seu atendimento na AndradeTech.`
+
   if (orderDetails) {
     msg = `*AndradeTech - Atualização de OS*\n\n` +
           `Olá, *${orderDetails.client || 'Cliente'}*!\n` +
@@ -115,10 +127,19 @@ function WhatsAppBtn({ phone, label = '', orderDetails }: { phone: string; label
           `*Aparelho:* ${orderDetails.device || 'N/A'}\n` +
           `*Serviço:* ${orderDetails.service || 'Em diagnóstico'}\n` +
           `*Situação Atual:* ${orderDetails.status || 'Em andamento'}\n` +
-          (orderDetails.value ? `*Valor:* R$ ${orderDetails.value.toFixed(2)}\n\n` : '\n') +
-          `Qualquer dúvida estamos à disposição!`
+          (orderDetails.value ? `*Valor Total:* R$ ${orderDetails.value.toFixed(2)}\n\n` : '\n') +
+          `Estamos à disposição!`
+  } else if (quoteDetails) {
+    msg = `*AndradeTech - Proposta de Orçamento*\n\n` +
+          `Olá, *${quoteDetails.client || 'Cliente'}*!\n` +
+          `*Orçamento:* #${quoteDetails.id || '---'}\n` +
+          `*Aparelho:* ${quoteDetails.device || 'N/A'}\n` +
+          `*Descrição:* ${quoteDetails.description || 'Reparo técnico'}\n` +
+          `*Valor Total:* R$ ${(quoteDetails.value || 0).toFixed(2)}\n` +
+          `*Validade da proposta:* ${quoteDetails.validUntil || '7 dias'}\n\n` +
+          `Podemos confirmar a aprovação do serviço?`
   } else if (label) {
-    msg = `Olá! Referente a: ${label}.`
+    msg = `Olá! ${label}`
   }
 
   const cleanPhone = phone ? phone.replace(/\D/g, '') : ''
@@ -132,10 +153,10 @@ function WhatsAppBtn({ phone, label = '', orderDetails }: { phone: string; label
       onClick={(e) => {
         if (!cleanPhone) {
           e.preventDefault()
-          alert('Telefone do cliente não cadastrado!')
+          alert('Telefone do cliente não informado!')
         }
       }}
-      title="Enviar mensagem no WhatsApp"
+      title="Enviar WhatsApp"
       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 flex-shrink-0 cursor-pointer"
       style={{ background: '#25D366' }}
     >
@@ -157,7 +178,7 @@ function EmptyState({ icon, title, sub }: { icon: React.ReactNode; title: string
   )
 }
 
-// ─── Modal: Ordem de Serviço (Criar & Editar) ─────────────────────────────────
+// ─── Modal: Ordem de Serviço ──────────────────────────────────────────────────
 
 function OrderModal({
   onClose,
@@ -204,11 +225,11 @@ function OrderModal({
   const handleSave = (e: React.FormEvent, sendToWhatsApp = false) => {
     e.preventDefault()
     if (!client.trim() || !device.trim()) {
-      alert('Preencha o nome do cliente e o aparelho!')
+      alert('Preencha o cliente e o aparelho!')
       return
     }
 
-    const firstService = items[0]?.desc?.trim() || 'Serviço Geral'
+    const firstService = items[0]?.desc?.trim() || 'Serviço Técnico'
     const savedOrder: Order = {
       id: orderToEdit?.id || `OS-${Math.floor(1000 + Math.random() * 9000)}`,
       client,
@@ -226,13 +247,13 @@ function OrderModal({
     onSave(savedOrder)
 
     if (sendToWhatsApp && phone) {
-      const msg = `*AndradeTech - Informações da Ordem #${savedOrder.id}*\n\n` +
+      const msg = `*AndradeTech - Ordem de Serviço #${savedOrder.id}*\n\n` +
                   `Olá, *${client}*!\n` +
                   `*Aparelho:* ${device}\n` +
                   `*Serviço:* ${firstService}\n` +
-                  `*Situação Atual:* ${status}\n` +
+                  `*Situação:* ${status}\n` +
                   `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
-                  `Estamos à disposição!`
+                  `Qualquer dúvida estamos à disposição!`
       window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
     }
 
@@ -272,7 +293,7 @@ function OrderModal({
               </datalist>
             </div>
             <div>
-              <label className="block text-[11px] font-mono mb-1 uppercase tracking-wider text-neutral-500">WhatsApp / Tel</label>
+              <label className="block text-[11px] font-mono mb-1 uppercase tracking-wider text-neutral-500">Telefone / WhatsApp</label>
               <input
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
@@ -321,15 +342,15 @@ function OrderModal({
               rows={2}
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="Relato do cliente ou laudo inicial..."
+              placeholder="Relato do problema, observações do aparelho..."
               className="w-full rounded-lg px-3 py-2 text-sm border border-neutral-800 bg-[#181818] text-white outline-none resize-none"
             />
           </div>
 
-          {/* Itens e Peças */}
+          {/* Serviços e Peças */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Serviços / Peças</label>
+              <label className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Itens / Serviços</label>
               <button
                 type="button"
                 onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
@@ -369,7 +390,7 @@ function OrderModal({
                               className="text-[10px] rounded bg-[#222] border border-neutral-700 text-neutral-400 outline-none"
                               defaultValue=""
                             >
-                              <option value="" disabled>Predefinições</option>
+                              <option value="" disabled>Catálogo</option>
                               {services.map(s => (
                                 <option key={s.id} value={s.name}>{s.name} (R${s.default_price})</option>
                               ))}
@@ -430,7 +451,271 @@ function OrderModal({
           </button>
           <div className="flex w-full sm:w-auto gap-2">
             <button type="submit" className="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500">
-              Salvar
+              Salvar OS
+            </button>
+            <button type="button" onClick={(e) => handleSave(e, true)} className="flex-1 sm:flex-initial inline-flex justify-center items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-green-600 hover:bg-green-500">
+              Salvar & Whats
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ─── Modal: Novo Orçamento ────────────────────────────────────────────────────
+
+function QuoteModal({
+  onClose,
+  clients,
+  services,
+  onSave,
+}: {
+  onClose: () => void
+  clients: Client[]
+  services: CustomService[]
+  onSave: (quote: Quote) => void
+}) {
+  const [client, setClient] = useState('')
+  const [phone, setPhone] = useState('')
+  const [device, setDevice] = useState('')
+  const [description, setDescription] = useState('')
+  const [validDays, setValidDays] = useState('7')
+  const [items, setItems] = useState<OrderItem[]>([{ desc: '', qty: 1, unit: 0 }])
+
+  const total = items.reduce((s, i) => s + (i.qty || 1) * (i.unit || 0), 0)
+
+  const handleClientChange = (name: string) => {
+    setClient(name)
+    const found = clients.find(c => c.name.toLowerCase() === name.toLowerCase())
+    if (found) setPhone(found.phone)
+  }
+
+  const handleApplyServicePreset = (serviceName: string, index: number) => {
+    const svc = services.find(s => s.name === serviceName)
+    if (svc) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+    }
+  }
+
+  const handleSave = (e: React.FormEvent, sendWhatsApp = false) => {
+    e.preventDefault()
+    if (!client.trim() || !device.trim()) {
+      alert('Informe o cliente e o aparelho!')
+      return
+    }
+
+    const expDate = new Date()
+    expDate.setDate(expDate.getDate() + (Number(validDays) || 7))
+
+    const newQuote: Quote = {
+      id: `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
+      client,
+      phone,
+      device,
+      description: description || items[0]?.desc || 'Proposta de serviço',
+      value: total,
+      validUntil: expDate.toLocaleDateString('pt-BR'),
+      createdAt: new Date().toLocaleDateString('pt-BR'),
+      status: 'Pendente',
+      items,
+    }
+
+    onSave(newQuote)
+
+    if (sendWhatsApp && phone) {
+      const msg = `*AndradeTech - Proposta de Orçamento #${newQuote.id}*\n\n` +
+                  `Olá, *${client}*!\n` +
+                  `*Aparelho:* ${device}\n` +
+                  `*Descrição:* ${newQuote.description}\n` +
+                  `*Valor Total:* R$ ${total.toFixed(2)}\n` +
+                  `*Válido até:* ${newQuote.validUntil}\n\n` +
+                  `Aguardamos sua aprovação para iniciar o trabalho!`
+      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
+    }
+
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 overflow-y-auto">
+      <form onSubmit={(e) => handleSave(e, false)} className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-neutral-800 bg-[#111] shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-800">
+          <div>
+            <div className="text-[10px] font-mono text-neutral-500 uppercase">PROPOSTA COMERCIAL</div>
+            <h2 className="text-sm sm:text-base font-bold text-neutral-100">Criar Novo Orçamento</h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-neutral-500 hover:text-white">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-4 flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-mono mb-1 uppercase tracking-wider text-neutral-500">Cliente *</label>
+              <input
+                list="client-options-quote"
+                value={client}
+                onChange={e => handleClientChange(e.target.value)}
+                placeholder="Nome do cliente..."
+                className="w-full rounded-lg px-3 py-2 text-sm border border-neutral-800 bg-[#181818] text-white outline-none"
+              />
+              <datalist id="client-options-quote">
+                {clients.map(c => <option key={c.id} value={c.name} />)}
+              </datalist>
+            </div>
+            <div>
+              <label className="block text-[11px] font-mono mb-1 uppercase tracking-wider text-neutral-500">WhatsApp / Tel</label>
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="(DDD) 99999-9999"
+                className="w-full rounded-lg px-3 py-2 text-sm border border-neutral-800 bg-[#181818] text-white outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-mono mb-1 uppercase tracking-wider text-neutral-500">Aparelho *</label>
+              <input
+                value={device}
+                onChange={e => setDevice(e.target.value)}
+                placeholder="Ex: iPhone 12, Notebook Acer..."
+                className="w-full rounded-lg px-3 py-2 text-sm border border-neutral-800 bg-[#181818] text-white outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-mono mb-1 uppercase tracking-wider text-neutral-500">Validade da Proposta</label>
+              <select
+                value={validDays}
+                onChange={e => setValidDays(e.target.value)}
+                className="w-full rounded-lg px-3 py-2 text-sm border border-neutral-800 bg-[#181818] text-white outline-none"
+              >
+                <option value="3">3 dias</option>
+                <option value="7">7 dias (padrão)</option>
+                <option value="15">15 dias</option>
+                <option value="30">30 dias</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-mono mb-1 uppercase tracking-wider text-neutral-500">Resumo do Diagnóstico</label>
+            <textarea
+              rows={2}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Descreva a falha constatada e o que precisa ser substituído..."
+              className="w-full rounded-lg px-3 py-2 text-sm border border-neutral-800 bg-[#181818] text-white outline-none resize-none"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Itens / Peças / Serviços</label>
+              <button
+                type="button"
+                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
+                className="text-xs font-semibold text-blue-500 hover:text-blue-400"
+              >
+                + Adicionar Item
+              </button>
+            </div>
+
+            <div className="rounded-lg border border-neutral-800 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-black/60 text-neutral-500">
+                    <th className="px-3 py-2 text-left font-mono uppercase">Item</th>
+                    <th className="px-2 py-2 text-center w-12 font-mono uppercase">Qtd</th>
+                    <th className="px-2 py-2 text-right w-20 font-mono uppercase">Unit</th>
+                    <th className="px-2 py-2 text-right w-20 font-mono uppercase">Total</th>
+                    <th className="w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, i) => (
+                    <tr key={i} className="border-t border-neutral-800">
+                      <td className="px-2 py-1.5">
+                        <div className="flex flex-col sm:flex-row gap-1">
+                          <input
+                            value={item.desc}
+                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
+                            placeholder="Peça ou mão de obra..."
+                            className="w-full bg-transparent outline-none text-neutral-200"
+                          />
+                          {services.length > 0 && (
+                            <select
+                              onChange={e => {
+                                if (e.target.value) handleApplyServicePreset(e.target.value, i)
+                              }}
+                              className="text-[10px] rounded bg-[#222] border border-neutral-700 text-neutral-400 outline-none"
+                              defaultValue=""
+                            >
+                              <option value="" disabled>Catálogo</option>
+                              {services.map(s => (
+                                <option key={s.id} value={s.name}>{s.name} (R${s.default_price})</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
+                          className="w-full bg-transparent text-center outline-none font-mono text-neutral-200"
+                        />
+                      </td>
+                      <td className="px-1 py-1.5 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={item.unit || ''}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
+                          placeholder="0"
+                          className="w-full bg-transparent text-right outline-none font-mono text-neutral-200"
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
+                        R$ {((item.qty || 1) * (item.unit || 0)).toFixed(2)}
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
+                          className="text-neutral-500 hover:text-red-400"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-neutral-700 bg-black/40">
+                    <td colSpan={3} className="px-3 py-2 text-right font-mono text-neutral-500 uppercase">Total:</td>
+                    <td className="px-2 py-2 text-right font-mono font-bold text-white">R$ {total.toFixed(2)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 py-3 border-t border-neutral-800 flex flex-col-reverse sm:flex-row items-center justify-between gap-2">
+          <button type="button" onClick={onClose} className="w-full sm:w-auto px-4 py-2 text-xs text-neutral-500 hover:text-white">
+            Cancelar
+          </button>
+          <div className="flex w-full sm:w-auto gap-2">
+            <button type="submit" className="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500">
+              Salvar Orçamento
             </button>
             <button type="button" onClick={(e) => handleSave(e, true)} className="flex-1 sm:flex-initial inline-flex justify-center items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-green-600 hover:bg-green-500">
               Salvar & Whats
@@ -519,7 +804,7 @@ function NewClientModal({ onClose, onSave }: { onClose: () => void; onSave: (cli
   )
 }
 
-// ─── Navegação Mobile & Desktop ───────────────────────────────────────────────
+// ─── Navegação e Topbar ────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Painel', icon: (
@@ -532,8 +817,8 @@ const NAV_ITEMS = [
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
   )},
   { id: 'clients', label: 'Clientes', icon: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
-  )} as any,
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+  )},
   { id: 'settings', label: 'Ajustes', icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M20 12h2M2 12h2"/></svg>
   )},
@@ -543,12 +828,14 @@ function Topbar({
   title,
   onOpenMobileMenu,
   onNewOrder,
+  onNewQuote,
   onNewClient,
   children,
 }: {
   title: string
   onOpenMobileMenu: () => void
   onNewOrder?: () => void
+  onNewQuote?: () => void
   onNewClient?: () => void
   children?: React.ReactNode
 }) {
@@ -572,18 +859,28 @@ function Topbar({
         {onNewClient && (
           <button
             onClick={onNewClient}
-            title="Cadastrar novo cliente"
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-neutral-800 bg-[#141414] text-neutral-300 hover:bg-neutral-800 transition-colors"
+            title="Novo Cliente"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-neutral-800 bg-[#141414] text-neutral-300 hover:bg-neutral-800"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg>
             <span className="text-[11px] sm:text-xs">Cliente</span>
+          </button>
+        )}
+        {onNewQuote && (
+          <button
+            onClick={onNewQuote}
+            title="Novo Orçamento"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-amber-900/60 bg-amber-950/20 text-amber-400 hover:bg-amber-950/40"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+            <span className="text-[11px] sm:text-xs">Orçamento</span>
           </button>
         )}
         {onNewOrder && (
           <button
             onClick={onNewOrder}
-            title="Cadastrar nova OS"
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 transition-colors"
+            title="Nova OS"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
             <span className="text-[11px] sm:text-xs">Nova OS</span>
@@ -601,6 +898,7 @@ function DashboardScreen({
   quotes,
   statuses,
   onNewOrder,
+  onNewQuote,
   onNewClient,
   onEditOrder,
   onOpenMenu,
@@ -609,6 +907,7 @@ function DashboardScreen({
   quotes: Quote[]
   statuses: CustomStatus[]
   onNewOrder: () => void
+  onNewQuote: () => void
   onNewClient: () => void
   onEditOrder: (order: Order) => void
   onOpenMenu: () => void
@@ -628,7 +927,13 @@ function DashboardScreen({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <Topbar title="Visão Geral" onOpenMobileMenu={onOpenMenu} onNewOrder={onNewOrder} onNewClient={onNewClient} />
+      <Topbar
+        title="Visão Geral"
+        onOpenMobileMenu={onOpenMenu}
+        onNewOrder={onNewOrder}
+        onNewQuote={onNewQuote}
+        onNewClient={onNewClient}
+      />
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         <div className="relative">
@@ -648,7 +953,7 @@ function DashboardScreen({
             { label: 'Em Aberto', value: openOrders.toString(), sub: 'serviços ativos', color: 'text-blue-500' },
             { label: 'Concluídos', value: completedOrders.toString(), sub: 'finalizados', color: 'text-green-500' },
             { label: 'Orçamentos', value: pendingQuotes.toString(), sub: 'pendentes', color: 'text-amber-500' },
-            { label: 'Previsto', value: `R$ ${totalRevenue.toFixed(0)}`, sub: 'total acumulado', color: 'text-neutral-100' },
+            { label: 'Previsto', value: `R$ ${totalRevenue.toFixed(0)}`, sub: 'total faturado', color: 'text-neutral-100' },
           ].map(kpi => (
             <div key={kpi.label} className="rounded-xl p-3 sm:p-4 border border-neutral-900 bg-[#111]">
               <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">{kpi.label}</span>
@@ -683,7 +988,7 @@ function DashboardScreen({
                       <EmptyState
                         icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>}
                         title="Nenhuma ordem recente"
-                        sub="Toque em '+ Nova OS' para registrar"
+                        sub="Registre uma nova OS ou Orçamento"
                       />
                     </td>
                   </tr>
@@ -724,7 +1029,7 @@ function DashboardScreen({
   )
 }
 
-// ─── Tela: Ordens de Serviço (Modo Lista / Kanban) ────────────────────────────
+// ─── Tela: Ordens de Serviço ──────────────────────────────────────────────────
 
 function OrdersScreen({
   orders,
@@ -807,7 +1112,7 @@ function OrdersScreen({
                         <EmptyState
                           icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>}
                           title="Nenhuma ordem encontrada"
-                          sub="Crie uma nova OS ou mude o filtro"
+                          sub="Crie uma nova OS para começar"
                         />
                       </td>
                     </tr>
@@ -910,42 +1215,105 @@ function OrdersScreen({
 
 // ─── Tela: Orçamentos ─────────────────────────────────────────────────────────
 
-function QuotesScreen({ quotes, onOpenMenu }: { quotes: Quote[]; onOpenMenu: () => void }) {
+function QuotesScreen({
+  quotes,
+  onNewQuote,
+  onConvertToOrder,
+  onDeleteQuote,
+  onOpenMenu,
+}: {
+  quotes: Quote[]
+  onNewQuote: () => void
+  onConvertToOrder: (quote: Quote) => void
+  onDeleteQuote: (id: string) => void
+  onOpenMenu: () => void
+}) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <Topbar title="Orçamentos & Propostas" onOpenMobileMenu={onOpenMenu} />
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+      <Topbar title="Orçamentos & Propostas" onOpenMobileMenu={onOpenMenu} onNewQuote={onNewQuote} />
+
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+        {/* Botão de destaque no mobile */}
+        <div className="flex justify-between items-center sm:hidden">
+          <span className="text-xs font-mono text-neutral-400">{quotes.length} orçamentos</span>
+          <button
+            onClick={onNewQuote}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-amber-600 hover:bg-amber-500"
+          >
+            + Novo Orçamento
+          </button>
+        </div>
+
         <div className="rounded-xl border border-neutral-900 bg-[#111] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[500px] text-xs">
+            <table className="w-full min-w-[650px] text-xs">
               <thead>
                 <tr className="bg-[#0c0c0c] text-neutral-500 border-b border-neutral-900 text-left">
                   <th className="px-3 py-2.5 font-mono uppercase">ID</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Cliente</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Descrição</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Aparelho</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Resumo</th>
                   <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
-                  <th className="px-3 py-2.5 font-mono uppercase text-right">WhatsApp</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Validade</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Status</th>
+                  <th className="px-3 py-2.5 font-mono uppercase text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-900">
                 {quotes.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>
+                    <td colSpan={7}>
                       <EmptyState
                         icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>}
                         title="Nenhum orçamento cadastrado"
-                        sub="Propostas criadas aparecerão aqui"
+                        sub="Clique em '+ Orçamento' para gerar uma proposta"
                       />
                     </td>
                   </tr>
                 ) : (
                   quotes.map(q => (
                     <tr key={q.id} className="hover:bg-neutral-900/50">
-                      <td className="px-3 py-2.5 font-mono text-blue-500">{q.id}</td>
-                      <td className="px-3 py-2.5 font-semibold text-neutral-200">{q.client}</td>
-                      <td className="px-3 py-2.5 text-neutral-400 truncate max-w-xs">{q.description}</td>
-                      <td className="px-3 py-2.5 font-mono text-white">R$ {q.value.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-right"><WhatsAppBtn phone={q.phone} label={`Orçamento ${q.id}`} /></td>
+                      <td className="px-3 py-2.5 font-mono text-amber-500 font-bold">{q.id}</td>
+                      <td className="px-3 py-2.5">
+                        <div className="font-semibold text-neutral-200">{q.client}</div>
+                        <div className="text-[10px] text-neutral-400">{q.device}</div>
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-400 max-w-[180px] truncate">{q.description}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-white">R$ {q.value.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{q.validUntil}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${
+                          q.status === 'Aprovado' ? 'bg-green-950/60 text-green-400 border border-green-800/40' :
+                          q.status === 'Cancelado' ? 'bg-red-950/60 text-red-400 border border-red-800/40' :
+                          'bg-amber-950/60 text-amber-400 border border-amber-800/40'
+                        }`}>
+                          {q.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          {q.status !== 'Aprovado' && (
+                            <button
+                              onClick={() => {
+                                if (confirm(`Deseja converter o orçamento ${q.id} em uma Ordem de Serviço?`)) {
+                                  onConvertToOrder(q)
+                                }
+                              }}
+                              className="px-2 py-1 rounded text-[11px] font-semibold bg-blue-600/30 text-blue-400 border border-blue-600/40 hover:bg-blue-600 hover:text-white transition-colors"
+                              title="Converter para OS"
+                            >
+                              Virar OS
+                            </button>
+                          )}
+                          <WhatsAppBtn phone={q.phone} quoteDetails={q} />
+                          <button
+                            onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
+                            className="p-1 rounded text-neutral-500 hover:text-red-400 transition-colors"
+                            title="Descartar orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -971,7 +1339,6 @@ function ClientsScreen({ clients, onNewClient, onOpenMenu }: { clients: Client[]
       <Topbar title="Base de Clientes" onOpenMobileMenu={onOpenMenu} onNewClient={onNewClient} />
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
-        {/* Barra de pesquisa + botão de Novo Cliente garantido no Mobile */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
@@ -1011,7 +1378,7 @@ function ClientsScreen({ clients, onNewClient, onOpenMenu }: { clients: Client[]
                       <EmptyState
                         icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
                         title="Nenhum cliente cadastrado"
-                        sub="Toque em '+ Cliente' para adicionar"
+                        sub="Toque em '+ Cliente' para cadastrar"
                       />
                     </td>
                   </tr>
@@ -1185,7 +1552,7 @@ function SettingsScreen({
                   </div>
                   <button
                     onClick={() => {
-                      if (statuses.length <= 1) return alert('Mantenha pelo menos um status!')
+                      if (statuses.length <= 1) return alert('Mantenha ao menos uma situação!')
                       onDeleteStatus(st.id)
                     }}
                     className="text-neutral-600 hover:text-red-400"
@@ -1208,9 +1575,11 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('dashboard')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showOrderModal, setShowOrderModal] = useState(false)
+  const [showQuoteModal, setShowQuoteModal] = useState(false)
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
   const [showNewClient, setShowNewClient] = useState(false)
 
+  // Estados com persistência LocalStorage
   const [clients, setClients] = useState<Client[]>(() => {
     const saved = localStorage.getItem('andrade_clients')
     return saved ? JSON.parse(saved) : []
@@ -1268,6 +1637,38 @@ export default function App() {
       }
       return [orderData, ...prev]
     })
+  }
+
+  const handleSaveQuote = (quoteData: Quote) => {
+    setQuotes(prev => [quoteData, ...prev])
+  }
+
+  const handleConvertToOrder = (quote: Quote) => {
+    // 1. Marca o orçamento como Aprovado
+    setQuotes(prev => prev.map(q => q.id === quote.id ? { ...q, status: 'Aprovado' } : q))
+
+    // 2. Gera uma nova Ordem de Serviço
+    const newOrder: Order = {
+      id: `OS-${Math.floor(1000 + Math.random() * 9000)}`,
+      client: quote.client,
+      phone: quote.phone,
+      device: quote.device,
+      service: quote.items[0]?.desc || quote.description,
+      status: 'Entrada',
+      value: quote.value,
+      date: new Date().toLocaleDateString('pt-BR'),
+      technician: 'Admin',
+      notes: `Convertido do Orçamento #${quote.id}. ${quote.description}`,
+      items: quote.items,
+    }
+
+    setOrders(prev => [newOrder, ...prev])
+    setScreen('orders')
+    alert(`Orçamento #${quote.id} convertido com sucesso na Ordem de Serviço #${newOrder.id}!`)
+  }
+
+  const handleDeleteQuote = (id: string) => {
+    setQuotes(prev => prev.filter(q => q.id !== id))
   }
 
   const handleOpenEditOrder = (order: Order) => {
@@ -1363,6 +1764,7 @@ export default function App() {
             quotes={quotes}
             statuses={statuses}
             onNewOrder={handleOpenNewOrder}
+            onNewQuote={() => setShowQuoteModal(true)}
             onNewClient={() => setShowNewClient(true)}
             onEditOrder={handleOpenEditOrder}
             onOpenMenu={() => setMobileMenuOpen(true)}
@@ -1379,7 +1781,15 @@ export default function App() {
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
         )}
-        {screen === 'quotes' && <QuotesScreen quotes={quotes} onOpenMenu={() => setMobileMenuOpen(true)} />}
+        {screen === 'quotes' && (
+          <QuotesScreen
+            quotes={quotes}
+            onNewQuote={() => setShowQuoteModal(true)}
+            onConvertToOrder={handleConvertToOrder}
+            onDeleteQuote={handleDeleteQuote}
+            onOpenMenu={() => setMobileMenuOpen(true)}
+          />
+        )}
         {screen === 'clients' && (
           <ClientsScreen
             clients={clients}
@@ -1400,7 +1810,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Barra Inferior (Celular) */}
+      {/* Barra Inferior Mobile */}
       <nav className="fixed bottom-0 inset-x-0 h-14 bg-[#0d0d0d] border-t border-neutral-900 flex md:hidden items-center justify-around z-40 px-2">
         {NAV_ITEMS.map(item => {
           const isActive = screen === item.id
@@ -1430,6 +1840,15 @@ export default function App() {
           services={services}
           onSave={handleSaveOrder}
           orderToEdit={orderEditing}
+        />
+      )}
+
+      {showQuoteModal && (
+        <QuoteModal
+          onClose={() => setShowQuoteModal(false)}
+          clients={clients}
+          services={services}
+          onSave={handleSaveQuote}
         />
       )}
 
