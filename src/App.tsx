@@ -1191,6 +1191,7 @@ function PDVScreen({
   isDark,
   onCompleteSale,
   onPrintSale,
+  onDeleteSale,
   onOpenMenu,
 }: {
   products: Product[]
@@ -1199,6 +1200,7 @@ function PDVScreen({
   isDark: boolean
   onCompleteSale: (sale: Sale) => void
   onPrintSale: (sale: Sale) => void
+  onDeleteSale: (sale: Sale) => void
   onOpenMenu: () => void
 }) {
   const [cart, setCart] = useState<{ product: Product; qty: number }[]>([])
@@ -1340,6 +1342,14 @@ function PDVScreen({
                           title="Imprimir Cupom"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteSale(s)}
+                          className="p-1 rounded text-neutral-400 hover:text-red-500"
+                          title="Excluir Venda"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/><path d="M9 6V4h6v2"/></svg>
                         </button>
                       </div>
                     </div>
@@ -1781,11 +1791,18 @@ function OrderModal({
   )
 
   useEffect(() => {
-    if (!phone && client && safeClients.length > 0) {
-      const found = safeClients.find(c => c.name === client)
-      if (found) setPhone(found.phone)
+    // Se o cliente atual deixou de existir, limpa a seleção.
+    if (client && !safeClients.some(c => c.name === client)) {
+      setClient('')
+      setPhone('')
+      return
     }
-  }, [client, safeClients])
+
+    if (client && safeClients.length > 0) {
+      const found = safeClients.find(c => c.name === client)
+      if (found && phone !== found.phone) setPhone(found.phone)
+    }
+  }, [client, safeClients, phone])
 
   const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
 
@@ -2091,7 +2108,7 @@ function QuoteModal({
   const safeServices = Array.isArray(services) ? services : []
   const safeProducts = Array.isArray(products) ? products : []
 
-  const [client, setClient] = useState(safeClients.length > 0 ? safeClients[0].name : '')
+  const [client, setClient] = useState('')
   const [phone, setPhone] = useState('')
   const [device, setDevice] = useState('')
   const [description, setDescription] = useState('')
@@ -2197,16 +2214,21 @@ function QuoteModal({
                   <span>+</span> Cliente
                 </button>
               </div>
-              <input
-                list="quote-client-options"
+              <select
                 value={client}
                 onChange={e => handleClientSelectChange(e.target.value)}
-                placeholder="Selecione ou digite..."
                 className={inputClass}
-              />
-              <datalist id="quote-client-options">
-                {safeClients.map(c => <option key={c.id} value={c.name} />)}
-              </datalist>
+              >
+                <option value="">Selecione um cliente...</option>
+                {safeClients.map(c => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}{c.phone ? ` — ${c.phone}` : ''}
+                  </option>
+                ))}
+              </select>
+              {safeClients.length === 0 && (
+                <p className="mt-1 text-[10px] text-amber-500">Nenhum cliente cadastrado. Clique em "+ Cliente" para cadastrar.</p>
+              )}
             </div>
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
@@ -3036,6 +3058,36 @@ export default function App() {
 
   // ─── Lógica de PDV (Frente de Caixa & Baixa no Estoque) ───────────────────────
 
+  const handleDeleteSale = async (sale: Sale) => {
+    const confirmed = confirm(
+      `Excluir a venda #${sale.id}?\n\nO estoque dos produtos vendidos será devolvido automaticamente. Essa ação não pode ser desfeita.`
+    )
+    if (!confirmed) return
+
+    // Remove imediatamente da interface para evitar a sensação de atraso.
+    setSales(prev => prev.filter(s => s.id !== sale.id))
+
+    // Devolve ao estoque os itens dessa venda.
+    for (const item of sale.items || []) {
+      const prod = products.find(p => p.name === item.desc)
+      if (prod) {
+        const restoredStock = prod.stock + Number(item.qty || 0)
+        setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock: restoredStock } : p))
+        await supabase.from('products').update({ stock: restoredStock }).eq('id', prod.id)
+      }
+    }
+
+    const { error } = await supabase.from('sales').delete().eq('id', sale.id)
+    if (error) {
+      // Se o banco falhar, recarrega os dados para manter a interface consistente.
+      await fetchData()
+      alert(`Não foi possível excluir a venda #${sale.id}. Verifique a conexão com o banco de dados.`)
+      return
+    }
+
+    alert(`Venda #${sale.id} excluída com sucesso. O estoque foi restaurado.`)
+  }
+
   const handleCompleteSale = async (saleData: Sale) => {
     setSales(prev => [saleData, ...prev])
 
@@ -3280,6 +3332,7 @@ export default function App() {
             sales={sales}
             isDark={isDark}
             onCompleteSale={handleCompleteSale}
+            onDeleteSale={handleDeleteSale}
             onPrintSale={(sale) => {
               setOrderToPrint({
                 id: sale.id,
