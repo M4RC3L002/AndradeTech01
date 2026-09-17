@@ -100,6 +100,8 @@ const DEFAULT_PRODUCTS: Product[] = [
   { id: '3', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
 ]
 
+const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
+
 // ─── Componente de Logotipo ───────────────────────────────────────────────────
 
 function AppLogo({ size = 32 }: { size?: number }) {
@@ -118,7 +120,7 @@ function AppLogo({ size = 32 }: { size?: number }) {
 
   return (
     <img
-      src="/logo.png"
+      src={LOGO_URL}
       alt="AndradeTech Logo"
       onError={() => setImgError(true)}
       className="rounded-lg object-contain flex-shrink-0"
