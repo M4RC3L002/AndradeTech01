@@ -60,7 +60,6 @@ interface CustomService {
 
 interface Product {
   id: string
-  code?: string
   name: string
   category: string
   cost_price: number
@@ -109,9 +108,9 @@ const DEFAULT_SERVICES: CustomService[] = [
 ]
 
 const DEFAULT_PRODUCTS: Product[] = [
-  { id: '1', code: 'SSD480', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
-  { id: '2', code: 'TEL11', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
-  { id: '3', code: 'FNT500', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
+  { id: '1', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
+  { id: '2', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
+  { id: '3', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
 ]
 
 const NAV_ITEMS = [
@@ -450,7 +449,7 @@ function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; i
   )
 }
 
-// ─── Modal de Emissão de OS / Cupom Fiscal ───────────────────────────────────
+// ─── Modal de Emissão (OS e Vendas PDV) ─────────────────────────────────────────
 
 function PrintModal({
   order,
@@ -674,38 +673,607 @@ function PrintModal({
   )
 }
 
-// ─── Modal de Ajustes: Produto ────────────────────────────────────────────────
+// ─── Telas Principais (Dashboard, Orders, Quotes, PDV, Clients, Settings) ─────
 
-function ProductModal({
-  onClose,
-  onSave,
+const DashboardScreen = ({
+  orders = [],
+  quotes = [],
+  statuses = [],
   isDark,
+  onNewOrder,
+  onNewQuote,
+  onNewClient,
+  onEditOrder,
+  onPrintOrder,
+  onOpenMenu,
 }: {
-  onClose: () => void
-  onSave: (prod: Product) => void
+  orders: Order[]
+  quotes: Quote[]
+  statuses: CustomStatus[]
   isDark: boolean
+  onNewOrder: () => void
+  onNewQuote: () => void
+  onNewClient: () => void
+  onEditOrder: (order: Order) => void
+  onPrintOrder: (order: Order) => void
+  onOpenMenu: () => void
+}) => {
+  const [search, setSearch] = useState('')
+
+  const safeOrders = Array.isArray(orders) ? orders : []
+  const safeQuotes = Array.isArray(quotes) ? quotes : []
+
+  const openOrders = safeOrders.filter(o => o && o.status !== 'Concluído' && o.status !== 'Entregue' && o.status !== 'Cancelado').length
+  const completedOrders = safeOrders.filter(o => o && (o.status === 'Concluído' || o.status === 'Entregue')).length
+  const pendingQuotes = safeQuotes.filter(q => q && q.status === 'Pendente').length
+  const totalRevenue = safeOrders.filter(o => o && o.status !== 'Cancelado').reduce((sum, o) => sum + Number(o.value || 0), 0)
+
+  const filteredOrders = safeOrders.filter(o =>
+    o && (
+      (o.client || '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.device || '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.id || '').toLowerCase().includes(search.toLowerCase())
+    )
+  )
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar
+        title="Visão Geral"
+        isDark={isDark}
+        onOpenMobileMenu={onOpenMenu}
+        onNewOrder={onNewOrder}
+        onNewQuote={onNewQuote}
+        onNewClient={onNewClient}
+      />
+
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="relative">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Pesquisar por OS, cliente, aparelho..."
+            className={`w-full rounded-xl border py-2.5 pl-9 pr-4 text-xs outline-none transition-colors sm:text-sm ${
+              isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
+            }`}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+          {[
+            { label: 'Em Aberto', value: openOrders.toString(), sub: 'serviços ativos', color: 'text-[#0066FF]' },
+            { label: 'Concluídos', value: completedOrders.toString(), sub: 'finalizados', color: 'text-green-500' },
+            { label: 'Orçamentos', value: pendingQuotes.toString(), sub: 'pendentes', color: 'text-[#8A2BE2]' },
+            { label: 'Previsto', value: `R$ ${totalRevenue.toFixed(0)}`, sub: 'total faturado', color: isDark ? 'text-white' : 'text-slate-800' },
+          ].map(kpi => (
+            <div key={kpi.label} className={`rounded-xl border p-3 sm:p-4 transition-colors ${
+              isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+            }`}>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">{kpi.label}</span>
+              <div className={`mt-1 text-lg font-bold tracking-tight sm:text-2xl ${kpi.color}`}>{kpi.value}</div>
+              <div className="mt-0.5 font-mono text-[10px] text-neutral-400 sm:text-xs">{kpi.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+            <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Ordens de Serviço Recentes</span>
+            <span className="font-mono text-[11px] text-neutral-400">{safeOrders.length} cadastradas</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Contato</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {filteredOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
+                        title="Nenhuma ordem recente"
+                        sub="Registre uma nova OS ou Orçamento"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filteredOrders.slice(0, 10).map(order => (
+                    <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
+                      <td className="px-3 py-2.5">
+                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                        <div className="font-mono text-[10px] text-neutral-400">{order.phone || 'Sem telefone'}</div>
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                      <td className="px-3 py-2.5"><StatusBadge status={order.status} statuses={statuses} /></td>
+                      <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                        {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onPrintOrder(order)}
+                            className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                            title="Imprimir OS / Cupom"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onEditOrder(order)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
+                            title="Editar OS"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+};
+
+function OrdersScreen({
+  orders = [],
+  statuses = [],
+  isDark,
+  onNewOrder,
+  onEditOrder,
+  onPrintOrder,
+  onUpdateStatus,
+  onDeleteOrder,
+  onOpenMenu,
+}: {
+  orders: Order[]
+  statuses: CustomStatus[]
+  isDark: boolean
+  onNewOrder: () => void
+  onEditOrder: (order: Order) => void
+  onPrintOrder: (order: Order) => void
+  onUpdateStatus: (id: string, status: string) => void
+  onDeleteOrder: (id: string) => void
+  onOpenMenu: () => void
 }) {
-  const [code, setCode] = useState('')
-  const [name, setName] = useState('')
-  const [category, setCategory] = useState('Peça')
-  const [costPrice, setCostPrice] = useState('')
-  const [salePrice, setSalePrice] = useState('')
-  const [stock, setStock] = useState('1')
+  const [view, setView] = useState<'list' | 'kanban'>('list')
+  const [filterStatus, setFilterStatus] = useState<string>('Todos')
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Informe o nome da peça/produto!')
+  const safeOrders = Array.isArray(orders) ? orders : []
+  const safeStatuses = Array.isArray(statuses) ? statuses : []
 
-    onSave({
-      id: Date.now().toString(),
-      code: code.trim().toUpperCase(),
-      name: name.trim(),
-      category: category.trim() || 'Peça',
-      cost_price: Number(costPrice) || 0,
-      sale_price: Number(salePrice) || 0,
-      stock: Number(stock) || 0,
+  const filtered = filterStatus === 'Todos' ? safeOrders : safeOrders.filter(o => o && o.status === filterStatus)
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Ordens de Serviço" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewOrder={onNewOrder}>
+        <div className={`ml-2 flex items-center gap-1 rounded-lg border p-0.5 ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-slate-100'}`}>
+          {(['list','kanban'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              className="rounded px-2 py-1 text-[11px] font-medium transition-all"
+              style={{
+                background: view === v ? 'linear-gradient(to right, #0066FF, #8A2BE2)' : 'transparent',
+                color: view === v ? '#fff' : (isDark ? '#888' : '#555'),
+              }}
+            >
+              {v === 'list' ? 'Lista' : 'Quadro'}
+            </button>
+          ))}
+        </div>
+      </Topbar>
+
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
+          {['Todos', ...safeStatuses.map(s => s.label)].map(s => {
+            const isActive = filterStatus === s
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setFilterStatus(s)}
+                className="whitespace-nowrap rounded-full border px-3 py-1 font-mono text-xs transition-all"
+                style={{
+                  background: isActive ? 'rgba(0, 102, 255, 0.15)' : 'transparent',
+                  color: isActive ? '#0066FF' : (isDark ? '#777' : '#555'),
+                  borderColor: isActive ? '#0066FF' : (isDark ? '#262626' : '#E2E8F0'),
+                }}
+              >
+                {s}
+              </button>
+            )
+          })}
+        </div>
+
+        {view === 'list' ? (
+          <div className={`overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px] text-xs">
+                <thead>
+                  <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                    <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Cliente</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Aparelho</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Situação</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                    <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>
+                        <EmptyState
+                          icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>}
+                          title="Nenhuma ordem encontrada"
+                          sub="Crie uma nova OS para começar"
+                          isDark={isDark}
+                        />
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map(order => (
+                      <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                        <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
+                        <td className="px-3 py-2.5">
+                          <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                          <div className="font-mono text-[10px] text-neutral-400">{order.phone || '—'}</div>
+                        </td>
+                        <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                        <td className="px-3 py-2.5">
+                          <select
+                            value={order.status}
+                            onChange={e => onUpdateStatus(order.id, e.target.value)}
+                            className={`rounded border px-1.5 py-0.5 font-mono text-xs outline-none ${
+                              isDark ? 'border-neutral-800 bg-[#181818] text-neutral-200' : 'border-slate-300 bg-white text-slate-800'
+                            }`}
+                          >
+                            {safeStatuses.map(st => (
+                              <option key={st.id} value={st.label}>{st.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                          {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => onPrintOrder(order)}
+                              className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                              title="Imprimir OS / Cupom"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onEditOrder(order)}
+                              className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
+                              title="Editar OS"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                            </button>
+                            <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                            <button
+                              type="button"
+                              onClick={() => { if(confirm(`Excluir ${order.id}?`)) onDeleteOrder(order.id) }}
+                              className="rounded p-1 text-neutral-400 hover:text-red-500"
+                              title="Excluir OS"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-4">
+            {safeStatuses.map(st => {
+              const colOrders = safeOrders.filter(o => o && (o.status || '').toLowerCase() === (st.label || '').toLowerCase())
+              return (
+                <div key={st.id} className={`flex w-64 flex-shrink-0 flex-col rounded-xl border transition-colors ${
+                  isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+                }`}>
+                  <div className={`flex items-center justify-between border-b px-3.5 py-2.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ background: st.dot }} />
+                      <span className="font-mono text-xs font-semibold" style={{ color: st.dot }}>{st.label}</span>
+                    </div>
+                    <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500'}`}>{colOrders.length}</span>
+                  </div>
+                  <div className="min-h-[140px] flex-1 space-y-2 p-2">
+                    {colOrders.length === 0 ? (
+                      <div className="py-8 text-center font-mono text-xs text-neutral-400">vazio</div>
+                    ) : (
+                      colOrders.map(order => (
+                        <div key={order.id} className={`space-y-1.5 rounded-lg border p-3 ${
+                          isDark ? 'border-neutral-800/80 bg-[#141414]' : 'border-slate-200 bg-slate-50'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs font-bold text-[#0066FF]">{order.id}</span>
+                            <span className="font-mono text-[10px] text-neutral-400">{order.date}</span>
+                          </div>
+                          <div className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                          <div className="text-[11px] text-neutral-400">{order.device}</div>
+                          <div className={`flex items-center justify-between border-t pt-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                            <span className="font-mono text-xs font-bold text-[#8A2BE2]">R$ {Number(order.value || 0).toFixed(2)}</span>
+                            <div className="flex gap-1">
+                              <button type="button" onClick={() => onPrintOrder(order)} className="p-1 text-neutral-400 hover:text-purple-500" title="Imprimir OS">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                              </button>
+                              <button type="button" onClick={() => onEditOrder(order)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar OS">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                              </button>
+                              <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function QuotesScreen({
+  quotes = [],
+  isDark,
+  onNewQuote,
+  onEditQuote,
+  onConvertToOrder,
+  onDeleteQuote,
+  onOpenMenu,
+}: {
+  quotes: Quote[]
+  isDark: boolean
+  onNewQuote: () => void
+  onEditQuote: (quote: Quote) => void
+  onConvertToOrder: (quote: Quote) => void
+  onDeleteQuote: (id: string) => void
+  onOpenMenu: () => void
+}) {
+  const safeQuotes = Array.isArray(quotes) ? quotes : []
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Orçamentos & Propostas" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewQuote={onNewQuote} />
+
+      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+        <div className="flex items-center justify-between sm:hidden">
+          <span className="font-mono text-xs text-neutral-400">{safeQuotes.length} orçamentos</span>
+          <button
+            type="button"
+            onClick={onNewQuote}
+            className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-1.5 text-xs font-semibold text-white shadow-md"
+          >
+            + Novo Orçamento
+          </button>
+        </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[650px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cliente / Aparelho</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Resumo</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Valor</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Validade</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Status</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {safeQuotes.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /></svg>}
+                        title="Nenhum orçamento cadastrado"
+                        sub="Clique em '+ Orçamento' para gerar uma proposta"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  safeQuotes.map(q => (
+                    <tr key={q.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">{q.id}</td>
+                      <td className="px-3 py-2.5">
+                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{q.client}</div>
+                        <div className="text-[10px] text-neutral-400">{q.device}</div>
+                      </td>
+                      <td className="max-w-[180px] truncate px-3 py-2.5 text-neutral-400">{q.description}</td>
+                      <td className={`px-3 py-2.5 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ {Number(q.value || 0).toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{q.validUntil}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`rounded px-2 py-0.5 font-mono text-[10px] ${
+                          q.status === 'Aprovado' ? 'border border-green-500/30 bg-green-500/10 text-green-500' :
+                          q.status === 'Cancelado' ? 'border border-red-500/30 bg-red-500/10 text-red-500' :
+                          'border border-purple-500/30 bg-purple-500/10 text-[#8A2BE2]'
+                        }`}>
+                          {q.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onEditQuote(q)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#8A2BE2] transition-colors"
+                            title="Editar Orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          {q.status !== 'Aprovado' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Deseja converter o orçamento ${q.id} em uma Ordem de Serviço?`)) {
+                                  onConvertToOrder(q)
+                                }
+                              }}
+                              className="rounded border border-[#0066FF]/30 bg-[#0066FF]/10 px-2 py-1 text-[11px] font-semibold text-[#0066FF] hover:bg-[#0066FF] hover:text-white transition-all"
+                              title="Converter para OS"
+                            >
+                              Virar OS
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
+                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                            title="Descartar orçamento"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tela de PDV (Frente de Caixa) ────────────────────────────────────────────
+
+function PDVScreen({
+  products = [],
+  clients = [],
+  sales = [],
+  isDark,
+  onCompleteSale,
+  onPrintSale,
+  onOpenMenu,
+}: {
+  products: Product[]
+  clients: Client[]
+  sales: Sale[]
+  isDark: boolean
+  onCompleteSale: (sale: Sale) => void
+  onPrintSale: (sale: Sale) => void
+  onOpenMenu: () => void
+}) {
+  const [cart, setCart] = useState<{ product: Product; qty: number }[]>([])
+  const [selectedClient, setSelectedClient] = useState('')
+  const [clientPhone, setClientPhone] = useState('')
+  const [clientCpf, setClientCpf] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'Dinheiro' | 'PIX' | 'Cartão de Crédito' | 'Cartão de Débito'>('PIX')
+
+  const total = cart.reduce((acc, item) => acc + (item.product.sale_price * item.qty), 0)
+
+  const handleSelectClient = (name: string) => {
+    setSelectedClient(name)
+    const found = clients.find(c => c.name.toLowerCase() === name.toLowerCase())
+    if (found) {
+      setClientPhone(found.phone)
+      setClientCpf(found.cpf)
+    }
+  }
+
+  const addToCart = (product: Product) => {
+    if (product.stock <= 0) {
+      alert('Produto sem estoque disponível!')
+      return
+    }
+    setCart(prev => {
+      const exists = prev.find(item => item.product.id === product.id)
+      if (exists) {
+        if (exists.qty >= product.stock) {
+          alert('Quantidade máxima em estoque atingida!')
+          return prev
+        }
+        return prev.map(item => item.product.id === product.id ? { ...item, qty: item.qty + 1 } : item)
+      }
+      return [...prev, { product, qty: 1 }]
     })
-    onClose()
+  }
+
+  const updateCartQty = (productId: string, qty: number, stock: number) => {
+    if (qty > stock) {
+      alert('Quantidade superior ao estoque disponível!')
+      return
+    }
+    if (qty <= 0) {
+      setCart(prev => prev.filter(item => item.product.id !== productId))
+      return
+    }
+    setCart(prev => prev.map(item => item.product.id === productId ? { ...item, qty } : item))
+  }
+
+  const handleFinishSale = () => {
+    if (cart.length === 0) {
+      alert('Adicione ao menos um produto no carrinho!')
+      return
+    }
+
+    const saleData: Sale = {
+      id: `VD-${Math.floor(1000 + Math.random() * 9000)}`,
+      client: selectedClient.trim() || 'Consumidor Final',
+      phone: clientPhone,
+      cpf: clientCpf,
+      payment_method: paymentMethod,
+      items: cart.map(item => ({
+        desc: item.product.name,
+        qty: item.qty,
+        unit: item.product.sale_price,
+      })),
+      total,
+      date: new Date().toLocaleDateString('pt-BR'),
+    }
+
+    onCompleteSale(saleData)
+    setCart([])
+    setSelectedClient('')
+    setClientPhone('')
+    setClientCpf('')
   }
 
   const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
@@ -713,204 +1281,466 @@ function ProductModal({
   }`
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">ESTOQUE & PEÇAS</div>
-            <h2 className="text-base font-bold">Novo Produto / Peça</h2>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Frente de Caixa (PDV)" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
+
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          {/* Coluna da Esquerda: Catálogo de Produtos para Venda */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className={`p-4 rounded-xl border ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
+              <h2 className="text-sm font-bold mb-3">Selecione os Produtos</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+                {products.length === 0 ? (
+                  <div className="col-span-2 text-center py-8 text-neutral-400 text-xs">Nenhum produto cadastrado no estoque</div>
+                ) : (
+                  products.map(p => (
+                    <div
+                      key={p.id}
+                      onClick={() => addToCart(p)}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between ${
+                        p.stock <= 0
+                          ? 'opacity-40 border-neutral-700 bg-neutral-900 pointer-events-none'
+                          : isDark ? 'border-neutral-800 bg-[#181818] hover:border-[#0066FF]' : 'border-slate-200 bg-slate-50 hover:border-[#0066FF]'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-bold text-xs">{p.name}</div>
+                        <div className="text-[10px] text-neutral-400">{p.category}</div>
+                      </div>
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-neutral-500/20">
+                        <span className="font-mono text-xs font-bold text-green-500">R$ {p.sale_price.toFixed(2)}</span>
+                        <span className="text-[10px] font-mono text-neutral-400">Estoque: {p.stock}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Histórico de Vendas Recentes */}
+            <div className={`p-4 rounded-xl border ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
+              <h2 className="text-sm font-bold mb-3">Últimas Vendas Realizadas</h2>
+              <div className="max-h-48 overflow-y-auto divide-y divide-neutral-500/10 text-xs">
+                {sales.length === 0 ? (
+                  <div className="text-center py-4 text-neutral-400">Nenhuma venda registrada ainda</div>
+                ) : (
+                  sales.slice(0, 5).map(s => (
+                    <div key={s.id} className="py-2 flex items-center justify-between">
+                      <div>
+                        <div className="font-bold">{s.client} <span className="font-normal text-neutral-400">({s.payment_method})</span></div>
+                        <div className="text-[10px] text-neutral-400">{s.date} - #{s.id}</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono font-bold text-green-500">R$ {s.total.toFixed(2)}</span>
+                        <button
+                          type="button"
+                          onClick={() => onPrintSale(s)}
+                          className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                          title="Imprimir Cupom"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
+
+          {/* Coluna da Direita: Carrinho e Finalização */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className={`p-4 rounded-xl border flex flex-col justify-between ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
+              <div>
+                <h2 className="text-sm font-bold mb-3">Carrinho de Compras</h2>
+                
+                {/* Dados do Cliente */}
+                <div className="space-y-2 mb-4">
+                  <input
+                    list="pdv-client-list"
+                    value={selectedClient}
+                    onChange={e => handleSelectClient(e.target.value)}
+                    placeholder="Cliente (opcional, padrão: Consumidor Final)"
+                    className={inputClass}
+                  />
+                  <datalist id="pdv-client-list">
+                    {clients.map(c => <option key={c.id} value={c.name} />)}
+                  </datalist>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={clientPhone}
+                      onChange={e => setClientPhone(e.target.value)}
+                      placeholder="Telefone"
+                      className={inputClass}
+                    />
+                    <input
+                      value={clientCpf}
+                      onChange={e => setClientCpf(e.target.value)}
+                      placeholder="CPF na Nota"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                {/* Itens no Carrinho */}
+                <div className="border-t border-b border-neutral-500/20 py-2 max-h-48 overflow-y-auto divide-y divide-neutral-500/10">
+                  {cart.length === 0 ? (
+                    <div className="text-center py-6 text-neutral-400 text-xs">Carrinho vazio</div>
+                  ) : (
+                    cart.map(item => (
+                      <div key={item.product.id} className="py-2 flex items-center justify-between text-xs">
+                        <div className="pr-2 flex-1">
+                          <div className="font-semibold">{item.product.name}</div>
+                          <div className="text-[10px] text-neutral-400">R$ {item.product.sale_price.toFixed(2)} un</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max={item.product.stock}
+                            value={item.qty}
+                            onChange={e => updateCartQty(item.product.id, Number(e.target.value), item.product.stock)}
+                            className="w-12 text-center rounded border border-neutral-700 bg-transparent text-xs py-1"
+                          />
+                          <span className="font-mono font-bold w-16 text-right">R$ {(item.product.sale_price * item.qty).toFixed(2)}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateCartQty(item.product.id, 0, item.product.stock)}
+                            className="text-neutral-400 hover:text-red-500 p-1"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Forma de Pagamento */}
+                <div className="mt-4">
+                  <label className="block text-xs font-mono text-neutral-400 mb-1">Forma de Pagamento:</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={e => setPaymentMethod(e.target.value as any)}
+                    className={inputClass}
+                  >
+                    <option value="PIX">⚡ PIX</option>
+                    <option value="Dinheiro">💵 Dinheiro</option>
+                    <option value="Cartão de Crédito">💳 Cartão de Crédito</option>
+                    <option value="Cartão de Débito">💳 Cartão de Débito</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Total e Conclusão */}
+              <div className="mt-5 pt-3 border-t border-neutral-500/20">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs uppercase font-mono text-neutral-400">Total a Pagar:</span>
+                  <span className="text-xl font-black font-mono text-green-500">R$ {total.toFixed(2)}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleFinishSale}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:opacity-95 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Concluir Venda & Baixar Estoque</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="space-y-3 px-5 py-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-1">
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Código</label>
-              <input value={code} onChange={e => setCode(e.target.value)} placeholder="Ex: P001" className={inputClass} />
-            </div>
-            <div className="col-span-2">
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Descrição do Produto *</label>
-              <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston..." className={inputClass} />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Telas, Armazenamento, Fontes..." className={inputClass} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Custo (R$)</label>
-              <input type="number" step="any" value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="0.00" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Venda (R$) *</label>
-              <input required type="number" step="any" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="0.00" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Quantidade</label>
-              <input type="number" min="0" value={stock} onChange={e => setStock(e.target.value)} className={inputClass} />
-            </div>
-          </div>
-        </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            Salvar Peça / Produto
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   )
 }
 
-function ServiceModal({
-  onClose,
-  onSave,
+function ClientsScreen({
+  clients = [],
   isDark,
+  onNewClient,
+  onEditClient,
+  onDeleteClient,
+  onOpenMenu,
 }: {
-  onClose: () => void
-  onSave: (svc: CustomService) => void
+  clients: Client[]
   isDark: boolean
+  onNewClient: () => void
+  onEditClient: (client: Client) => void
+  onDeleteClient: (id: string) => void
+  onOpenMenu: () => void
 }) {
-  const [name, setName] = useState('')
-  const [defaultPrice, setDefaultPrice] = useState('')
-  const [category, setCategory] = useState('Hardware')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return alert('Informe o nome do serviço!')
-
-    onSave({
-      id: Date.now().toString(),
-      name: name.trim(),
-      default_price: Number(defaultPrice) || 0,
-      category: category.trim() || 'Geral',
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
+  const [search, setSearch] = useState('')
+  const safeClients = Array.isArray(clients) ? clients : []
+  const filtered = safeClients.filter(c =>
+    c && ((c.name || '').toLowerCase().includes(search.toLowerCase()) || (c.phone || '').includes(search))
+  )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">MÃO DE OBRA</div>
-            <h2 className="text-base font-bold">Novo Serviço Técnico</h2>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Base de Clientes" isDark={isDark} onOpenMobileMenu={onOpenMenu} onNewClient={onNewClient} />
+
+      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar cliente ou tel..."
+              className={`w-full rounded-xl border py-2 pl-9 pr-3 text-xs outline-none transition-colors sm:text-sm ${
+                isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
+              }`}
+            />
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          <button
+            type="button"
+            onClick={onNewClient}
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-2 text-xs font-semibold text-white shadow-md hover:opacity-95"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+            <span>+ Cliente</span>
           </button>
         </div>
-        <div className="space-y-3 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome do Serviço *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Limpeza com Pasta Térmica..." className={inputClass} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço Padrão (R$) *</label>
-              <input required type="number" step="any" value={defaultPrice} onChange={e => setDefaultPrice(e.target.value)} placeholder="0.00" className={inputClass} />
-            </div>
-            <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software, Manutenção..." className={inputClass} />
-            </div>
+
+        <div className={`overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[550px] text-xs">
+              <thead>
+                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <th className="px-3 py-2.5 font-mono uppercase">Nome</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Telefone</th>
+                  <th className="px-3 py-2.5 font-mono uppercase">Cidade</th>
+                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>
+                      <EmptyState
+                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>}
+                        title="Nenhum cliente cadastrado"
+                        sub="Toque em '+ Cliente' para cadastrar"
+                        isDark={isDark}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map(c => (
+                    <tr key={c.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{c.name}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{c.phone || 'Sem número'}</td>
+                      <td className="px-3 py-2.5 text-neutral-400">{c.city}</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onEditClient(c)}
+                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF] transition-colors"
+                            title="Editar Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <WhatsAppBtn phone={c.phone} label={`Olá ${c.name}!`} />
+                          <button
+                            type="button"
+                            onClick={() => { if(confirm(`Deseja realmente excluir o cliente ${c.name}?`)) onDeleteClient(c.id) }}
+                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                            title="Excluir Cliente"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            Salvar Serviço
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   )
 }
 
-function StatusModal({
-  onClose,
-  onSave,
+function SettingsScreen({
+  services = [],
+  products = [],
+  statuses = [],
   isDark,
+  onOpenProductModal,
+  onOpenServiceModal,
+  onOpenStatusModal,
+  onDeleteProduct,
+  onDeleteService,
+  onDeleteStatus,
+  onOpenMenu,
 }: {
-  onClose: () => void
-  onSave: (st: CustomStatus) => void
+  services: CustomService[]
+  products: Product[]
+  statuses: CustomStatus[]
   isDark: boolean
+  onOpenProductModal: () => void
+  onOpenServiceModal: () => void
+  onOpenStatusModal: () => void
+  onDeleteProduct: (id: string) => void
+  onDeleteService: (id: string) => void
+  onDeleteStatus: (id: string) => void
+  onOpenMenu: () => void
 }) {
-  const [label, setLabel] = useState('')
-  const [dot, setDot] = useState('#0066FF')
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!label.trim()) return alert('Informe o nome da situação!')
-
-    onSave({
-      id: Date.now().toString(),
-      label: label.trim(),
-      dot,
-    })
-    onClose()
-  }
-
-  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
-  }`
+  const safeProducts = Array.isArray(products) ? products : []
+  const safeServices = Array.isArray(services) ? services : []
+  const safeStatuses = Array.isArray(statuses) ? statuses : []
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSave} className={`w-full max-w-md rounded-2xl border shadow-2xl transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
-        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div>
-            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">FLUXO DE OS</div>
-            <h2 className="text-base font-bold">Nova Situação / Status</h2>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Configurações, Peças & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Card Produtos / Peças */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div>
+                <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Produtos & Peças</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeProducts.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenProductModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Nova Peça
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {safeProducts.length === 0 ? (
+                <div className="p-6 text-center text-xs text-neutral-400">Nenhum produto cadastrado</div>
+              ) : (
+                safeProducts.map(p => (
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                    <div>
+                      <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</div>
+                      <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
+                        <span>Venda: R$ {Number(p.sale_price || 0).toFixed(2)}</span>
+                        <span>•</span>
+                        <span>Qtd: {p.stock}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteProduct(p.id)}
+                      className="p-1 rounded text-neutral-400 hover:text-red-500"
+                      title="Excluir"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <div className="space-y-4 px-5 py-4">
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome da Situação *</label>
-            <input required value={label} onChange={e => setLabel(e.target.value)} placeholder="Ex: Em Garantia, Aguardando Cliente..." className={inputClass} />
+
+          {/* Card Serviços */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div>
+                <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Serviços da Assistência</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeServices.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenServiceModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Novo Serviço
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {safeServices.length === 0 ? (
+                <div className="p-6 text-center text-xs text-neutral-400">Nenhum serviço cadastrado</div>
+              ) : (
+                safeServices.map(s => (
+                  <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                    <div>
+                      <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</div>
+                      <div className="font-mono text-neutral-400">R$ {Number(s.default_price || 0).toFixed(2)}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteService(s.id)}
+                      className="p-1 rounded text-neutral-400 hover:text-red-500"
+                      title="Excluir"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cor de Identificação</label>
-            <div className="flex items-center gap-3">
-              <input type="color" value={dot} onChange={e => setDot(e.target.value)} className="h-10 w-16 cursor-pointer rounded-lg border-0 bg-transparent" />
-              <span className="font-mono text-xs uppercase text-neutral-400">{dot}</span>
+
+          {/* Card Situações / Status */}
+          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div>
+                <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Situações de OS</span>
+                <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeStatuses.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenStatusModal}
+                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+              >
+                + Nova Situação
+              </button>
+            </div>
+
+            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+              {safeStatuses.map(st => (
+                <div key={st.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full shadow-sm" style={{ background: st.dot }} />
+                    <span className={isDark ? 'text-neutral-200' : 'text-slate-800'}>{st.label}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (safeStatuses.length <= 1) return alert('Mantenha ao menos uma situação!')
+                      onDeleteStatus(st.id)
+                    }}
+                    className="p-1 rounded text-neutral-400 hover:text-red-500"
+                    title="Excluir"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
-            Cancelar
-          </button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            Salvar Situação
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   )
 }
 
-// ─── Modal de OS e Cliente ────────────────────────────────────────────────────
+// ─── Modais de OS, Orçamento e Cliente ────────────────────────────────────────
 
 function OrderModal({
   onClose,
@@ -1545,6 +2375,8 @@ function QuoteModal({
   )
 }
 
+// ─── Modal de Cliente (Estrutura Real) ────────────────────────────────────────
+
 function ClientModal({
   onClose,
   onSave,
@@ -1640,410 +2472,245 @@ function ClientModal({
   )
 }
 
-// ─── Modal de Venda do PDV (Com Backdrop e Blur) ──────────────────────────────
+// ─── Modais de Catálogo / Configurações ───────────────────────────────────────
 
-function PDVSaleModal({
+function ProductModal({
   onClose,
-  products = [],
-  clients = [],
-  onFinishSale,
+  onSave,
   isDark,
 }: {
   onClose: () => void
-  products: Product[]
-  clients: Client[]
-  onFinishSale: (sale: Sale) => void
+  onSave: (product: Product) => void
   isDark: boolean
 }) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [cart, setCart] = useState<{ product: Product; qty: number }[]>([])
-  const [selectedClient, setSelectedClient] = useState('')
-  const [clientPhone, setClientPhone] = useState('')
-  const [clientCpf, setClientCpf] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'Dinheiro' | 'PIX' | 'Cartão de Crédito' | 'Cartão de Débito'>('PIX')
-
-  const total = cart.reduce((acc, item) => acc + (item.product.sale_price * item.qty), 0)
-
-  const filteredProducts = products.filter(p => {
-    const term = searchTerm.toLowerCase()
-    return (
-      p.name.toLowerCase().includes(term) ||
-      (p.code && p.code.toLowerCase().includes(term)) ||
-      p.category.toLowerCase().includes(term)
-    )
-  })
-
-  const handleSelectClient = (name: string) => {
-    setSelectedClient(name)
-    const found = clients.find(c => c.name.toLowerCase() === name.toLowerCase())
-    if (found) {
-      setClientPhone(found.phone)
-      setClientCpf(found.cpf)
-    }
-  }
-
-  const addToCart = (product: Product) => {
-    if (product.stock <= 0) {
-      alert('Produto sem estoque!')
-      return
-    }
-    setCart(prev => {
-      const exists = prev.find(item => item.product.id === product.id)
-      if (exists) {
-        if (exists.qty >= product.stock) {
-          alert('Estoque máximo atingido!')
-          return prev
-        }
-        return prev.map(item => item.product.id === product.id ? { ...item, qty: item.qty + 1 } : item)
-      }
-      return [...prev, { product, qty: 1 }]
-    })
-  }
-
-  const updateCartQty = (productId: string, qty: number, stock: number) => {
-    if (qty > stock) {
-      alert('Quantidade superior ao estoque!')
-      return
-    }
-    if (qty <= 0) {
-      setCart(prev => prev.filter(item => item.product.id !== productId))
-      return
-    }
-    setCart(prev => prev.map(item => item.product.id === productId ? { ...item, qty } : item))
-  }
-
-  const handleCancelSale = () => {
-    if (cart.length > 0 && !confirm('Deseja realmente cancelar esta compra e limpar os itens?')) {
-      return
-    }
-    setCart([])
-    setSelectedClient('')
-    setClientPhone('')
-    setClientCpf('')
-    onClose()
-  }
-
-  const handleFinish = () => {
-    if (cart.length === 0) {
-      alert('Adicione ao menos um item ao carrinho!')
-      return
-    }
-
-    const saleData: Sale = {
-      id: `VD-${Math.floor(1000 + Math.random() * 9000)}`,
-      client: selectedClient.trim() || 'Consumidor Final',
-      phone: clientPhone,
-      cpf: clientCpf,
-      payment_method: paymentMethod,
-      items: cart.map(item => ({
-        desc: item.product.name,
-        qty: item.qty,
-        unit: item.product.sale_price,
-      })),
-      total,
-      date: new Date().toLocaleDateString('pt-BR'),
-    }
-
-    onFinishSale(saleData)
-    onClose()
-  }
+  const [name, setName] = useState('')
+  const [category, setCategory] = useState('Geral')
+  const [costPrice, setCostPrice] = useState('')
+  const [salePrice, setSalePrice] = useState('')
+  const [stock, setStock] = useState('0')
 
   const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
-    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+    isDark
+      ? 'border-neutral-800 bg-[#181818] text-white focus:border-[#0066FF]'
+      : 'border-slate-300 bg-slate-50 text-slate-900 focus:border-[#0066FF]'
   }`
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmedName = name.trim()
+    if (!trimmedName) return alert('Nome do produto é obrigatório')
+
+    onSave({
+      id: `PROD-${Date.now()}`,
+      name: trimmedName,
+      category: category.trim() || 'Geral',
+      cost_price: Math.max(0, Number(costPrice.replace(',', '.')) || 0),
+      sale_price: Math.max(0, Number(salePrice.replace(',', '.')) || 0),
+      stock: Math.max(0, Math.floor(Number(stock.replace(',', '.')) || 0)),
+    })
+    onClose()
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
-      <div className={`flex max-h-[94vh] w-full max-w-4xl flex-col rounded-2xl border shadow-2xl overflow-hidden transition-colors ${
-        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-      }`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 backdrop-blur-sm">
+      <form
+        onSubmit={handleSubmit}
+        className={`w-full max-w-md rounded-2xl border shadow-2xl ${
+          isDark ? 'border-neutral-800 bg-[#111] text-white' : 'border-slate-200 bg-white text-slate-900'
+        }`}
+      >
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] uppercase text-green-500 font-bold">FRENTE DE CAIXA</span>
-            <h2 className="text-base font-bold">Nova Venda (PDV)</h2>
+          <div>
+            <div className="font-mono text-[10px] font-bold uppercase text-[#0066FF]">CATÁLOGO</div>
+            <h2 className="text-base font-bold">Nova Peça / Produto</h2>
           </div>
-          <button type="button" onClick={handleCancelSale} className="p-1.5 text-neutral-400 hover:text-red-400">
+          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400" aria-label="Fechar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Lado Esquerdo: Busca e Itens */}
-          <div className="lg:col-span-7 space-y-3">
-            <div className="relative">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                placeholder="Buscar por nome ou código..."
-                className={`w-full rounded-xl border py-2 pl-9 pr-3 text-xs outline-none ${
-                  isDark ? 'border-neutral-800 bg-[#181818] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-[#0066FF]'
-                }`}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[360px] overflow-y-auto pr-1">
-              {filteredProducts.length === 0 ? (
-                <div className="col-span-2 text-center py-8 text-neutral-400 text-xs">Nenhum produto encontrado</div>
-              ) : (
-                filteredProducts.map(p => (
-                  <div
-                    key={p.id}
-                    onClick={() => addToCart(p)}
-                    className={`p-2.5 rounded-lg border cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between ${
-                      p.stock <= 0
-                        ? 'opacity-40 border-neutral-700 bg-neutral-900 pointer-events-none'
-                        : isDark ? 'border-neutral-800 bg-[#181818] hover:border-[#0066FF]' : 'border-slate-200 bg-slate-50 hover:border-[#0066FF]'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs truncate">{p.name}</span>
-                        {p.code && <span className="font-mono text-[9px] bg-neutral-500/20 px-1 rounded uppercase">{p.code}</span>}
-                      </div>
-                      <div className="text-[10px] text-neutral-400">{p.category}</div>
-                    </div>
-                    <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-neutral-500/20">
-                      <span className="font-mono text-xs font-bold text-green-500">R$ {p.sale_price.toFixed(2)}</span>
-                      <span className="text-[10px] font-mono text-neutral-400">Estoque: {p.stock}</span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+        <div className="space-y-3 px-5 py-4">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome *</label>
+            <input autoFocus required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston" className={inputClass} />
           </div>
-
-          {/* Lado Direito: Carrinho e Fechamento */}
-          <div className="lg:col-span-5 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-neutral-500/20 pt-4 lg:pt-0 lg:pl-5 space-y-3">
-            <div className="space-y-3">
-              <h3 className="font-bold text-xs uppercase tracking-wider text-neutral-400">Cliente & Pagamento</h3>
-              
-              <input
-                list="modal-pdv-clients"
-                value={selectedClient}
-                onChange={e => handleSelectClient(e.target.value)}
-                placeholder="Nome do cliente (opcional)"
-                className={inputClass}
-              />
-              <datalist id="modal-pdv-clients">
-                {clients.map(c => <option key={c.id} value={c.name} />)}
-              </datalist>
-
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  value={clientPhone}
-                  onChange={e => setClientPhone(e.target.value)}
-                  placeholder="WhatsApp"
-                  className={inputClass}
-                />
-                <input
-                  value={clientCpf}
-                  onChange={e => setClientCpf(e.target.value)}
-                  placeholder="CPF"
-                  className={inputClass}
-                />
-              </div>
-
-              <div className="border-t border-b border-neutral-500/20 py-2 max-h-36 overflow-y-auto divide-y divide-neutral-500/10">
-                {cart.length === 0 ? (
-                  <div className="text-center py-4 text-neutral-400 text-xs">Carrinho vazio</div>
-                ) : (
-                  cart.map(item => (
-                    <div key={item.product.id} className="py-1.5 flex items-center justify-between text-xs">
-                      <div className="pr-1 flex-1">
-                        <div className="font-semibold text-[11px]">{item.product.name}</div>
-                        <div className="text-[9px] text-neutral-400">R$ {item.product.sale_price.toFixed(2)} un</div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="number"
-                          min="1"
-                          max={item.product.stock}
-                          value={item.qty}
-                          onChange={e => updateCartQty(item.product.id, Number(e.target.value), item.product.stock)}
-                          className="w-10 text-center rounded border border-neutral-700 bg-transparent text-xs py-0.5"
-                        />
-                        <span className="font-mono font-bold w-14 text-right text-[11px]">R$ {(item.product.sale_price * item.qty).toFixed(2)}</span>
-                        <button
-                          type="button"
-                          onClick={() => updateCartQty(item.product.id, 0, item.product.stock)}
-                          className="text-neutral-400 hover:text-red-500 p-0.5"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono text-neutral-400 mb-1">Pagamento:</label>
-                <select
-                  value={paymentMethod}
-                  onChange={e => setPaymentMethod(e.target.value as any)}
-                  className={inputClass}
-                >
-                  <option value="PIX">⚡ PIX</option>
-                  <option value="Dinheiro">💵 Dinheiro</option>
-                  <option value="Cartão de Crédito">💳 Cartão de Crédito</option>
-                  <option value="Cartão de Débito">💳 Cartão de Débito</option>
-                </select>
-              </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
+            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Armazenamento" className={inputClass} />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Custo</label>
+              <input inputMode="decimal" value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="0,00" className={inputClass} />
             </div>
-
-            <div className="pt-3 border-t border-neutral-500/20 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs uppercase font-mono text-neutral-400">Total:</span>
-                <span className="text-lg font-black font-mono text-green-500">R$ {total.toFixed(2)}</span>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleCancelSale}
-                  className="flex-1 py-2 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold"
-                >
-                  Cancelar Venda
-                </button>
-                <button
-                  type="button"
-                  onClick={handleFinish}
-                  className="flex-1 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-bold text-xs shadow-md"
-                >
-                  Finalizar Venda
-                </button>
-              </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Venda</label>
+              <input inputMode="decimal" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="0,00" className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Estoque</label>
+              <input inputMode="numeric" min="0" value={stock} onChange={e => setStock(e.target.value)} placeholder="0" className={inputClass} />
             </div>
           </div>
         </div>
-      </div>
+
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">Cancelar</button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:opacity-95">Salvar Produto</button>
+        </div>
+      </form>
     </div>
   )
 }
 
-// ─── Tela de PDV ──────────────────────────────────────────────────────────────
-
-function PDVScreen({
-  products = [],
-  sales = [],
+function ServiceModal({
+  onClose,
+  onSave,
   isDark,
-  onOpenNewSale,
-  onPrintSale,
-  onOpenMenu,
 }: {
-  products: Product[]
-  sales: Sale[]
+  onClose: () => void
+  onSave: (service: CustomService) => void
   isDark: boolean
-  onOpenNewSale: () => void
-  onPrintSale: (sale: Sale) => void
-  onOpenMenu: () => void
 }) {
-  const [searchTerm, setSearchTerm] = useState('')
+  const [name, setName] = useState('')
+  const [category, setCategory] = useState('Manutenção')
+  const [price, setPrice] = useState('')
 
-  const filteredSales = sales.filter(s =>
-    s.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.payment_method.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark
+      ? 'border-neutral-800 bg-[#181818] text-white focus:border-[#0066FF]'
+      : 'border-slate-300 bg-slate-50 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmedName = name.trim()
+    if (!trimmedName) return alert('Nome do serviço é obrigatório')
+
+    onSave({
+      id: `SERV-${Date.now()}`,
+      name: trimmedName,
+      default_price: Math.max(0, Number(price.replace(',', '.')) || 0),
+      category: category.trim() || 'Manutenção',
+    })
+    onClose()
+  }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <Topbar title="Frente de Caixa (PDV)" isDark={isDark} onOpenMobileMenu={onOpenMenu}>
-        <button
-          type="button"
-          onClick={onOpenNewSale}
-          className="inline-flex items-center gap-1 rounded-lg bg-green-600 hover:bg-green-500 px-3 py-1.5 text-xs font-bold text-white shadow-md transition-all ml-2"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>Nova Venda</span>
-        </button>
-      </Topbar>
-
-      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
-        <div className="relative">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
-            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-          </svg>
-          <input
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Pesquisar venda por cliente, ID ou pagamento..."
-            className={`w-full rounded-xl border py-2.5 pl-9 pr-4 text-xs outline-none transition-colors sm:text-sm ${
-              isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'
-            }`}
-          />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 backdrop-blur-sm">
+      <form
+        onSubmit={handleSubmit}
+        className={`w-full max-w-md rounded-2xl border shadow-2xl ${
+          isDark ? 'border-neutral-800 bg-[#111] text-white' : 'border-slate-200 bg-white text-slate-900'
+        }`}
+      >
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] font-bold uppercase text-[#0066FF]">SERVIÇOS</div>
+            <h2 className="text-base font-bold">Novo Serviço</h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400" aria-label="Fechar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
         </div>
 
-        <div className={`overflow-hidden rounded-xl border transition-colors ${
-          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-        }`}>
-          <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-            <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Histórico de Vendas</span>
-            <span className="font-mono text-[11px] text-neutral-400">{sales.length} registradas</span>
+        <div className="space-y-3 px-5 py-4">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome *</label>
+            <input autoFocus required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Formatação + SO" className={inputClass} />
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[620px] text-xs">
-              <thead>
-                <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <th className="px-3 py-2.5 font-mono uppercase">ID</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Data</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Cliente</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Pagamento</th>
-                  <th className="px-3 py-2.5 font-mono uppercase">Valor Total</th>
-                  <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-                {filteredSales.length === 0 ? (
-                  <tr>
-                    <td colSpan={6}>
-                      <EmptyState
-                        icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>}
-                        title="Nenhuma venda realizada"
-                        sub="Clique em '+ Nova Venda' para começar"
-                        isDark={isDark}
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  filteredSales.map(s => (
-                    <tr key={s.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-green-500">{s.id}</td>
-                      <td className="px-3 py-2.5 text-neutral-400">{s.date}</td>
-                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.client}</td>
-                      <td className="px-3 py-2.5">
-                        <span className="font-mono text-[10px] px-2 py-0.5 rounded border border-neutral-700">
-                          {s.payment_method}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 font-mono font-bold text-green-500">R$ {s.total.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => onPrintSale(s)}
-                          className="p-1 rounded text-neutral-400 hover:text-purple-500"
-                          title="Reimprimir Cupom"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
+            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Software" className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Preço padrão</label>
+            <input inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)} placeholder="0,00" className={inputClass} />
           </div>
         </div>
-      </div>
+
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">Cancelar</button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:opacity-95">Salvar Serviço</button>
+        </div>
+      </form>
     </div>
   )
 }
 
-// ─── Raiz da Aplicação ────────────────────────────────────────────────────────
+function StatusModal({
+  onClose,
+  onSave,
+  isDark,
+}: {
+  onClose: () => void
+  onSave: (status: CustomStatus) => void
+  isDark: boolean
+}) {
+  const [label, setLabel] = useState('')
+  const [dot, setDot] = useState('#0066FF')
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark
+      ? 'border-neutral-800 bg-[#181818] text-white focus:border-[#0066FF]'
+      : 'border-slate-300 bg-slate-50 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmedLabel = label.trim()
+    if (!trimmedLabel) return alert('Nome da situação é obrigatório')
+
+    onSave({
+      id: `STATUS-${Date.now()}`,
+      label: trimmedLabel,
+      dot,
+    })
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 backdrop-blur-sm">
+      <form
+        onSubmit={handleSubmit}
+        className={`w-full max-w-md rounded-2xl border shadow-2xl ${
+          isDark ? 'border-neutral-800 bg-[#111] text-white' : 'border-slate-200 bg-white text-slate-900'
+        }`}
+      >
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] font-bold uppercase text-[#0066FF]">SITUAÇÕES DE OS</div>
+            <h2 className="text-base font-bold">Nova Situação</h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400" aria-label="Fechar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="space-y-3 px-5 py-4">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome *</label>
+            <input autoFocus required value={label} onChange={e => setLabel(e.target.value)} placeholder="Ex: Aguardando aprovação" className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cor</label>
+            <div className="flex items-center gap-3">
+              <input type="color" value={dot} onChange={e => setDot(e.target.value)} className="h-10 w-14 cursor-pointer rounded-lg border-0 bg-transparent p-0" />
+              <span className="font-mono text-xs text-neutral-400">{dot.toUpperCase()}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">Cancelar</button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:opacity-95">Salvar Situação</button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ─── Componente Principal ─────────────────────────────────────────────────────
 
 export default function App() {
   const [session, setSession] = useState<any>(null)
@@ -2077,7 +2744,6 @@ export default function App() {
   const [showProductModal, setShowProductModal] = useState(false)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
-  const [showPDVSaleModal, setShowPDVSaleModal] = useState(false)
 
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
@@ -2224,17 +2890,7 @@ export default function App() {
 
     try {
       const { data: pData } = await supabase.from('products').select('*')
-      if (pData && pData.length > 0) {
-        setProducts(pData.map(p => ({
-          id: p.id,
-          code: p.code || '',
-          name: p.name,
-          category: p.category,
-          cost_price: Number(p.cost_price) || 0,
-          sale_price: Number(p.sale_price) || 0,
-          stock: Number(p.stock) || 0,
-        })))
-      }
+      if (pData && pData.length > 0) setProducts(pData)
     } catch {}
 
     try {
@@ -2278,6 +2934,16 @@ export default function App() {
   const handleDeleteClient = async (id: string) => {
     setClients(prev => prev.filter(c => c.id !== id))
     await supabase.from('clients').delete().eq('id', id)
+  }
+
+  const handleOpenEditClient = (client: Client) => {
+    setClientEditing(client)
+    setShowClientModal(true)
+  }
+
+  const handleOpenNewClient = () => {
+    setClientEditing(null)
+    setShowClientModal(true)
   }
 
   const handleSaveOrder = async (orderData: Order) => {
@@ -2368,11 +3034,12 @@ export default function App() {
     await supabase.from('quotes').delete().eq('id', id)
   }
 
-  // ─── Lógica de PDV ──────────────────────────────────────────────────────────
+  // ─── Lógica de PDV (Frente de Caixa & Baixa no Estoque) ───────────────────────
 
   const handleCompleteSale = async (saleData: Sale) => {
     setSales(prev => [saleData, ...prev])
 
+    // Registra a venda na tabela sales
     await supabase.from('sales').insert([{
       id: saleData.id,
       client: saleData.client,
@@ -2383,7 +3050,7 @@ export default function App() {
       total: saleData.total,
     }])
 
-    // Baixa de estoque
+    // Dá baixa automática na quantidade de cada produto vendido
     for (const item of saleData.items) {
       const prod = products.find(p => p.name === item.desc)
       if (prod) {
@@ -2393,7 +3060,8 @@ export default function App() {
       }
     }
 
-    if (confirm(`Venda #${saleData.id} concluída com sucesso!\nDeseja imprimir o cupom?`)) {
+    // Pergunta se deseja imprimir o comprovante/cupom fiscal da venda imediatamente
+    if (confirm(`Venda #${saleData.id} concluída com sucesso!\nDeseja imprimir o cupom da venda?`)) {
       setOrderToPrint({
         id: saleData.id,
         client: saleData.client,
@@ -2573,9 +3241,9 @@ export default function App() {
             isDark={isDark}
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
             onNewQuote={() => { setShowQuoteModal(true) }}
-            onNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
-            onEditOrder={(o: Order) => { setOrderEditing(o); setShowOrderModal(true) }}
-            onPrintOrder={(o: Order) => setOrderToPrint(o)}
+            onNewClient={handleOpenNewClient}
+            onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
+            onPrintOrder={(o) => setOrderToPrint(o)}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
         )}
@@ -2598,7 +3266,7 @@ export default function App() {
             isDark={isDark}
             onNewQuote={() => { setShowQuoteModal(true) }}
             onEditQuote={(q) => {
-              onConvertToOrder(q)
+              handleConvertToOrder(q)
             }}
             onConvertToOrder={handleConvertToOrder}
             onDeleteQuote={handleDeleteQuote}
@@ -2608,9 +3276,10 @@ export default function App() {
         {screen === 'pdv' && (
           <PDVScreen
             products={products}
+            clients={clients}
             sales={sales}
             isDark={isDark}
-            onOpenNewSale={() => setShowPDVSaleModal(true)}
+            onCompleteSale={handleCompleteSale}
             onPrintSale={(sale) => {
               setOrderToPrint({
                 id: sale.id,
@@ -2633,8 +3302,8 @@ export default function App() {
           <ClientsScreen
             clients={clients}
             isDark={isDark}
-            onNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
-            onEditClient={(client: Client) => { setClientEditing(client); setShowClientModal(true) }}
+            onNewClient={handleOpenNewClient}
+            onEditClient={handleOpenEditClient}
             onDeleteClient={handleDeleteClient}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
@@ -2698,7 +3367,7 @@ export default function App() {
           services={services}
           products={products}
           onSave={handleSaveOrder}
-          onQuickNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
+          onQuickNewClient={handleOpenNewClient}
           orderToEdit={orderEditing}
           isDark={isDark}
         />
@@ -2712,7 +3381,7 @@ export default function App() {
           products={products}
           onSave={handleSaveQuote}
           onConvertToOrder={handleConvertToOrder}
-          onQuickNewClient={() => { setClientEditing(null); setShowClientModal(true) }}
+          onQuickNewClient={handleOpenNewClient}
           isDark={isDark}
         />
       )}
@@ -2725,17 +3394,6 @@ export default function App() {
           }}
           onSave={handleSaveClient}
           clientToEdit={clientEditing}
-          isDark={isDark}
-        />
-      )}
-
-      {/* Modal de Nova Venda do PDV com Backdrop Blur */}
-      {showPDVSaleModal && (
-        <PDVSaleModal
-          onClose={() => setShowPDVSaleModal(false)}
-          products={products}
-          clients={clients}
-          onFinishSale={handleCompleteSale}
           isDark={isDark}
         />
       )}
