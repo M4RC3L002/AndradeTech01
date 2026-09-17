@@ -73,6 +73,11 @@ interface CustomStatus {
   dot: string
 }
 
+interface CategoryItem {
+  id: string
+  name: string
+}
+
 // ─── Padrões Iniciais ─────────────────────────────────────────────────────────
 
 const DEFAULT_STATUSES: CustomStatus[] = [
@@ -86,18 +91,24 @@ const DEFAULT_STATUSES: CustomStatus[] = [
 ]
 
 const DEFAULT_SERVICES: CustomService[] = [
-  { id: '1', name: 'Troca de Tela', default_price: 350, category: 'Hardware' },
-  { id: '2', name: 'Reparo de Bateria', default_price: 180, category: 'Hardware' },
-  { id: '3', name: 'Formatação + SO', default_price: 150, category: 'Software' },
-  { id: '4', name: 'Limpeza Interna e Pasta', default_price: 120, category: 'Manutenção' },
-  { id: '5', name: 'Troca de Conector de Carga', default_price: 130, category: 'Hardware' },
-  { id: '6', name: 'Diagnóstico e Orçamento', default_price: 0, category: 'Diagnóstico' },
+  { id: '1', name: 'Troca de Tela', default_price: 350, category: 'Dispositivos' },
+  { id: '2', name: 'Reparo de Bateria', default_price: 180, category: 'Dispositivos' },
+  { id: '3', name: 'Formatação + SO', default_price: 150, category: 'Computadores' },
+  { id: '4', name: 'Limpeza Interna e Pasta', default_price: 120, category: 'Computadores' },
+  { id: '5', name: 'Troca de Conector de Carga', default_price: 130, category: 'Dispositivos' },
+  { id: '6', name: 'Diagnóstico e Orçamento', default_price: 0, category: 'Geral' },
 ]
 
 const DEFAULT_PRODUCTS: Product[] = [
-  { id: '1', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
-  { id: '2', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
-  { id: '3', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
+  { id: '1', name: 'SSD 480GB Kingston', category: 'Computadores', cost_price: 130, sale_price: 240, stock: 4 },
+  { id: '2', name: 'Tela iPhone 11 Incell', category: 'Dispositivos', cost_price: 110, sale_price: 250, stock: 2 },
+  { id: '3', name: 'Fonte ATX 500W', category: 'Computadores', cost_price: 160, sale_price: 280, stock: 3 },
+]
+
+const DEFAULT_CATEGORIES: CategoryItem[] = [
+  { id: '1', name: 'Acessórios' },
+  { id: '2', name: 'Computadores' },
+  { id: '3', name: 'Dispositivos' },
 ]
 
 const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
@@ -156,7 +167,7 @@ function ThemeToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () => vo
   )
 }
 
-// ─── Modal de Emissão e Impressão (A4 e Bobina Térmica) ───────────────────────
+// ─── Modal de Emissão e Impressão ──────────────────────────────────────────────
 
 function PrintModal({
   order,
@@ -575,31 +586,35 @@ function EmptyState({ icon, title, sub, isDark }: { icon: React.ReactNode; title
   )
 }
 
-// ─── Modais Específicos de Configurações ───────────────────────────────────────
+// ─── Modais de Ajustes (Com Edição e Backdrop Blur) ───────────────────────────
 
 function ProductModal({
   onClose,
   onSave,
+  categories,
+  productToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (prod: Product) => void
+  categories: CategoryItem[]
+  productToEdit?: Product | null
   isDark: boolean
 }) {
-  const [name, setName] = useState('')
-  const [category, setCategory] = useState('Peça')
-  const [costPrice, setCostPrice] = useState('')
-  const [salePrice, setSalePrice] = useState('')
-  const [stock, setStock] = useState('1')
+  const [name, setName] = useState(productToEdit?.name || '')
+  const [category, setCategory] = useState(productToEdit?.category || categories[0]?.name || 'Geral')
+  const [costPrice, setCostPrice] = useState(productToEdit?.cost_price ? String(productToEdit.cost_price) : '')
+  const [salePrice, setSalePrice] = useState(productToEdit?.sale_price ? String(productToEdit.sale_price) : '')
+  const [stock, setStock] = useState(productToEdit?.stock !== undefined ? String(productToEdit.stock) : '1')
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return alert('Informe o nome da peça/produto!')
 
     onSave({
-      id: Date.now().toString(),
+      id: productToEdit?.id || Date.now().toString(),
       name: name.trim(),
-      category: category.trim() || 'Peça',
+      category: category.trim() || 'Geral',
       cost_price: Number(costPrice) || 0,
       sale_price: Number(salePrice) || 0,
       stock: Number(stock) || 0,
@@ -619,7 +634,7 @@ function ProductModal({
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
             <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">ESTOQUE & PEÇAS</div>
-            <h2 className="text-base font-bold">Novo Produto / Peça</h2>
+            <h2 className="text-base font-bold">{productToEdit ? 'Editar Peça / Produto' : 'Novo Produto / Peça'}</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -631,8 +646,13 @@ function ProductModal({
             <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston, Tela iPhone 11..." className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Telas, Armazenamento, Fontes..." className={inputClass} />
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria de Filtro</label>
+            <select value={category} onChange={e => setCategory(e.target.value)} className={inputClass}>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.name}>{cat.name}</option>
+              ))}
+              <option value="Geral">Geral</option>
+            </select>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
@@ -654,7 +674,7 @@ function ProductModal({
             Cancelar
           </button>
           <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            Salvar Peça / Produto
+            {productToEdit ? 'Atualizar Peça' : 'Salvar Peça / Produto'}
           </button>
         </div>
       </form>
@@ -665,22 +685,26 @@ function ProductModal({
 function ServiceModal({
   onClose,
   onSave,
+  categories,
+  serviceToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (svc: CustomService) => void
+  categories: CategoryItem[]
+  serviceToEdit?: CustomService | null
   isDark: boolean
 }) {
-  const [name, setName] = useState('')
-  const [defaultPrice, setDefaultPrice] = useState('')
-  const [category, setCategory] = useState('Hardware')
+  const [name, setName] = useState(serviceToEdit?.name || '')
+  const [defaultPrice, setDefaultPrice] = useState(serviceToEdit?.default_price ? String(serviceToEdit.default_price) : '')
+  const [category, setCategory] = useState(serviceToEdit?.category || categories[0]?.name || 'Geral')
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return alert('Informe o nome do serviço!')
 
     onSave({
-      id: Date.now().toString(),
+      id: serviceToEdit?.id || Date.now().toString(),
       name: name.trim(),
       default_price: Number(defaultPrice) || 0,
       category: category.trim() || 'Geral',
@@ -700,7 +724,7 @@ function ServiceModal({
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
             <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">MÃO DE OBRA</div>
-            <h2 className="text-base font-bold">Novo Serviço Técnico</h2>
+            <h2 className="text-base font-bold">{serviceToEdit ? 'Editar Serviço' : 'Novo Serviço Técnico'}</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -709,7 +733,7 @@ function ServiceModal({
         <div className="space-y-3 px-5 py-4">
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome do Serviço *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Limpeza com Pasta Térmica..." className={inputClass} />
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Troca de Tela, Formatação..." className={inputClass} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -717,8 +741,13 @@ function ServiceModal({
               <input required type="number" step="any" value={defaultPrice} onChange={e => setDefaultPrice(e.target.value)} placeholder="0.00" className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Hardware, Software, Manutenção..." className={inputClass} />
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria de Filtro</label>
+              <select value={category} onChange={e => setCategory(e.target.value)} className={inputClass}>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.name}>{cat.name}</option>
+                ))}
+                <option value="Geral">Geral</option>
+              </select>
             </div>
           </div>
         </div>
@@ -727,7 +756,68 @@ function ServiceModal({
             Cancelar
           </button>
           <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            Salvar Serviço
+            {serviceToEdit ? 'Atualizar Serviço' : 'Salvar Serviço'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+function CategoryModal({
+  onClose,
+  onSave,
+  categoryToEdit,
+  isDark,
+}: {
+  onClose: () => void
+  onSave: (cat: CategoryItem) => void
+  categoryToEdit?: CategoryItem | null
+  isDark: boolean
+}) {
+  const [name, setName] = useState(categoryToEdit?.name || '')
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return alert('Informe o nome da categoria!')
+
+    onSave({
+      id: categoryToEdit?.id || Date.now().toString(),
+      name: name.trim(),
+    })
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={handleSave} className={`w-full max-w-md rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">FILTROS & CATEGORIAS</div>
+            <h2 className="text-base font-bold">{categoryToEdit ? 'Editar Categoria' : 'Nova Categoria'}</h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="space-y-4 px-5 py-4">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome da Categoria *</label>
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Acessórios, Computadores, Dispositivos..." className={inputClass} />
+          </div>
+        </div>
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
+            Cancelar
+          </button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
+            {categoryToEdit ? 'Atualizar Categoria' : 'Salvar Categoria'}
           </button>
         </div>
       </form>
@@ -738,21 +828,23 @@ function ServiceModal({
 function StatusModal({
   onClose,
   onSave,
+  statusToEdit,
   isDark,
 }: {
   onClose: () => void
   onSave: (st: CustomStatus) => void
+  statusToEdit?: CustomStatus | null
   isDark: boolean
 }) {
-  const [label, setLabel] = useState('')
-  const [dot, setDot] = useState('#0066FF')
+  const [label, setLabel] = useState(statusToEdit?.label || '')
+  const [dot, setDot] = useState(statusToEdit?.dot || '#0066FF')
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     if (!label.trim()) return alert('Informe o nome da situação!')
 
     onSave({
-      id: Date.now().toString(),
+      id: statusToEdit?.id || Date.now().toString(),
       label: label.trim(),
       dot,
     })
@@ -771,7 +863,7 @@ function StatusModal({
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
             <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">FLUXO DE OS</div>
-            <h2 className="text-base font-bold">Nova Situação / Status</h2>
+            <h2 className="text-base font-bold">{statusToEdit ? 'Editar Situação' : 'Nova Situação / Status'}</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -795,7 +887,7 @@ function StatusModal({
             Cancelar
           </button>
           <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
-            Salvar Situação
+            {statusToEdit ? 'Atualizar Situação' : 'Salvar Situação'}
           </button>
         </div>
       </form>
@@ -805,7 +897,7 @@ function StatusModal({
 
 // ─── Modal: Ordem de Serviço ──────────────────────────────────────────────────
 
-function OrderModalWrapper({
+function OrderModal({
   onClose,
   clients,
   statuses,
@@ -826,24 +918,648 @@ function OrderModalWrapper({
   orderToEdit?: Order | null
   isDark: boolean
 }) {
+  const [client, setClient] = useState(orderToEdit?.client || (clients[0]?.name ?? ''))
+  const [phone, setPhone] = useState(orderToEdit?.phone || '')
+  const [device, setDevice] = useState(orderToEdit?.device || '')
+  const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
+  const [notes, setNotes] = useState(orderToEdit?.notes || '')
+  const [status, setStatus] = useState(orderToEdit?.status || (statuses[0]?.label ?? 'Entrada'))
+  const [items, setItems] = useState<OrderItem[]>(
+    orderToEdit?.items && orderToEdit.items.length > 0
+      ? orderToEdit.items
+      : [{ desc: orderToEdit?.service || '', qty: 1, unit: orderToEdit?.value || 0 }]
+  )
+
+  useEffect(() => {
+    if (!phone && client) {
+      const found = clients.find(c => c.name === client)
+      if (found) setPhone(found.phone)
+    }
+  }, [client, clients])
+
+  const total = items.reduce((s, i) => s + (i.qty || 1) * (i.unit || 0), 0)
+
+  const handleClientSelectChange = (name: string) => {
+    setClient(name)
+    const found = clients.find(c => c.name === name)
+    if (found) setPhone(found.phone)
+  }
+
+  const handleApplyPreset = (value: string, index: number) => {
+    const svc = services.find(s => s.name === value)
+    if (svc) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+      return
+    }
+    const prod = products.find(p => p.name === value)
+    if (prod) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
+    }
+  }
+
+  const handleSave = (e: React.FormEvent, sendToWhatsApp = false) => {
+    e.preventDefault()
+    if (!client.trim() || !device.trim()) {
+      alert('Selecione o cliente e informe o aparelho!')
+      return
+    }
+
+    const firstService = items[0]?.desc?.trim() || 'Serviço Técnico'
+    const savedOrder: Order = {
+      id: orderToEdit?.id || `OS-${Math.floor(1000 + Math.random() * 9000)}`,
+      client,
+      phone,
+      device,
+      service: firstService,
+      status,
+      value: total,
+      date: orderToEdit?.date || new Date().toLocaleDateString('pt-BR'),
+      technician: technician || 'Admin',
+      notes,
+      items,
+    }
+
+    onSave(savedOrder)
+
+    if (sendToWhatsApp && phone) {
+      const msg = `*AndradeTech - Ordem de Serviço #${savedOrder.id}*\n\n` +
+                  `Olá, *${client}*!\n` +
+                  `*Aparelho:* ${device}\n` +
+                  `*Serviço:* ${firstService}\n` +
+                  `*Situação:* ${status}\n` +
+                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
+                  `Qualquer dúvida estamos à disposição!`
+      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
+    }
+
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
   return (
-    <OrderModal
-      onClose={onClose}
-      clients={clients}
-      statuses={statuses}
-      services={services}
-      products={products}
-      onSave={onSave}
-      onQuickNewClient={onQuickNewClient}
-      orderToEdit={orderToEdit}
-      isDark={isDark}
-    />
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
+              {orderToEdit ? `EDITANDO ${orderToEdit.id}` : 'NOVO REGISTRO'}
+            </div>
+            <h2 className="text-sm font-bold sm:text-base">
+              {orderToEdit ? 'Editar Ordem de Serviço' : 'Registrar Ordem de Serviço'}
+            </h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
+                <button
+                  type="button"
+                  onClick={onQuickNewClient}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
+                  title="Cadastrar Novo Cliente"
+                >
+                  <span>+</span> Cliente
+                </button>
+              </div>
+              <select
+                value={client}
+                onChange={e => handleClientSelectChange(e.target.value)}
+                className={inputClass}
+              >
+                <option value="" disabled>Selecione um cliente...</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="(DDD) 99999-9999"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
+              <input
+                value={device}
+                onChange={e => setDevice(e.target.value)}
+                placeholder="Ex: Notebook Lenovo, Galaxy S21..."
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
+              <select
+                value={status}
+                onChange={e => setStatus(e.target.value)}
+                className={inputClass}
+              >
+                {statuses.map(s => (
+                  <option key={s.id} value={s.label}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Técnico Responsável</label>
+            <input
+              value={technician}
+              onChange={e => setTechnician(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Diagnóstico / Defeito</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Relato do problema, observações do aparelho..."
+              className={`${inputClass} resize-none`}
+            />
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Serviços & Peças</label>
+              <button
+                type="button"
+                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
+                className="text-xs font-semibold text-[#0066FF] hover:text-[#8A2BE2]"
+              >
+                + Adicionar Item
+              </button>
+            </div>
+
+            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <th className="px-3 py-2 text-left">Item (Serviço ou Peça)</th>
+                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
+                    <th className="w-20 px-2 py-2 text-right">Unit</th>
+                    <th className="w-20 px-2 py-2 text-right">Total</th>
+                    <th className="w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, i) => (
+                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
+                      <td className="px-2 py-1.5">
+                        <div className="flex flex-col gap-1 sm:flex-row">
+                          <input
+                            value={item.desc}
+                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
+                            placeholder="Descrição..."
+                            className="w-full bg-transparent outline-none"
+                          />
+                          <select
+                            onChange={e => {
+                              if (e.target.value) handleApplyPreset(e.target.value, i)
+                            }}
+                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Catálogo</option>
+                            <optgroup label="Serviços">
+                              {services.map(s => (
+                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Produtos / Peças">
+                              {products.map(p => (
+                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
+                          className="w-full bg-transparent text-center font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-1 py-1.5 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={item.unit || ''}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
+                          placeholder="0"
+                          className="w-full bg-transparent text-right font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
+                        R$ {((item.qty || 1) * (item.unit || 0)).toFixed(2)}
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
+                          className="text-neutral-400 hover:text-red-500"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
+                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
+                    <td className="px-2 py-2 text-right font-bold text-[#0066FF]">R$ {total.toFixed(2)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
+            Cancelar
+          </button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20 sm:flex-initial">
+              Salvar OS
+            </button>
+            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
+              Salvar & Whats
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ─── Modal: Orçamento ─────────────────────────────────────────────────────────
+
+function QuoteModal({
+  onClose,
+  clients,
+  services,
+  products,
+  onSave,
+  onConvertToOrder,
+  onQuickNewClient,
+  quoteToEdit,
+  isDark,
+}: {
+  onClose: () => void
+  clients: Client[]
+  services: CustomService[]
+  products: Product[]
+  onSave: (quote: Quote) => void
+  onConvertToOrder: (quote: Quote) => void
+  onQuickNewClient: () => void
+  quoteToEdit?: Quote | null
+  isDark: boolean
+}) {
+  const [client, setClient] = useState(quoteToEdit?.client || (clients[0]?.name ?? ''))
+  const [phone, setPhone] = useState(quoteToEdit?.phone || '')
+  const [device, setDevice] = useState(quoteToEdit?.device || '')
+  const [description, setDescription] = useState(quoteToEdit?.description || '')
+  const [validDays, setValidDays] = useState('7')
+  const [status, setStatus] = useState<'Pendente' | 'Aprovado' | 'Cancelado'>(quoteToEdit?.status || 'Pendente')
+  const [items, setItems] = useState<OrderItem[]>(
+    quoteToEdit?.items && quoteToEdit.items.length > 0
+      ? quoteToEdit.items
+      : [{ desc: '', qty: 1, unit: 0 }]
+  )
+
+  useEffect(() => {
+    if (!phone && client) {
+      const found = clients.find(c => c.name === client)
+      if (found) setPhone(found.phone)
+    }
+  }, [client, clients])
+
+  const total = items.reduce((s, i) => s + (i.qty || 1) * (i.unit || 0), 0)
+
+  const handleClientSelectChange = (name: string) => {
+    setClient(name)
+    const found = clients.find(c => c.name === name)
+    if (found) setPhone(found.phone)
+  }
+
+  const handleApplyPreset = (value: string, index: number) => {
+    const svc = services.find(s => s.name === value)
+    if (svc) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+      return
+    }
+    const prod = products.find(p => p.name === value)
+    if (prod) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
+    }
+  }
+
+  const handleSave = (e: React.FormEvent, sendWhatsApp = false) => {
+    e.preventDefault()
+    if (!client.trim() || !device.trim()) {
+      alert('Selecione o cliente e informe o aparelho!')
+      return
+    }
+
+    const expDate = new Date()
+    expDate.setDate(expDate.getDate() + (Number(validDays) || 7))
+
+    const quoteData: Quote = {
+      id: quoteToEdit?.id || `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
+      client,
+      phone,
+      device,
+      description: description || items[0]?.desc || 'Proposta de serviço',
+      value: total,
+      validUntil: quoteToEdit?.validUntil || expDate.toLocaleDateString('pt-BR'),
+      createdAt: quoteToEdit?.createdAt || new Date().toLocaleDateString('pt-BR'),
+      status,
+      items,
+    }
+
+    onSave(quoteData)
+
+    if (status === 'Aprovado' && (!quoteToEdit || quoteToEdit.status !== 'Aprovado')) {
+      const confirmConvert = confirm('O orçamento foi marcado como Aprovado. Deseja gerar a Ordem de Serviço agora?')
+      if (confirmConvert) {
+        onConvertToOrder(quoteData)
+      }
+    }
+
+    if (sendWhatsApp && phone) {
+      const msg = `*AndradeTech - Proposta de Orçamento #${quoteData.id}*\n\n` +
+                  `Olá, *${client}*!\n` +
+                  `*Aparelho:* ${device}\n` +
+                  `*Situação:* ${status}\n` +
+                  `*Descrição:* ${quoteData.description}\n` +
+                  `*Valor Total:* R$ ${total.toFixed(2)}\n` +
+                  `*Válido até:* ${quoteData.validUntil}\n\n` +
+                  `Aguardamos sua confirmação!`
+      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
+    }
+
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={(e) => handleSave(e, false)} className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">
+              {quoteToEdit ? `EDITANDO ${quoteToEdit.id}` : 'PROPOSTA COMERCIAL'}
+            </div>
+            <h2 className="text-sm font-bold sm:text-base">
+              {quoteToEdit ? 'Editar Orçamento' : 'Criar Novo Orçamento'}
+            </h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cliente *</label>
+                <button
+                  type="button"
+                  onClick={onQuickNewClient}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2 py-0.5 rounded shadow-sm hover:opacity-95"
+                  title="Cadastrar Novo Cliente"
+                >
+                  <span>+</span> Cliente
+                </button>
+              </div>
+              <select
+                value={client}
+                onChange={e => handleClientSelectChange(e.target.value)}
+                className={inputClass}
+              >
+                <option value="" disabled>Selecione um cliente...</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="(DDD) 99999-9999"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Aparelho *</label>
+              <input
+                value={device}
+                onChange={e => setDevice(e.target.value)}
+                placeholder="Ex: iPhone 12, Notebook Acer..."
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
+              <select
+                value={status}
+                onChange={e => setStatus(e.target.value as any)}
+                className={`${inputClass} font-semibold ${
+                  status === 'Aprovado' ? 'text-green-500' :
+                  status === 'Cancelado' ? 'text-red-500' : 'text-[#8A2BE2]'
+                }`}
+              >
+                <option value="Pendente">🟡 Pendente</option>
+                <option value="Aprovado">🟢 Aprovado (Vira OS)</option>
+                <option value="Cancelado">🔴 Cancelado</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Validade</label>
+              <select
+                value={validDays}
+                onChange={e => setValidDays(e.target.value)}
+                className={inputClass}
+              >
+                <option value="3">3 dias</option>
+                <option value="7">7 dias (padrão)</option>
+                <option value="15">15 dias</option>
+                <option value="30">30 dias</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Resumo do Diagnóstico</label>
+            <textarea
+              rows={2}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Descreva a falha constatada e o que precisa ser substituído..."
+              className={`${inputClass} resize-none`}
+            />
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">Itens / Peças / Serviços</label>
+              <button
+                type="button"
+                onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
+                className="text-xs font-semibold text-[#8A2BE2] hover:text-[#0066FF]"
+              >
+                + Adicionar Item
+              </button>
+            </div>
+
+            <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className={`border-b font-mono uppercase ${isDark ? 'bg-black/60 text-neutral-400 border-neutral-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <th className="px-3 py-2 text-left">Item</th>
+                    <th className="w-12 px-2 py-2 text-center">Qtd</th>
+                    <th className="w-20 px-2 py-2 text-right">Unit</th>
+                    <th className="w-20 px-2 py-2 text-right">Total</th>
+                    <th className="w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, i) => (
+                    <tr key={i} className={`border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
+                      <td className="px-2 py-1.5">
+                        <div className="flex flex-col gap-1 sm:flex-row">
+                          <input
+                            value={item.desc}
+                            onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
+                            placeholder="Peça ou mão de obra..."
+                            className="w-full bg-transparent outline-none"
+                          />
+                          <select
+                            onChange={e => {
+                              if (e.target.value) handleApplyPreset(e.target.value, i)
+                            }}
+                            className={`rounded border text-[10px] outline-none ${isDark ? 'bg-[#222] border-neutral-700 text-neutral-300' : 'bg-slate-100 border-slate-300 text-slate-700'}`}
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Catálogo</option>
+                            <optgroup label="Serviços">
+                              {services.map(s => (
+                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Produtos / Peças">
+                              {products.map(p => (
+                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, qty: Math.max(1, +e.target.value) } : it))}
+                          className="w-full bg-transparent text-center font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-1 py-1.5 text-right">
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={item.unit || ''}
+                          onChange={e => setItems(items.map((it, j) => j === i ? { ...it, unit: +e.target.value } : it))}
+                          placeholder="0"
+                          className="w-full bg-transparent text-right font-mono outline-none"
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono text-neutral-400">
+                        R$ {((item.qty || 1) * (item.unit || 0)).toFixed(2)}
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => items.length > 1 && setItems(items.filter((_, j) => j !== i))}
+                          className="text-neutral-400 hover:text-red-500"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className={`border-t font-mono ${isDark ? 'border-neutral-700 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
+                    <td colSpan={3} className="px-3 py-2 text-right uppercase text-neutral-400">Total:</td>
+                    <td className="px-2 py-2 text-right font-bold text-[#8A2BE2]">R$ {total.toFixed(2)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className={`flex flex-col-reverse items-center justify-between gap-2 border-t px-5 py-3 sm:flex-row ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="w-full px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600 sm:w-auto">
+            Cancelar
+          </button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <button type="submit" className="flex-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-purple-500/20 sm:flex-initial">
+              {quoteToEdit ? 'Atualizar Orçamento' : 'Salvar Orçamento'}
+            </button>
+            <button type="button" onClick={(e) => handleSave(e, true)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-500 sm:flex-initial">
+              Salvar & Whats
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
   )
 }
 
 // ─── Modal: Cliente ───────────────────────────────────────────────────────────
 
-function ClientModalWrapper({
+function ClientModal({
   onClose,
   onSave,
   clientToEdit,
@@ -854,13 +1570,87 @@ function ClientModalWrapper({
   clientToEdit?: Client | null
   isDark: boolean
 }) {
+  const [name, setName] = useState(clientToEdit?.name || '')
+  const [phone, setPhone] = useState(clientToEdit?.phone || '')
+  const [cpf, setCpf] = useState(clientToEdit?.cpf || '')
+  const [address, setAddress] = useState(clientToEdit?.address || '')
+  const [city, setCity] = useState(clientToEdit?.city || '')
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return alert('Nome do cliente é obrigatório')
+
+    onSave({
+      id: clientToEdit?.id || `CLI-${Math.floor(100 + Math.random() * 900)}`,
+      name,
+      phone,
+      cpf,
+      address,
+      city: city || 'São João do Paraíso',
+      totalOrders: clientToEdit?.totalOrders || 0,
+      totalSpent: clientToEdit?.totalSpent || 0,
+      lastService: clientToEdit?.lastService || 'Cadastrado no sistema',
+      devices: clientToEdit?.devices || [],
+    })
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
   return (
-    <ClientModal
-      onClose={onClose}
-      onSave={onSave}
-      clientToEdit={clientToEdit}
-      isDark={isDark}
-    />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm">
+      <form onSubmit={handleSave} className={`w-full max-w-lg rounded-2xl border shadow-2xl transition-colors ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">
+              {clientToEdit ? `EDITANDO ${clientToEdit.id}` : 'CADASTRO'}
+            </div>
+            <h2 className="text-base font-bold">
+              {clientToEdit ? 'Editar Cliente' : 'Novo Cliente'}
+            </h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="space-y-3 px-5 py-4">
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome Completo *</label>
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Rafael Mendonça" className={inputClass} />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Telefone / WhatsApp *</label>
+              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(DDD) 99999-9999" className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">CPF / CNPJ</label>
+              <input value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className={inputClass} />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Endereço</label>
+            <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, bairro..." className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Cidade / Estado</label>
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Ex: São João do Paraíso, BA" className={inputClass} />
+          </div>
+        </div>
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">
+            Cancelar
+          </button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 shadow-md shadow-blue-500/20">
+            {clientToEdit ? 'Salvar Alterações' : 'Salvar Cliente'}
+          </button>
+        </div>
+      </form>
+    </div>
   )
 }
 
@@ -1575,141 +2365,356 @@ function ClientsScreen({
   )
 }
 
-// ─── Tela: Configurações & Catálogo (Com botões de modal) ──────────────────────
+// ─── Tela: Configurações, Catálogo & Categorias (Com Filtros e Lista/Quadro) ──
 
 function SettingsScreen({
   services,
   products,
   statuses,
+  categories,
   isDark,
   onOpenProductModal,
   onOpenServiceModal,
   onOpenStatusModal,
+  onOpenCategoryModal,
+  onEditProduct,
+  onEditService,
+  onEditStatus,
+  onEditCategory,
   onDeleteProduct,
   onDeleteService,
   onDeleteStatus,
+  onDeleteCategory,
   onOpenMenu,
   onLogout,
 }: {
   services: CustomService[]
   products: Product[]
   statuses: CustomStatus[]
+  categories: CategoryItem[]
   isDark: boolean
   onOpenProductModal: () => void
   onOpenServiceModal: () => void
   onOpenStatusModal: () => void
+  onOpenCategoryModal: () => void
+  onEditProduct: (prod: Product) => void
+  onEditService: (svc: CustomService) => void
+  onEditStatus: (st: CustomStatus) => void
+  onEditCategory: (cat: CategoryItem) => void
   onDeleteProduct: (id: string) => void
   onDeleteService: (id: string) => void
   onDeleteStatus: (id: string) => void
+  onDeleteCategory: (id: string) => void
   onOpenMenu: () => void
   onLogout: () => void
 }) {
+  const [view, setView] = useState<'board' | 'list'>('board')
+  const [selectedCategory, setSelectedCategory] = useState<string>('Todos')
+
+  const filteredProducts = selectedCategory === 'Todos'
+    ? products
+    : products.filter(p => p.category?.toLowerCase() === selectedCategory.toLowerCase())
+
+  const filteredServices = selectedCategory === 'Todos'
+    ? services
+    : services.filter(s => s.category?.toLowerCase() === selectedCategory.toLowerCase())
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Topbar title="Configurações, Peças & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} onLogout={onLogout} />
+      <Topbar title="Configurações & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} onLogout={onLogout}>
+        {/* Alternador Lista / Quadro */}
+        <div className={`ml-2 flex items-center gap-1 rounded-lg border p-0.5 ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-slate-100'}`}>
+          <button
+            onClick={() => setView('board')}
+            className="rounded px-2 py-1 text-[11px] font-medium transition-all"
+            style={{
+              background: view === 'board' ? 'linear-gradient(to right, #0066FF, #8A2BE2)' : 'transparent',
+              color: view === 'board' ? '#fff' : (isDark ? '#888' : '#555'),
+            }}
+          >
+            Quadro
+          </button>
+          <button
+            onClick={() => setView('list')}
+            className="rounded px-2 py-1 text-[11px] font-medium transition-all"
+            style={{
+              background: view === 'list' ? 'linear-gradient(to right, #0066FF, #8A2BE2)' : 'transparent',
+              color: view === 'list' ? '#fff' : (isDark ? '#888' : '#555'),
+            }}
+          >
+            Lista
+          </button>
+        </div>
+      </Topbar>
+
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Card Produtos / Peças */}
-          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
-            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-          }`}>
-            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Produtos & Peças</span>
+        {/* Barra de Filtros de Categoria */}
+        <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
+          <span className="text-[11px] font-mono text-neutral-400 mr-1 uppercase">Filtro:</span>
+          {['Todos', ...categories.map(c => c.name)].map(catName => {
+            const isActive = selectedCategory === catName
+            return (
               <button
-                onClick={onOpenProductModal}
-                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+                key={catName}
+                onClick={() => setSelectedCategory(catName)}
+                className="whitespace-nowrap rounded-full border px-3 py-1 font-mono text-xs transition-all"
+                style={{
+                  background: isActive ? 'rgba(0, 102, 255, 0.15)' : 'transparent',
+                  color: isActive ? '#0066FF' : (isDark ? '#777' : '#555'),
+                  borderColor: isActive ? '#0066FF' : (isDark ? '#262626' : '#E2E8F0'),
+                }}
               >
-                + Nova Peça
+                {catName}
               </button>
-            </div>
+            )
+          })}
+        </div>
 
-            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-              {products.length === 0 ? (
-                <div className="p-6 text-center text-xs text-neutral-400">Nenhum produto cadastrado</div>
-              ) : (
-                products.map(p => (
-                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
-                    <div>
-                      <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</div>
-                      <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
-                        <span>Venda: R$ {p.sale_price.toFixed(2)}</span>
-                        <span>•</span>
-                        <span>Qtd: {p.stock}</span>
-                      </div>
-                    </div>
-                    <button onClick={() => onDeleteProduct(p.id)} className="text-neutral-400 hover:text-red-500">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Card Serviços */}
-          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
-            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-          }`}>
-            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Serviços da Assistência</span>
-              <button
-                onClick={onOpenServiceModal}
-                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
-              >
-                + Novo Serviço
-              </button>
-            </div>
-
-            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-              {services.map(s => (
-                <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+        {view === 'board' ? (
+          <>
+            {/* Linha 1: Peças, Serviços e Situações */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              {/* Card Produtos / Peças */}
+              <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+                isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+              }`}>
+                <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
                   <div>
-                    <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</div>
-                    <div className="font-mono text-neutral-400">R$ {s.default_price.toFixed(2)}</div>
-                  </div>
-                  <button onClick={() => onDeleteService(s.id)} className="text-neutral-400 hover:text-red-500">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Card Situações / Status */}
-          <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
-            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
-          }`}>
-            <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-              <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Situações de OS</span>
-              <button
-                onClick={onOpenStatusModal}
-                className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
-              >
-                + Nova Situação
-              </button>
-            </div>
-
-            <div className={`max-h-80 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
-              {statuses.map(st => (
-                <div key={st.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full" style={{ background: st.dot }} />
-                    <span className={isDark ? 'text-neutral-200' : 'text-slate-800'}>{st.label}</span>
+                    <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Produtos & Peças</span>
+                    <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({filteredProducts.length})</span>
                   </div>
                   <button
-                    onClick={() => {
-                      if (statuses.length <= 1) return alert('Mantenha ao menos uma situação!')
-                      onDeleteStatus(st.id)
-                    }}
-                    className="text-neutral-400 hover:text-red-500"
+                    onClick={onOpenProductModal}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    + Nova Peça
                   </button>
                 </div>
-              ))}
+
+                <div className={`max-h-72 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                  {filteredProducts.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-neutral-400">Nenhuma peça nesta categoria</div>
+                  ) : (
+                    filteredProducts.map(p => (
+                      <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
+                        <div>
+                          <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</div>
+                          <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
+                            <span className="text-[#0066FF] font-bold">{p.category || 'Geral'}</span>
+                            <span>•</span>
+                            <span>Venda: R$ {p.sale_price.toFixed(2)}</span>
+                            <span>•</span>
+                            <span>Qtd: {p.stock}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => onEditProduct(p)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Peça">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <button onClick={() => onDeleteProduct(p.id)} className="p-1 text-neutral-400 hover:text-red-500" title="Excluir">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Card Serviços */}
+              <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+                isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+              }`}>
+                <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                  <div>
+                    <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Serviços da Assistência</span>
+                    <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({filteredServices.length})</span>
+                  </div>
+                  <button
+                    onClick={onOpenServiceModal}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+                  >
+                    + Novo Serviço
+                  </button>
+                </div>
+
+                <div className={`max-h-72 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                  {filteredServices.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-neutral-400">Nenhum serviço nesta categoria</div>
+                  ) : (
+                    filteredServices.map(s => (
+                      <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
+                        <div>
+                          <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</div>
+                          <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
+                            <span className="text-[#8A2BE2] font-bold">{s.category || 'Geral'}</span>
+                            <span>•</span>
+                            <span>R$ {s.default_price.toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => onEditService(s)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Serviço">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <button onClick={() => onDeleteService(s.id)} className="p-1 text-neutral-400 hover:text-red-500" title="Excluir">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Card Situações / Status */}
+              <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+                isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+              }`}>
+                <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                  <div>
+                    <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Situações de OS</span>
+                    <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({statuses.length})</span>
+                  </div>
+                  <button
+                    onClick={onOpenStatusModal}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+                  >
+                    + Nova Situação
+                  </button>
+                </div>
+
+                <div className={`max-h-72 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                  {statuses.map(st => (
+                    <div key={st.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full shadow-sm" style={{ background: st.dot }} />
+                        <span className={isDark ? 'text-neutral-200' : 'text-slate-800'}>{st.label}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => onEditStatus(st)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Situação">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (statuses.length <= 1) return alert('Mantenha ao menos uma situação!')
+                            onDeleteStatus(st.id)
+                          }}
+                          className="p-1 text-neutral-400 hover:text-red-500"
+                          title="Excluir"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Linha 2: Quadro de Categorias / Filtros */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 pt-2">
+              <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+                isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+              }`}>
+                <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                  <div>
+                    <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Categorias de Filtro</span>
+                    <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({categories.length})</span>
+                  </div>
+                  <button
+                    onClick={onOpenCategoryModal}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-2.5 py-1 text-xs font-bold text-white hover:opacity-95 shadow-sm"
+                  >
+                    + Nova Categoria
+                  </button>
+                </div>
+
+                <div className={`max-h-56 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                  {categories.map(c => (
+                    <div key={c.id} className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-neutral-500/5">
+                      <span className={`font-semibold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>{c.name}</span>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => onEditCategory(c)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Categoria">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (categories.length <= 1) return alert('Mantenha ao menos uma categoria!')
+                            onDeleteCategory(c.id)
+                          }}
+                          className="p-1 text-neutral-400 hover:text-red-500"
+                          title="Excluir"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* MODO LISTA INTEGRADA */
+          <div className={`overflow-hidden rounded-xl border transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+          }`}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px] text-xs">
+                <thead>
+                  <tr className={`border-b text-left text-neutral-400 ${isDark ? 'bg-[#0e0e0e] border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                    <th className="px-3 py-2.5 font-mono uppercase">Tipo</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Nome / Descrição</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Categoria</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Preço / Venda</th>
+                    <th className="px-3 py-2.5 font-mono uppercase">Estoque</th>
+                    <th className="px-3 py-2.5 text-right font-mono uppercase">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                  {filteredProducts.map(p => (
+                    <tr key={`prod-${p.id}`} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">📦 Peça</td>
+                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{p.category}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-green-500">R$ {p.sale_price.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-300">{p.stock} un</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1">
+                          <button onClick={() => onEditProduct(p)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Peça">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <button onClick={() => onDeleteProduct(p.id)} className="p-1 text-neutral-400 hover:text-red-500" title="Excluir">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredServices.map(s => (
+                    <tr key={`svc-${s.id}`} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">🛠️ Serviço</td>
+                      <td className={`px-3 py-2.5 font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{s.name}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">{s.category}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-green-500">R$ {s.default_price.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono text-neutral-400">—</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center gap-1">
+                          <button onClick={() => onEditService(s)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar Serviço">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <button onClick={() => onDeleteService(s.id)} className="p-1 text-neutral-400 hover:text-red-500" title="Excluir">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
@@ -1740,13 +2745,22 @@ export default function App() {
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [showQuoteModal, setShowQuoteModal] = useState(false)
   const [showClientModal, setShowClientModal] = useState(false)
+
+  // Modais de Ajustes
   const [showProductModal, setShowProductModal] = useState(false)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
 
+  // Itens em Edição
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
   const [quoteEditing, setQuoteEditing] = useState<Quote | null>(null)
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
+  const [productEditing, setProductEditing] = useState<Product | null>(null)
+  const [serviceEditing, setServiceEditing] = useState<CustomService | null>(null)
+  const [statusEditing, setStatusEditing] = useState<CustomStatus | null>(null)
+  const [categoryEditing, setCategoryEditing] = useState<CategoryItem | null>(null)
+
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null)
 
   const [clients, setClients] = useState<Client[]>([])
@@ -1755,6 +2769,7 @@ export default function App() {
   const [services, setServices] = useState<CustomService[]>(DEFAULT_SERVICES)
   const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS)
   const [statuses, setStatuses] = useState<CustomStatus[]>(DEFAULT_STATUSES)
+  const [categories, setCategories] = useState<CategoryItem[]>(DEFAULT_CATEGORIES)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -1862,6 +2877,9 @@ export default function App() {
 
       const { data: stData } = await supabase.from('statuses').select('*')
       if (stData && stData.length > 0) setStatuses(stData)
+
+      const { data: catData } = await supabase.from('categories').select('*')
+      if (catData && catData.length > 0) setCategories(catData)
     } catch (err) {
       console.error('Erro ao buscar dados do Supabase:', err)
     }
@@ -1902,16 +2920,6 @@ export default function App() {
   const handleDeleteClient = async (id: string) => {
     setClients(prev => prev.filter(c => c.id !== id))
     await supabase.from('clients').delete().eq('id', id)
-  }
-
-  const handleOpenEditClient = (client: Client) => {
-    setClientEditing(client)
-    setShowClientModal(true)
-  }
-
-  const handleOpenNewClient = () => {
-    setClientEditing(null)
-    setShowClientModal(true)
   }
 
   const handleSaveOrder = async (orderData: Order) => {
@@ -2022,6 +3030,7 @@ export default function App() {
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-slate-100 text-slate-900'}`}>
+      {/* Sidebar Desktop */}
       <aside className={`hidden h-screen flex-shrink-0 flex-col border-r transition-colors md:flex ${
         isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white'
       }`} style={{ width: 230 }}>
@@ -2213,10 +3222,16 @@ export default function App() {
             services={services}
             products={products}
             statuses={statuses}
+            categories={categories}
             isDark={isDark}
-            onOpenProductModal={() => setShowProductModal(true)}
-            onOpenServiceModal={() => setShowServiceModal(true)}
-            onOpenStatusModal={() => setShowStatusModal(true)}
+            onOpenProductModal={() => { setProductEditing(null); setShowProductModal(true) }}
+            onOpenServiceModal={() => { setServiceEditing(null); setShowServiceModal(true) }}
+            onOpenStatusModal={() => { setStatusEditing(null); setShowStatusModal(true) }}
+            onOpenCategoryModal={() => { setCategoryEditing(null); setShowCategoryModal(true) }}
+            onEditProduct={(p) => { setProductEditing(p); setShowProductModal(true) }}
+            onEditService={(s) => { setServiceEditing(s); setShowServiceModal(true) }}
+            onEditStatus={(st) => { setStatusEditing(st); setShowStatusModal(true) }}
+            onEditCategory={(cat) => { setCategoryEditing(cat); setShowCategoryModal(true) }}
             onDeleteProduct={async (id) => {
               setProducts(prev => prev.filter(p => p.id !== id))
               await supabase.from('products').delete().eq('id', id)
@@ -2228,6 +3243,10 @@ export default function App() {
             onDeleteStatus={async (id) => {
               setStatuses(prev => prev.filter(s => s.id !== id))
               await supabase.from('statuses').delete().eq('id', id)
+            }}
+            onDeleteCategory={async (id) => {
+              setCategories(prev => prev.filter(c => c.id !== id))
+              await supabase.from('categories').delete().eq('id', id)
             }}
             onOpenMenu={() => setMobileMenuOpen(true)}
             onLogout={handleLogout}
@@ -2257,7 +3276,7 @@ export default function App() {
 
       {/* Modais Globais */}
       {showOrderModal && (
-        <OrderModalWrapper
+        <OrderModal
           onClose={() => {
             setShowOrderModal(false)
             setOrderEditing(null)
@@ -2291,7 +3310,7 @@ export default function App() {
       )}
 
       {showClientModal && (
-        <ClientModalWrapper
+        <ClientModal
           onClose={() => {
             setShowClientModal(false)
             setClientEditing(null)
@@ -2302,13 +3321,21 @@ export default function App() {
         />
       )}
 
-      {/* Modais de Ajustes com Backdrop Blur */}
+      {/* Modais de Ajustes com Edição e Backdrop Blur */}
       {showProductModal && (
         <ProductModal
-          onClose={() => setShowProductModal(false)}
+          onClose={() => {
+            setShowProductModal(false)
+            setProductEditing(null)
+          }}
+          productToEdit={productEditing}
+          categories={categories}
           onSave={async (prod) => {
-            setProducts(prev => [prod, ...prev])
-            await supabase.from('products').insert([prod])
+            setProducts(prev => {
+              const exists = prev.some(p => p.id === prod.id)
+              return exists ? prev.map(p => p.id === prod.id ? prod : p) : [prod, ...prev]
+            })
+            await supabase.from('products').upsert([prod])
           }}
           isDark={isDark}
         />
@@ -2316,10 +3343,18 @@ export default function App() {
 
       {showServiceModal && (
         <ServiceModal
-          onClose={() => setShowServiceModal(false)}
+          onClose={() => {
+            setShowServiceModal(false)
+            setServiceEditing(null)
+          }}
+          serviceToEdit={serviceEditing}
+          categories={categories}
           onSave={async (svc) => {
-            setServices(prev => [svc, ...prev])
-            await supabase.from('services').insert([svc])
+            setServices(prev => {
+              const exists = prev.some(s => s.id === svc.id)
+              return exists ? prev.map(s => s.id === svc.id ? svc : s) : [svc, ...prev]
+            })
+            await supabase.from('services').upsert([svc])
           }}
           isDark={isDark}
         />
@@ -2327,10 +3362,35 @@ export default function App() {
 
       {showStatusModal && (
         <StatusModal
-          onClose={() => setShowStatusModal(false)}
+          onClose={() => {
+            setShowStatusModal(false)
+            setStatusEditing(null)
+          }}
+          statusToEdit={statusEditing}
           onSave={async (st) => {
-            setStatuses(prev => [...prev, st])
-            await supabase.from('statuses').insert([st])
+            setStatuses(prev => {
+              const exists = prev.some(s => s.id === st.id)
+              return exists ? prev.map(s => s.id === st.id ? st : s) : [st, ...prev]
+            })
+            await supabase.from('statuses').upsert([st])
+          }}
+          isDark={isDark}
+        />
+      )}
+
+      {showCategoryModal && (
+        <CategoryModal
+          onClose={() => {
+            setShowCategoryModal(false)
+            setCategoryEditing(null)
+          }}
+          categoryToEdit={categoryEditing}
+          onSave={async (cat) => {
+            setCategories(prev => {
+              const exists = prev.some(c => c.id === cat.id)
+              return exists ? prev.map(c => c.id === cat.id ? cat : c) : [...prev, cat]
+            })
+            await supabase.from('categories').upsert([cat])
           }}
           isDark={isDark}
         />
