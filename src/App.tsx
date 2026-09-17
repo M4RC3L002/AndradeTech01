@@ -237,7 +237,8 @@ function PrintModal({
                   <div>
                     <h1 className="text-xl font-black tracking-tight text-slate-900">ANDRADETECH</h1>
                     <p className="text-[11px] font-semibold text-slate-600">Assistência Técnica em Informática e Acessórios</p>
-                    <p className="text-[10px] text-slate-500">Eunápolis - BA | WhatsApp / Tel: (73) 99999-9999</p>
+                    <p className="text-[10px] text-slate-500">São João do Paraíso - BA | WhatsApp / Tel: (73) 98834-3028</p>
+                    <p className="text-[10px] text-slate-500">E-mail: andrade.tech2026@gmail.com</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -329,8 +330,9 @@ function PrintModal({
               <div className="text-center pb-2 border-b border-dashed border-black mb-2">
                 <div className="font-black text-sm">ANDRADETECH</div>
                 <div className="text-[9px]">Assistência Técnica Especializada</div>
-                <div className="text-[9px]">Eunápolis - Bahia</div>
-                <div className="text-[9px]">Tel/WhatsApp: (73) 99999-9999</div>
+                <div className="text-[9px]">São João do Paraíso - Bahia</div>
+                <div className="text-[9px]">Tel/WhatsApp: (73) 98834-3028</div>
+                <div className="text-[8px]">andrade.tech2026@gmail.com</div>
               </div>
 
               <div className="text-center font-bold text-xs py-1 border-b border-dashed border-black mb-2">
