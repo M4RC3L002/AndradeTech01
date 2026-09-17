@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Tipos ────────────────────────────────────────────────────────────────────
 
 type Screen = 'dashboard' | 'orders' | 'quotes' | 'clients' | 'settings'
 
@@ -73,7 +73,9 @@ interface CustomStatus {
   dot: string
 }
 
-// ─── Padrões Iniciais ─────────────────────────────────────────────────────────
+// ─── Constantes Padrão ────────────────────────────────────────────────────────
+
+const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
 
 const DEFAULT_STATUSES: CustomStatus[] = [
   { id: '1', label: 'Entrada', dot: '#64748B' },
@@ -99,8 +101,6 @@ const DEFAULT_PRODUCTS: Product[] = [
   { id: '2', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
   { id: '3', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
 ]
-
-const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
 
 const NAV_ITEMS = [
   {
@@ -140,7 +140,7 @@ const NAV_ITEMS = [
   },
 ] as const
 
-// ─── Componentes Globais de UI ────────────────────────────────────────────────
+// ─── Componentes de UI Auxiliares ─────────────────────────────────────────────
 
 function AppLogo({ size = 36 }: { size?: number }) {
   const [imgError, setImgError] = useState(false)
@@ -299,7 +299,6 @@ function Topbar({
   onNewOrder?: () => void
   onNewQuote?: () => void
   onNewClient?: () => void
-  onLogout?: () => void
   children?: React.ReactNode
 }) {
   return (
@@ -364,7 +363,7 @@ function Topbar({
   )
 }
 
-// ─── Tela de Login ───────────────────────────────────────────────────────────
+// ─── Telas de Autenticação e Impressão ─────────────────────────────────────────
 
 function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; isDark: boolean }) {
   const [email, setEmail] = useState('')
@@ -450,8 +449,6 @@ function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; i
     </div>
   )
 }
-
-// ─── Modal de Emissão e Impressão (Folha A4 e Cupom Térmico) ───────────────────
 
 function PrintModal({
   order,
@@ -925,7 +922,7 @@ function StatusModal({
   )
 }
 
-// ─── Modal: Ordem de Serviço ──────────────────────────────────────────────────
+// ─── Modais de OS, Orçamento e Cliente ────────────────────────────────────────
 
 function OrderModal({
   onClose,
@@ -1253,8 +1250,6 @@ function OrderModal({
   )
 }
 
-// ─── Modal: Orçamento ─────────────────────────────────────────────────────────
-
 function QuoteModal({
   onClose,
   clients = [],
@@ -1342,7 +1337,7 @@ function QuoteModal({
                   `Olá, *${client}*!\n` +
                   `*Aparelho:* ${device}\n` +
                   `*Descrição:* ${quoteData.description}\n` +
-                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
+                  `*Valor Total:* R$ ${total.toFixed(2)}\n` +
                   `*Válido até:* ${quoteData.validUntil}\n\n` +
                   `Aguardamos sua confirmação!`
       window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
@@ -1562,8 +1557,6 @@ function QuoteModal({
   )
 }
 
-// ─── Modal: Cliente ───────────────────────────────────────────────────────────
-
 function ClientModal({
   onClose,
   onSave,
@@ -1659,7 +1652,7 @@ function ClientModal({
   )
 }
 
-// ─── App Component Principal ──────────────────────────────────────────────────
+// ─── Componente Principal ─────────────────────────────────────────────────────
 
 export default function App() {
   const [session, setSession] = useState<any>(null)
