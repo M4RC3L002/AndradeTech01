@@ -140,7 +140,7 @@ const NAV_ITEMS = [
   },
 ] as const
 
-// ─── Componentes Globais ──────────────────────────────────────────────────────
+// ─── Componentes Globais de UI ────────────────────────────────────────────────
 
 function AppLogo({ size = 36 }: { size?: number }) {
   const [imgError, setImgError] = useState(false)
@@ -364,7 +364,94 @@ function Topbar({
   )
 }
 
-// ─── Modal de Emissão e Impressão (A4 e Bobina Térmica) ───────────────────────
+// ─── Tela de Login ───────────────────────────────────────────────────────────
+
+function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; isDark: boolean }) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setErrorMsg('')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password.trim(),
+    })
+
+    if (error) {
+      setErrorMsg('E-mail ou senha incorretos.')
+      setLoading(false)
+    } else {
+      onLoginSuccess()
+    }
+  }
+
+  return (
+    <div className={`flex min-h-screen items-center justify-center p-4 transition-colors ${isDark ? 'bg-[#0a0a0a]' : 'bg-slate-100'}`}>
+      <div className={`w-full max-w-sm rounded-2xl border p-6 shadow-2xl transition-colors ${isDark ? 'bg-[#111] border-neutral-800' : 'bg-white border-slate-200'}`}>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="mb-3">
+            <AppLogo size={56} />
+          </div>
+          <h1 className="text-xl font-extrabold bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] bg-clip-text text-transparent">
+            AndradeTech
+          </h1>
+          <p className="font-mono text-xs text-neutral-400">Acesso Restrito ao Sistema</p>
+        </div>
+
+        {errorMsg && (
+          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-center text-xs text-red-500">
+            {errorMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-neutral-400">E-mail</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="seu-email@exemplo.com"
+              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+                isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#0066FF]'
+              }`}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-neutral-400">Senha</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+                isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-800 focus:border-[#0066FF]'
+              }`}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] hover:opacity-95 shadow-md shadow-blue-500/20 disabled:opacity-50"
+          >
+            {loading ? 'Validando...' : 'Entrar no Painel'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Modal de Emissão e Impressão (Folha A4 e Cupom Térmico) ───────────────────
 
 function PrintModal({
   order,
@@ -379,7 +466,7 @@ function PrintModal({
 }) {
   const [printType, setPrintType] = useState<'a4' | 'thermal'>('a4')
 
-  const items = order.items && order.items.length > 0
+  const items = (order.items && order.items.length > 0)
     ? order.items
     : [{ desc: order.service || 'Serviço Técnico Especializado', qty: 1, unit: order.value || 0 }]
 
@@ -838,7 +925,7 @@ function StatusModal({
   )
 }
 
-// ─── Modal: Ordem de Serviço (Criação e Edição Segura) ────────────────────────
+// ─── Modal: Ordem de Serviço ──────────────────────────────────────────────────
 
 function OrderModal({
   onClose,
@@ -1166,6 +1253,8 @@ function OrderModal({
   )
 }
 
+// ─── Modal: Orçamento ─────────────────────────────────────────────────────────
+
 function QuoteModal({
   onClose,
   clients = [],
@@ -1253,7 +1342,7 @@ function QuoteModal({
                   `Olá, *${client}*!\n` +
                   `*Aparelho:* ${device}\n` +
                   `*Descrição:* ${quoteData.description}\n` +
-                  `*Valor Total:* R$ ${total.toFixed(2)}\n` +
+                  `*Valor Total:* R$ ${total.toFixed(2)}\n\n` +
                   `*Válido até:* ${quoteData.validUntil}\n\n` +
                   `Aguardamos sua confirmação!`
       window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
@@ -1473,6 +1562,8 @@ function QuoteModal({
   )
 }
 
+// ─── Modal: Cliente ───────────────────────────────────────────────────────────
+
 function ClientModal({
   onClose,
   onSave,
@@ -1568,7 +1659,7 @@ function ClientModal({
   )
 }
 
-// ─── Raiz da Aplicação ────────────────────────────────────────────────────────
+// ─── App Component Principal ──────────────────────────────────────────────────
 
 export default function App() {
   const [session, setSession] = useState<any>(null)
@@ -2065,7 +2156,6 @@ export default function App() {
             isDark={isDark}
             onNewQuote={() => { setShowQuoteModal(true) }}
             onEditQuote={(q) => {
-              // Abre a OS com base no orçamento
               onConvertToOrder(q)
             }}
             onConvertToOrder={handleConvertToOrder}
