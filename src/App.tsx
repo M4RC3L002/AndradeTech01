@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { supabase } from './supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -293,7 +294,7 @@ function OrderModal({
               </datalist>
             </div>
             <div>
-              <label className="block text-[11px] font-mono mb-1 uppercase tracking-wider text-neutral-500">Telefone / WhatsApp</label>
+              <label className="block text-[11px] font-mono mb-1 uppercase tracking-wider text-neutral-500">WhatsApp / Tel</label>
               <input
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
@@ -347,7 +348,6 @@ function OrderModal({
             />
           </div>
 
-          {/* Serviços e Peças */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Itens / Serviços</label>
@@ -818,7 +818,7 @@ const NAV_ITEMS = [
   )},
   { id: 'clients', label: 'Clientes', icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-  )},
+  )} as any,
   { id: 'settings', label: 'Ajustes', icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M20 12h2M2 12h2"/></svg>
   )},
@@ -1233,7 +1233,6 @@ function QuotesScreen({
       <Topbar title="Orçamentos & Propostas" onOpenMobileMenu={onOpenMenu} onNewQuote={onNewQuote} />
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
-        {/* Botão de destaque no mobile */}
         <div className="flex justify-between items-center sm:hidden">
           <span className="text-xs font-mono text-neutral-400">{quotes.length} orçamentos</span>
           <button
@@ -1459,7 +1458,6 @@ function SettingsScreen({
       <Topbar title="Configurações & Catálogo" onOpenMobileMenu={onOpenMenu} />
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Card Serviços */}
           <div className="rounded-xl border border-neutral-900 bg-[#111] overflow-hidden flex flex-col">
             <div className="px-4 py-3 border-b border-neutral-900 flex items-center justify-between">
               <span className="text-xs font-semibold text-neutral-200">Serviços Cadastrados</span>
@@ -1508,7 +1506,6 @@ function SettingsScreen({
             </div>
           </div>
 
-          {/* Card Situações / Status */}
           <div className="rounded-xl border border-neutral-900 bg-[#111] overflow-hidden flex flex-col">
             <div className="px-4 py-3 border-b border-neutral-900 flex items-center justify-between">
               <span className="text-xs font-semibold text-neutral-200">Situações de OS</span>
@@ -1569,7 +1566,7 @@ function SettingsScreen({
   )
 }
 
-// ─── Raiz da Aplicação ────────────────────────────────────────────────────────
+// ─── Raiz da Aplicação com Sincronização Supabase ─────────────────────────────
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('dashboard')
@@ -1579,75 +1576,147 @@ export default function App() {
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
   const [showNewClient, setShowNewClient] = useState(false)
 
-  // Estados com persistência LocalStorage
-  const [clients, setClients] = useState<Client[]>(() => {
-    const saved = localStorage.getItem('andrade_clients')
-    return saved ? JSON.parse(saved) : []
-  })
+  const [clients, setClients] = useState<Client[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [quotes, setQuotes] = useState<Quote[]>([])
+  const [services, setServices] = useState<CustomService[]>(DEFAULT_SERVICES)
+  const [statuses, setStatuses] = useState<CustomStatus[]>(DEFAULT_STATUSES)
 
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('andrade_orders')
-    return saved ? JSON.parse(saved) : []
-  })
+  // 1. Carregar dados da Nuvem (Supabase) ao abrir a tela
+  const fetchData = async () => {
+    try {
+      const { data: cData } = await supabase.from('clients').select('*')
+      if (cData) {
+        setClients(cData.map(c => ({
+          id: c.id,
+          name: c.name,
+          phone: c.phone || '',
+          cpf: c.cpf || '',
+          address: c.address || '',
+          city: c.city || '',
+          totalOrders: c.total_orders || 0,
+          totalSpent: Number(c.total_spent) || 0,
+          lastService: c.last_service || '',
+          devices: Array.isArray(c.devices) ? c.devices : [],
+        })))
+      }
 
-  const [quotes, setQuotes] = useState<Quote[]>(() => {
-    const saved = localStorage.getItem('andrade_quotes')
-    return saved ? JSON.parse(saved) : []
-  })
+      const { data: oData } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
+      if (oData) {
+        setOrders(oData.map(o => ({
+          id: o.id,
+          client: o.client,
+          phone: o.phone || '',
+          device: o.device,
+          service: o.service || '',
+          status: o.status,
+          value: Number(o.value) || 0,
+          date: o.date,
+          technician: o.technician || 'Admin',
+          notes: o.notes || '',
+          items: Array.isArray(o.items) ? o.items : [],
+        })))
+      }
 
-  const [services, setServices] = useState<CustomService[]>(() => {
-    const saved = localStorage.getItem('andrade_services')
-    return saved ? JSON.parse(saved) : DEFAULT_SERVICES
-  })
+      const { data: qData } = await supabase.from('quotes').select('*').order('created_at', { ascending: false })
+      if (qData) {
+        setQuotes(qData.map(q => ({
+          id: q.id,
+          client: q.client,
+          phone: q.phone || '',
+          device: q.device || '',
+          description: q.description || '',
+          value: Number(q.value) || 0,
+          validUntil: q.valid_until || '',
+          createdAt: q.created_at ? new Date(q.created_at).toLocaleDateString('pt-BR') : '',
+          status: q.status || 'Pendente',
+          items: Array.isArray(q.items) ? q.items : [],
+        })))
+      }
 
-  const [statuses, setStatuses] = useState<CustomStatus[]>(() => {
-    const saved = localStorage.getItem('andrade_statuses')
-    return saved ? JSON.parse(saved) : DEFAULT_STATUSES
-  })
+      const { data: sData } = await supabase.from('services').select('*')
+      if (sData && sData.length > 0) setServices(sData)
 
-  useEffect(() => {
-    localStorage.setItem('andrade_clients', JSON.stringify(clients))
-  }, [clients])
-
-  useEffect(() => {
-    localStorage.setItem('andrade_orders', JSON.stringify(orders))
-  }, [orders])
-
-  useEffect(() => {
-    localStorage.setItem('andrade_quotes', JSON.stringify(quotes))
-  }, [quotes])
-
-  useEffect(() => {
-    localStorage.setItem('andrade_services', JSON.stringify(services))
-  }, [services])
-
-  useEffect(() => {
-    localStorage.setItem('andrade_statuses', JSON.stringify(statuses))
-  }, [statuses])
-
-  const handleSaveClient = (newClient: Client) => {
-    setClients(prev => [newClient, ...prev])
+      const { data: stData } = await supabase.from('statuses').select('*')
+      if (stData && stData.length > 0) setStatuses(stData)
+    } catch (err) {
+      console.error('Erro ao conectar ao Supabase:', err)
+    }
   }
 
-  const handleSaveOrder = (orderData: Order) => {
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  // 2. Ações de Clientes no Supabase
+  const handleSaveClient = async (newClient: Client) => {
+    setClients(prev => [newClient, ...prev])
+    await supabase.from('clients').insert([{
+      id: newClient.id,
+      name: newClient.name,
+      phone: newClient.phone,
+      cpf: newClient.cpf,
+      address: newClient.address,
+      city: newClient.city,
+      total_orders: 0,
+      total_spent: 0,
+      last_service: newClient.lastService,
+      devices: newClient.devices,
+    }])
+  }
+
+  // 3. Ações de Ordens no Supabase
+  const handleSaveOrder = async (orderData: Order) => {
     setOrders(prev => {
       const exists = prev.some(o => o.id === orderData.id)
-      if (exists) {
-        return prev.map(o => o.id === orderData.id ? orderData : o)
-      }
-      return [orderData, ...prev]
+      return exists ? prev.map(o => o.id === orderData.id ? orderData : o) : [orderData, ...prev]
     })
+
+    await supabase.from('orders').upsert([{
+      id: orderData.id,
+      client: orderData.client,
+      phone: orderData.phone,
+      device: orderData.device,
+      service: orderData.service,
+      status: orderData.status,
+      value: orderData.value,
+      date: orderData.date,
+      technician: orderData.technician,
+      notes: orderData.notes,
+      items: orderData.items || [],
+    }])
   }
 
-  const handleSaveQuote = (quoteData: Quote) => {
+  const handleUpdateOrderStatus = async (orderId: string, nextStatus: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: nextStatus } : o))
+    await supabase.from('orders').update({ status: nextStatus }).eq('id', orderId)
+  }
+
+  const handleDeleteOrder = async (orderId: string) => {
+    setOrders(prev => prev.filter(o => o.id !== orderId))
+    await supabase.from('orders').delete().eq('id', orderId)
+  }
+
+  // 4. Ações de Orçamentos no Supabase
+  const handleSaveQuote = async (quoteData: Quote) => {
     setQuotes(prev => [quoteData, ...prev])
+    await supabase.from('quotes').insert([{
+      id: quoteData.id,
+      client: quoteData.client,
+      phone: quoteData.phone,
+      device: quoteData.device,
+      description: quoteData.description,
+      value: quoteData.value,
+      valid_until: quoteData.validUntil,
+      status: quoteData.status,
+      items: quoteData.items,
+    }])
   }
 
-  const handleConvertToOrder = (quote: Quote) => {
-    // 1. Marca o orçamento como Aprovado
+  const handleConvertToOrder = async (quote: Quote) => {
     setQuotes(prev => prev.map(q => q.id === quote.id ? { ...q, status: 'Aprovado' } : q))
+    await supabase.from('quotes').update({ status: 'Aprovado' }).eq('id', quote.id)
 
-    // 2. Gera uma nova Ordem de Serviço
     const newOrder: Order = {
       id: `OS-${Math.floor(1000 + Math.random() * 9000)}`,
       client: quote.client,
@@ -1663,35 +1732,32 @@ export default function App() {
     }
 
     setOrders(prev => [newOrder, ...prev])
+    await supabase.from('orders').insert([{
+      id: newOrder.id,
+      client: newOrder.client,
+      phone: newOrder.phone,
+      device: newOrder.device,
+      service: newOrder.service,
+      status: newOrder.status,
+      value: newOrder.value,
+      date: newOrder.date,
+      technician: newOrder.technician,
+      notes: newOrder.notes,
+      items: newOrder.items,
+    }])
+
     setScreen('orders')
-    alert(`Orçamento #${quote.id} convertido com sucesso na Ordem de Serviço #${newOrder.id}!`)
+    alert(`Orçamento #${quote.id} convertido com sucesso na Ordem #${newOrder.id}!`)
   }
 
-  const handleDeleteQuote = (id: string) => {
+  const handleDeleteQuote = async (id: string) => {
     setQuotes(prev => prev.filter(q => q.id !== id))
-  }
-
-  const handleOpenEditOrder = (order: Order) => {
-    setOrderEditing(order)
-    setShowOrderModal(true)
-  }
-
-  const handleOpenNewOrder = () => {
-    setOrderEditing(null)
-    setShowOrderModal(true)
-  }
-
-  const handleUpdateOrderStatus = (orderId: string, nextStatus: string) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: nextStatus } : o))
-  }
-
-  const handleDeleteOrder = (orderId: string) => {
-    setOrders(prev => prev.filter(o => o.id !== orderId))
+    await supabase.from('quotes').delete().eq('id', id)
   }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0a0a0a] text-white">
-      {/* Sidebar Lateral (Desktop) */}
+      {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col h-screen border-r border-neutral-900 bg-[#111] flex-shrink-0" style={{ width: 220 }}>
         <div className="px-5 py-4 border-b border-neutral-900 flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center flex-shrink-0">
@@ -1699,7 +1765,7 @@ export default function App() {
           </div>
           <div>
             <div className="font-bold text-sm text-neutral-100">AndradeTech</div>
-            <div className="text-[10px] font-mono text-neutral-500">Gestão de OS</div>
+            <div className="text-[10px] font-mono text-neutral-500">Nuvem Conectada</div>
           </div>
         </div>
 
@@ -1724,7 +1790,7 @@ export default function App() {
         </nav>
       </aside>
 
-      {/* Drawer Menu (Mobile) */}
+      {/* Drawer Mobile */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden bg-black/80">
           <div className="w-64 h-full bg-[#111] border-r border-neutral-800 p-4 flex flex-col">
@@ -1763,10 +1829,10 @@ export default function App() {
             orders={orders}
             quotes={quotes}
             statuses={statuses}
-            onNewOrder={handleOpenNewOrder}
+            onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
             onNewQuote={() => setShowQuoteModal(true)}
             onNewClient={() => setShowNewClient(true)}
-            onEditOrder={handleOpenEditOrder}
+            onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
         )}
@@ -1774,8 +1840,8 @@ export default function App() {
           <OrdersScreen
             orders={orders}
             statuses={statuses}
-            onNewOrder={handleOpenNewOrder}
-            onEditOrder={handleOpenEditOrder}
+            onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
+            onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
             onUpdateStatus={handleUpdateOrderStatus}
             onDeleteOrder={handleDeleteOrder}
             onOpenMenu={() => setMobileMenuOpen(true)}
@@ -1801,16 +1867,28 @@ export default function App() {
           <SettingsScreen
             services={services}
             statuses={statuses}
-            onAddService={svc => setServices(prev => [svc, ...prev])}
-            onDeleteService={id => setServices(prev => prev.filter(s => s.id !== id))}
-            onAddStatus={st => setStatuses(prev => [...prev, st])}
-            onDeleteStatus={id => setStatuses(prev => prev.filter(s => s.id !== id))}
+            onAddService={async (svc) => {
+              setServices(prev => [svc, ...prev])
+              await supabase.from('services').insert([svc])
+            }}
+            onDeleteService={async (id) => {
+              setServices(prev => prev.filter(s => s.id !== id))
+              await supabase.from('services').delete().eq('id', id)
+            }}
+            onAddStatus={async (st) => {
+              setStatuses(prev => [...prev, st])
+              await supabase.from('statuses').insert([st])
+            }}
+            onDeleteStatus={async (id) => {
+              setStatuses(prev => prev.filter(s => s.id !== id))
+              await supabase.from('statuses').delete().eq('id', id)
+            }}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
         )}
       </main>
 
-      {/* Barra Inferior Mobile */}
+      {/* Navegação Inferior Mobile */}
       <nav className="fixed bottom-0 inset-x-0 h-14 bg-[#0d0d0d] border-t border-neutral-900 flex md:hidden items-center justify-around z-40 px-2">
         {NAV_ITEMS.map(item => {
           const isActive = screen === item.id
