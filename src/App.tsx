@@ -135,7 +135,7 @@ function WhatsAppBtn({ phone, label = '', orderDetails }: { phone: string; label
           alert('Telefone do cliente não cadastrado!')
         }
       }}
-      title="Enviar mensagem formatada no WhatsApp"
+      title="Enviar mensagem no WhatsApp"
       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 flex-shrink-0 cursor-pointer"
       style={{ background: '#25D366' }}
     >
@@ -326,7 +326,7 @@ function OrderModal({
             />
           </div>
 
-          {/* Serviços e Peças */}
+          {/* Itens e Peças */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-[11px] font-mono uppercase tracking-wider text-neutral-500">Serviços / Peças</label>
@@ -532,8 +532,8 @@ const NAV_ITEMS = [
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
   )},
   { id: 'clients', label: 'Clientes', icon: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-  )},
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+  )} as any,
   { id: 'settings', label: 'Ajustes', icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M20 12h2M2 12h2"/></svg>
   )},
@@ -553,17 +553,17 @@ function Topbar({
   children?: React.ReactNode
 }) {
   return (
-    <div className="flex-shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-b border-neutral-900 bg-[#0a0a0a]">
-      <div className="flex items-center gap-3 min-w-0">
+    <div className="flex-shrink-0 flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-neutral-900 bg-[#0a0a0a]">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
           onClick={onOpenMobileMenu}
-          className="md:hidden p-1.5 rounded-lg bg-neutral-900 text-neutral-400 hover:text-white"
+          className="md:hidden p-1.5 rounded-lg bg-neutral-900 text-neutral-400 hover:text-white flex-shrink-0"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <div className="truncate">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-neutral-500">AndradeTech</div>
-          <div className="text-sm font-bold text-white truncate">{title}</div>
+          <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-neutral-500">AndradeTech</div>
+          <div className="text-xs sm:text-sm font-bold text-white truncate">{title}</div>
         </div>
         {children}
       </div>
@@ -572,18 +572,21 @@ function Topbar({
         {onNewClient && (
           <button
             onClick={onNewClient}
-            className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-neutral-800 text-neutral-300 hover:bg-neutral-900"
+            title="Cadastrar novo cliente"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-neutral-800 bg-[#141414] text-neutral-300 hover:bg-neutral-800 transition-colors"
           >
-            + Cliente
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            <span className="text-[11px] sm:text-xs">Cliente</span>
           </button>
         )}
         {onNewOrder && (
           <button
             onClick={onNewOrder}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500"
+            title="Cadastrar nova OS"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 transition-colors"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            <span>Nova OS</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <span className="text-[11px] sm:text-xs">Nova OS</span>
           </button>
         )}
       </div>
@@ -628,7 +631,6 @@ function DashboardScreen({
       <Topbar title="Visão Geral" onOpenMobileMenu={onOpenMenu} onNewOrder={onNewOrder} onNewClient={onNewClient} />
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
-        {/* Barra de Pesquisa */}
         <div className="relative">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -641,7 +643,6 @@ function DashboardScreen({
           />
         </div>
 
-        {/* KPIs em Grid Responsivo (1 col celular, 2 tablet, 4 desktop) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
           {[
             { label: 'Em Aberto', value: openOrders.toString(), sub: 'serviços ativos', color: 'text-blue-500' },
@@ -657,7 +658,6 @@ function DashboardScreen({
           ))}
         </div>
 
-        {/* Tabela Responsiva com Scroll Horizontal */}
         <div className="rounded-xl border border-neutral-900 bg-[#111] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-900">
             <span className="text-xs font-semibold text-neutral-200">Ordens de Serviço Recentes</span>
@@ -766,7 +766,6 @@ function OrdersScreen({
       </Topbar>
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
-        {/* Filtros em Linha Deslizante */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           {['Todos', ...statuses.map(s => s.label)].map(s => {
             const isActive = filterStatus === s
@@ -971,22 +970,32 @@ function ClientsScreen({ clients, onNewClient, onOpenMenu }: { clients: Client[]
     <div className="flex-1 flex flex-col overflow-hidden">
       <Topbar title="Base de Clientes" onOpenMobileMenu={onOpenMenu} onNewClient={onNewClient} />
 
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
-        <div className="relative">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por cliente ou telefone..."
-            className="w-full rounded-xl pl-9 pr-4 py-2.5 text-xs sm:text-sm border border-neutral-800 bg-[#111] text-white outline-none"
-          />
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+        {/* Barra de pesquisa + botão de Novo Cliente garantido no Mobile */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar cliente ou tel..."
+              className="w-full rounded-xl pl-9 pr-3 py-2 text-xs sm:text-sm border border-neutral-800 bg-[#111] text-white outline-none"
+            />
+          </div>
+          <button
+            onClick={onNewClient}
+            className="px-3 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 flex items-center gap-1.5 flex-shrink-0"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <span>+ Cliente</span>
+          </button>
         </div>
 
         <div className="rounded-xl border border-neutral-900 bg-[#111] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[500px] text-xs">
+            <table className="w-full min-w-[480px] text-xs">
               <thead>
                 <tr className="bg-[#0c0c0c] text-neutral-500 border-b border-neutral-900 text-left">
                   <th className="px-3 py-2.5 font-mono uppercase">Nome</th>
@@ -1002,7 +1011,7 @@ function ClientsScreen({ clients, onNewClient, onOpenMenu }: { clients: Client[]
                       <EmptyState
                         icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
                         title="Nenhum cliente cadastrado"
-                        sub="Clique em '+ Cliente' para cadastrar"
+                        sub="Toque em '+ Cliente' para adicionar"
                       />
                     </td>
                   </tr>
@@ -1202,7 +1211,6 @@ export default function App() {
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
   const [showNewClient, setShowNewClient] = useState(false)
 
-  // Estados com persistência LocalStorage
   const [clients, setClients] = useState<Client[]>(() => {
     const saved = localStorage.getItem('andrade_clients')
     return saved ? JSON.parse(saved) : []
@@ -1315,7 +1323,7 @@ export default function App() {
         </nav>
       </aside>
 
-      {/* Drawer / Menu Gaveta Retrátil (Mobile) */}
+      {/* Drawer Menu (Mobile) */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden bg-black/80">
           <div className="w-64 h-full bg-[#111] border-r border-neutral-800 p-4 flex flex-col">
@@ -1347,7 +1355,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Área Principal de Conteúdo */}
+      {/* Área Principal */}
       <main className="flex-1 flex flex-col overflow-hidden pb-14 md:pb-0">
         {screen === 'dashboard' && (
           <DashboardScreen
@@ -1392,7 +1400,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Barra de Navegação Rápida Inferior (Exclusiva para Celular) */}
+      {/* Barra Inferior (Celular) */}
       <nav className="fixed bottom-0 inset-x-0 h-14 bg-[#0d0d0d] border-t border-neutral-900 flex md:hidden items-center justify-around z-40 px-2">
         {NAV_ITEMS.map(item => {
           const isActive = screen === item.id
