@@ -58,6 +58,15 @@ interface CustomService {
   category: string
 }
 
+interface Product {
+  id: string
+  name: string
+  category: string
+  cost_price: number
+  sale_price: number
+  stock: number
+}
+
 interface CustomStatus {
   id: string
   label: string
@@ -84,6 +93,39 @@ const DEFAULT_SERVICES: CustomService[] = [
   { id: '5', name: 'Troca de Conector de Carga', default_price: 130, category: 'Hardware' },
   { id: '6', name: 'Diagnóstico e Orçamento', default_price: 0, category: 'Diagnóstico' },
 ]
+
+const DEFAULT_PRODUCTS: Product[] = [
+  { id: '1', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
+  { id: '2', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
+  { id: '3', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
+]
+
+// ─── Componente de Logotipo ───────────────────────────────────────────────────
+
+function AppLogo({ size = 32 }: { size?: number }) {
+  const [imgError, setImgError] = useState(false)
+
+  if (imgError) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-lg bg-blue-600 font-bold text-white shadow-md flex-shrink-0"
+        style={{ width: size, height: size, fontSize: size * 0.45 }}
+      >
+        AT
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src="/logo.png"
+      alt="AndradeTech Logo"
+      onError={() => setImgError(true)}
+      className="rounded-lg object-contain flex-shrink-0"
+      style={{ width: size, height: size }}
+    />
+  )
+}
 
 // ─── Tela de Login ───────────────────────────────────────────────────────────
 
@@ -114,12 +156,9 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center p-4" style={{ background: '#0a0a0a' }}>
       <div className="w-full max-w-sm rounded-2xl border p-6 shadow-2xl" style={{ background: '#111111', borderColor: '#222222' }}>
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: '#2563EB' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
-              <rect x="9" y="3" width="6" height="4" rx="1" />
-            </svg>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="mb-3">
+            <AppLogo size={48} />
           </div>
           <h1 className="text-lg font-bold text-neutral-100">AndradeTech</h1>
           <p className="font-mono text-xs text-neutral-500">Acesso Restrito ao Sistema</p>
@@ -273,6 +312,7 @@ function OrderModal({
   clients,
   statuses,
   services,
+  products,
   onSave,
   orderToEdit,
 }: {
@@ -280,6 +320,7 @@ function OrderModal({
   clients: Client[]
   statuses: CustomStatus[]
   services: CustomService[]
+  products: Product[]
   onSave: (order: Order) => void
   orderToEdit?: Order | null
 }) {
@@ -303,10 +344,17 @@ function OrderModal({
     if (found) setPhone(found.phone)
   }
 
-  const handleApplyServicePreset = (serviceName: string, index: number) => {
-    const svc = services.find(s => s.name === serviceName)
+  const handleApplyPreset = (value: string, index: number) => {
+    // Procura se é serviço
+    const svc = services.find(s => s.name === value)
     if (svc) {
       setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+      return
+    }
+    // Procura se é produto
+    const prod = products.find(p => p.name === value)
+    if (prod) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
     }
   }
 
@@ -437,7 +485,7 @@ function OrderModal({
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-500">Itens / Serviços</label>
+              <label className="font-mono text-[11px] uppercase tracking-wider text-neutral-500">Serviços & Peças</label>
               <button
                 type="button"
                 onClick={() => setItems([...items, { desc: '', qty: 1, unit: 0 }])}
@@ -451,7 +499,7 @@ function OrderModal({
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-black/60 text-neutral-500">
-                    <th className="px-3 py-2 text-left font-mono uppercase">Item / Serviço</th>
+                    <th className="px-3 py-2 text-left font-mono uppercase">Item (Serviço ou Peça)</th>
                     <th className="w-12 px-2 py-2 text-center font-mono uppercase">Qtd</th>
                     <th className="w-20 px-2 py-2 text-right font-mono uppercase">Unit</th>
                     <th className="w-20 px-2 py-2 text-right font-mono uppercase">Total</th>
@@ -466,23 +514,28 @@ function OrderModal({
                           <input
                             value={item.desc}
                             onChange={e => setItems(items.map((it, j) => j === i ? { ...it, desc: e.target.value } : it))}
-                            placeholder="Descrição..."
+                            placeholder="Descrição da peça ou serviço..."
                             className="w-full bg-transparent text-neutral-200 outline-none"
                           />
-                          {services.length > 0 && (
-                            <select
-                              onChange={e => {
-                                if (e.target.value) handleApplyServicePreset(e.target.value, i)
-                              }}
-                              className="rounded border border-neutral-700 bg-[#222] text-[10px] text-neutral-400 outline-none"
-                              defaultValue=""
-                            >
-                              <option value="" disabled>Catálogo</option>
+                          <select
+                            onChange={e => {
+                              if (e.target.value) handleApplyPreset(e.target.value, i)
+                            }}
+                            className="rounded border border-neutral-700 bg-[#222] text-[10px] text-neutral-400 outline-none"
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Puxar do Catálogo</option>
+                            <optgroup label="Serviços">
                               {services.map(s => (
-                                <option key={s.id} value={s.name}>{s.name} (R${s.default_price})</option>
+                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
                               ))}
-                            </select>
-                          )}
+                            </optgroup>
+                            <optgroup label="Produtos / Peças">
+                              {products.map(p => (
+                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
+                              ))}
+                            </optgroup>
+                          </select>
                         </div>
                       </td>
                       <td className="px-1 py-1.5 text-center">
@@ -556,11 +609,13 @@ function QuoteModal({
   onClose,
   clients,
   services,
+  products,
   onSave,
 }: {
   onClose: () => void
   clients: Client[]
   services: CustomService[]
+  products: Product[]
   onSave: (quote: Quote) => void
 }) {
   const [client, setClient] = useState('')
@@ -578,10 +633,15 @@ function QuoteModal({
     if (found) setPhone(found.phone)
   }
 
-  const handleApplyServicePreset = (serviceName: string, index: number) => {
-    const svc = services.find(s => s.name === serviceName)
+  const handleApplyPreset = (value: string, index: number) => {
+    const svc = services.find(s => s.name === value)
     if (svc) {
       setItems(items.map((it, idx) => idx === index ? { ...it, desc: svc.name, unit: svc.default_price } : it))
+      return
+    }
+    const prod = products.find(p => p.name === value)
+    if (prod) {
+      setItems(items.map((it, idx) => idx === index ? { ...it, desc: prod.name, unit: prod.sale_price } : it))
     }
   }
 
@@ -733,20 +793,25 @@ function QuoteModal({
                             placeholder="Peça ou mão de obra..."
                             className="w-full bg-transparent text-neutral-200 outline-none"
                           />
-                          {services.length > 0 && (
-                            <select
-                              onChange={e => {
-                                if (e.target.value) handleApplyServicePreset(e.target.value, i)
-                              }}
-                              className="rounded border border-neutral-700 bg-[#222] text-[10px] text-neutral-400 outline-none"
-                              defaultValue=""
-                            >
-                              <option value="" disabled>Catálogo</option>
+                          <select
+                            onChange={e => {
+                              if (e.target.value) handleApplyPreset(e.target.value, i)
+                            }}
+                            className="rounded border border-neutral-700 bg-[#222] text-[10px] text-neutral-400 outline-none"
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Puxar do Catálogo</option>
+                            <optgroup label="Serviços">
                               {services.map(s => (
-                                <option key={s.id} value={s.name}>{s.name} (R${s.default_price})</option>
+                                <option key={s.id} value={s.name}>🛠️ {s.name} (R${s.default_price})</option>
                               ))}
-                            </select>
-                          )}
+                            </optgroup>
+                            <optgroup label="Produtos / Peças">
+                              {products.map(p => (
+                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
+                              ))}
+                            </optgroup>
+                          </select>
                         </div>
                       </td>
                       <td className="px-1 py-1.5 text-center">
@@ -985,6 +1050,15 @@ function Topbar({
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
             <span className="text-[11px] sm:text-xs">Nova OS</span>
+          </button>
+        )}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            title="Sair do Sistema"
+            className="inline-flex items-center rounded-lg border border-neutral-800 bg-[#141414] p-1.5 text-neutral-400 hover:text-red-400"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
           </button>
         )}
       </div>
@@ -1540,31 +1614,47 @@ function ClientsScreen({
   )
 }
 
-// ─── Tela: Cadastros Rápidos ──────────────────────────────────────────────────
+// ─── Tela: Cadastros Rápidos & Estoque ─────────────────────────────────────────
 
 function SettingsScreen({
   services,
+  products,
   statuses,
   onAddService,
   onDeleteService,
+  onAddProduct,
+  onDeleteProduct,
   onAddStatus,
   onDeleteStatus,
   onOpenMenu,
   onLogout,
 }: {
   services: CustomService[]
+  products: Product[]
   statuses: CustomStatus[]
   onAddService: (svc: CustomService) => void
   onDeleteService: (id: string) => void
+  onAddProduct: (prod: Product) => void
+  onDeleteProduct: (id: string) => void
   onAddStatus: (st: CustomStatus) => void
   onDeleteStatus: (id: string) => void
   onOpenMenu: () => void
   onLogout: () => void
 }) {
+  // Estados para adicionar serviço
   const [newSvcName, setNewSvcName] = useState('')
   const [newSvcPrice, setNewSvcPrice] = useState('')
   const [showAddService, setShowAddService] = useState(false)
 
+  // Estados para adicionar produto
+  const [newProdName, setNewProdName] = useState('')
+  const [newProdCategory, setNewProdCategory] = useState('Peça')
+  const [newProdCost, setNewProdCost] = useState('')
+  const [newProdSale, setNewProdSale] = useState('')
+  const [newProdStock, setNewProdStock] = useState('')
+  const [showAddProduct, setShowAddProduct] = useState(false)
+
+  // Estados para adicionar situação
   const [newStatusLabel, setNewStatusLabel] = useState('')
   const [newStatusColor, setNewStatusColor] = useState('#2563EB')
   const [showAddStatus, setShowAddStatus] = useState(false)
@@ -1583,6 +1673,24 @@ function SettingsScreen({
     setShowAddService(false)
   }
 
+  const handleCreateProduct = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newProdName.trim()) return
+    onAddProduct({
+      id: Date.now().toString(),
+      name: newProdName.trim(),
+      category: newProdCategory.trim() || 'Geral',
+      cost_price: Number(newProdCost) || 0,
+      sale_price: Number(newProdSale) || 0,
+      stock: Number(newProdStock) || 0,
+    })
+    setNewProdName('')
+    setNewProdCost('')
+    setNewProdSale('')
+    setNewProdStock('')
+    setShowAddProduct(false)
+  }
+
   const handleCreateStatus = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newStatusLabel.trim()) return
@@ -1597,12 +1705,92 @@ function SettingsScreen({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Topbar title="Configurações & Catálogo" onOpenMobileMenu={onOpenMenu} onLogout={onLogout} />
+      <Topbar title="Configurações, Peças & Catálogo" onOpenMobileMenu={onOpenMenu} onLogout={onLogout} />
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Card Produtos / Peças */}
           <div className="flex flex-col overflow-hidden rounded-xl border border-neutral-900 bg-[#111]">
             <div className="flex items-center justify-between border-b border-neutral-900 px-4 py-3">
-              <span className="text-xs font-semibold text-neutral-200">Serviços Cadastrados</span>
+              <span className="text-xs font-semibold text-neutral-200">Produtos & Peças</span>
+              <button
+                onClick={() => setShowAddProduct(!showAddProduct)}
+                className="text-[11px] font-semibold text-blue-500 hover:text-blue-400"
+              >
+                {showAddProduct ? 'Fechar' : '+ Novo Produto'}
+              </button>
+            </div>
+
+            {showAddProduct && (
+              <form onSubmit={handleCreateProduct} className="space-y-2 border-b border-neutral-900 bg-black/40 p-3">
+                <input
+                  required
+                  placeholder="Nome (Ex: SSD 512GB, Tela A10...)"
+                  value={newProdName}
+                  onChange={e => setNewProdName(e.target.value)}
+                  className="w-full rounded border border-neutral-800 bg-[#181818] px-2.5 py-1.5 text-xs text-white outline-none"
+                />
+                <input
+                  placeholder="Categoria (Ex: Telas, Armazenamento...)"
+                  value={newProdCategory}
+                  onChange={e => setNewProdCategory(e.target.value)}
+                  className="w-full rounded border border-neutral-800 bg-[#181818] px-2.5 py-1.5 text-xs text-white outline-none"
+                />
+                <div className="grid grid-cols-3 gap-1.5">
+                  <input
+                    type="number"
+                    placeholder="Custo (R$)"
+                    value={newProdCost}
+                    onChange={e => setNewProdCost(e.target.value)}
+                    className="w-full rounded border border-neutral-800 bg-[#181818] px-2 py-1.5 text-xs text-white outline-none"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Venda (R$)"
+                    value={newProdSale}
+                    onChange={e => setNewProdSale(e.target.value)}
+                    className="w-full rounded border border-neutral-800 bg-[#181818] px-2 py-1.5 text-xs text-white outline-none"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Estoque"
+                    value={newProdStock}
+                    onChange={e => setNewProdStock(e.target.value)}
+                    className="w-full rounded border border-neutral-800 bg-[#181818] px-2 py-1.5 text-xs text-white outline-none"
+                  />
+                </div>
+                <button type="submit" className="w-full rounded bg-blue-600 py-1.5 text-xs font-bold text-white hover:bg-blue-500">
+                  Salvar Produto
+                </button>
+              </form>
+            )}
+
+            <div className="max-h-72 divide-y divide-neutral-900 overflow-y-auto">
+              {products.length === 0 ? (
+                <div className="p-4 text-center text-xs text-neutral-600">Nenhum produto cadastrado</div>
+              ) : (
+                products.map(p => (
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2 text-xs">
+                    <div>
+                      <div className="font-medium text-neutral-200">{p.name}</div>
+                      <div className="flex gap-2 text-[10px] font-mono text-neutral-500">
+                        <span>Venda: R$ {p.sale_price.toFixed(2)}</span>
+                        <span>•</span>
+                        <span>Qtd: {p.stock}</span>
+                      </div>
+                    </div>
+                    <button onClick={() => onDeleteProduct(p.id)} className="text-neutral-600 hover:text-red-400">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Card Serviços */}
+          <div className="flex flex-col overflow-hidden rounded-xl border border-neutral-900 bg-[#111]">
+            <div className="flex items-center justify-between border-b border-neutral-900 px-4 py-3">
+              <span className="text-xs font-semibold text-neutral-200">Serviços da Assistência</span>
               <button
                 onClick={() => setShowAddService(!showAddService)}
                 className="text-[11px] font-semibold text-blue-500 hover:text-blue-400"
@@ -1635,7 +1823,7 @@ function SettingsScreen({
 
             <div className="max-h-72 divide-y divide-neutral-900 overflow-y-auto">
               {services.map(s => (
-                <div key={s.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                <div key={s.id} className="flex items-center justify-between px-4 py-2 text-xs">
                   <div>
                     <div className="font-medium text-neutral-200">{s.name}</div>
                     <div className="font-mono text-neutral-500">R$ {s.default_price.toFixed(2)}</div>
@@ -1648,6 +1836,7 @@ function SettingsScreen({
             </div>
           </div>
 
+          {/* Card Situações / Status */}
           <div className="flex flex-col overflow-hidden rounded-xl border border-neutral-900 bg-[#111]">
             <div className="flex items-center justify-between border-b border-neutral-900 px-4 py-3">
               <span className="text-xs font-semibold text-neutral-200">Situações de OS</span>
@@ -1727,6 +1916,7 @@ export default function App() {
   const [orders, setOrders] = useState<Order[]>([])
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [services, setServices] = useState<CustomService[]>(DEFAULT_SERVICES)
+  const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS)
   const [statuses, setStatuses] = useState<CustomStatus[]>(DEFAULT_STATUSES)
 
   // 1. Verificação de Sessão do Supabase
@@ -1760,7 +1950,6 @@ export default function App() {
     room
       .on('presence', { event: 'sync' }, () => {
         const presenceState = room.presenceState()
-        // Extrai a primeira conexão de cada ID agrupado
         const users = Object.keys(presenceState).map(key => presenceState[key][0] as any)
         setOnlineUsers(users)
       })
@@ -1833,6 +2022,9 @@ export default function App() {
 
       const { data: sData } = await supabase.from('services').select('*')
       if (sData && sData.length > 0) setServices(sData)
+
+      const { data: pData } = await supabase.from('products').select('*')
+      if (pData && pData.length > 0) setProducts(pData)
 
       const { data: stData } = await supabase.from('statuses').select('*')
       if (stData && stData.length > 0) setStatuses(stData)
@@ -1980,7 +2172,6 @@ export default function App() {
     await supabase.from('quotes').delete().eq('id', id)
   }
 
-  // Se estiver verificando autenticação
   if (authLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#0a0a0a] font-mono text-xs text-neutral-500">
@@ -1989,7 +2180,6 @@ export default function App() {
     )
   }
 
-  // Se não estiver logado, exibe tela de login
   if (!session) {
     return <LoginScreen onLoginSuccess={() => fetchData()} />
   }
@@ -1998,10 +2188,8 @@ export default function App() {
     <div className="flex h-screen overflow-hidden bg-[#0a0a0a] text-white">
       {/* Sidebar Desktop */}
       <aside className="hidden h-screen flex-shrink-0 flex-col border-r border-neutral-900 bg-[#111] md:flex" style={{ width: 220 }}>
-        <div className="flex items-center gap-2.5 border-b border-neutral-900 px-5 py-4">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-blue-600">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>
-          </div>
+        <div className="flex items-center gap-3 border-b border-neutral-900 px-5 py-4">
+          <AppLogo size={32} />
           <div>
             <div className="text-sm font-bold text-neutral-100">AndradeTech</div>
             <div className="font-mono text-[10px] text-neutral-500">Acesso Autenticado</div>
@@ -2028,7 +2216,7 @@ export default function App() {
           })}
         </nav>
 
-        {/* Indicador de Técnicos Online - PC */}
+        {/* Indicador de Técnicos Online */}
         <div className="border-t border-neutral-900 p-3 pb-0">
           <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-widest text-neutral-500">Técnicos Online ({onlineUsers.length})</div>
           <div className="mb-3 max-h-24 space-y-1.5 overflow-y-auto px-1">
@@ -2054,7 +2242,10 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex bg-black/80 md:hidden">
           <div className="flex h-full w-64 flex-col border-r border-neutral-800 bg-[#111] p-4">
             <div className="mb-4 flex items-center justify-between border-b border-neutral-800 pb-4">
-              <span className="text-sm font-bold text-white">AndradeTech OS</span>
+              <div className="flex items-center gap-2.5">
+                <AppLogo size={28} />
+                <span className="text-sm font-bold text-white">AndradeTech OS</span>
+              </div>
               <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-neutral-400 hover:text-white">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
@@ -2077,7 +2268,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Indicador de Técnicos Online - Mobile */}
             <div className="mt-auto border-t border-neutral-800 pt-3">
               <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-widest text-neutral-500">Técnicos Online ({onlineUsers.length})</div>
               <div className="mb-3 max-h-24 space-y-1.5 overflow-y-auto px-1">
@@ -2151,6 +2341,7 @@ export default function App() {
         {screen === 'settings' && (
           <SettingsScreen
             services={services}
+            products={products}
             statuses={statuses}
             onAddService={async (svc) => {
               setServices(prev => [svc, ...prev])
@@ -2159,6 +2350,14 @@ export default function App() {
             onDeleteService={async (id) => {
               setServices(prev => prev.filter(s => s.id !== id))
               await supabase.from('services').delete().eq('id', id)
+            }}
+            onAddProduct={async (prod) => {
+              setProducts(prev => [prod, ...prev])
+              await supabase.from('products').insert([prod])
+            }}
+            onDeleteProduct={async (id) => {
+              setProducts(prev => prev.filter(p => p.id !== id))
+              await supabase.from('products').delete().eq('id', id)
             }}
             onAddStatus={async (st) => {
               setStatuses(prev => [...prev, st])
@@ -2202,6 +2401,7 @@ export default function App() {
           clients={clients}
           statuses={statuses}
           services={services}
+          products={products}
           onSave={handleSaveOrder}
           orderToEdit={orderEditing}
         />
@@ -2212,6 +2412,7 @@ export default function App() {
           onClose={() => setShowQuoteModal(false)}
           clients={clients}
           services={services}
+          products={products}
           onSave={handleSaveQuote}
         />
       )}
