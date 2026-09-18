@@ -61,6 +61,7 @@ interface CustomService {
 interface Product {
   id: string
   name: string
+  brand?: string
   category: string
   cost_price: number
   sale_price: number
@@ -118,11 +119,11 @@ const DEFAULT_PRODUCT_CATEGORIES = [
 ]
 
 const DEFAULT_PRODUCTS: Product[] = [
-  { id: '1001', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
-  { id: '1002', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
-  { id: '1003', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
-  { id: '1004', name: 'Cabo USB-C Trançado 1.5m', category: 'Acessórios', cost_price: 15, sale_price: 45, stock: 10 },
-  { id: '1005', name: 'Memória RAM 16GB DDR4 3200MHz', category: 'Upgrade', cost_price: 180, sale_price: 290, stock: 5 },
+  { id: '1001', name: 'SSD 480GB Kingston', brand: 'Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
+  { id: '1002', name: 'Tela iPhone 11 Incell', brand: 'Apple', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
+  { id: '1003', name: 'Fonte ATX 500W', brand: 'Corsair', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
+  { id: '1004', name: 'Cabo USB-C Trançado 1.5m', brand: 'Baseus', category: 'Acessórios', cost_price: 15, sale_price: 45, stock: 10 },
+  { id: '1005', name: 'Memória RAM 16GB DDR4 3200MHz', brand: 'Asgard', category: 'Upgrade', cost_price: 180, sale_price: 290, stock: 5 },
 ]
 
 const NAV_ITEMS = [
@@ -1270,6 +1271,7 @@ function PDVScreen({
     const matchesSearch = !searchLower ||
       p.id.toLowerCase().includes(searchLower) ||
       p.name.toLowerCase().includes(searchLower) ||
+      (p.brand || '').toLowerCase().includes(searchLower) ||
       p.category.toLowerCase().includes(searchLower)
     return matchesCategory && matchesSearch
   })
@@ -1345,7 +1347,7 @@ function PDVScreen({
       cpf: clientCpf,
       payment_method: paymentMethod,
       items: cart.map(item => ({
-        desc: `${item.product.name} [Cod: ${item.product.id}]`,
+        desc: `${item.product.name}${item.product.brand ? ` (${item.product.brand})` : ''} [Cod: ${item.product.id}]`,
         qty: item.qty,
         unit: item.product.sale_price,
       })),
@@ -1381,7 +1383,7 @@ function PDVScreen({
                     value={productSearch}
                     onChange={e => setProductSearch(e.target.value)}
                     onKeyDown={handleSearchKeyDown}
-                    placeholder="Buscar por ID ou Nome (Enter)..."
+                    placeholder="Buscar por ID, Marca ou Nome..."
                     className={`w-full rounded-lg border px-3 py-1.5 text-xs outline-none transition-colors ${
                       isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
                     }`}
@@ -1439,6 +1441,11 @@ function PDVScreen({
                           </span>
                         </div>
                         <div className="font-bold text-xs mt-1 text-ellipsis overflow-hidden">{p.name}</div>
+                        {p.brand && (
+                          <div className="text-[10px] font-mono text-purple-400 mt-0.5">
+                            Marca: {p.brand}
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center justify-between mt-3 pt-2 border-t border-neutral-500/20">
                         <span className="font-mono text-xs font-bold text-green-500">R$ {p.sale_price.toFixed(2)}</span>
@@ -1540,7 +1547,9 @@ function PDVScreen({
                             <span className="font-mono text-[9px] text-blue-400">#{item.product.id}</span>
                             <span className="font-semibold">{item.product.name}</span>
                           </div>
-                          <div className="text-[10px] text-neutral-400">R$ {item.product.sale_price.toFixed(2)} un</div>
+                          <div className="text-[10px] text-neutral-400">
+                            {item.product.brand ? `${item.product.brand} • ` : ''}R$ {item.product.sale_price.toFixed(2)} un
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <input
@@ -1787,6 +1796,8 @@ function SettingsScreen({
                         <span className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</span>
                       </div>
                       <div className="flex gap-2 text-[10px] font-mono text-neutral-400 mt-0.5">
+                        {p.brand && <span className="text-amber-400 font-semibold">{p.brand}</span>}
+                        {p.brand && <span>•</span>}
                         <span className="text-purple-400 font-semibold">{p.category || 'Geral'}</span>
                         <span>•</span>
                         <span>Venda: R$ {Number(p.sale_price || 0).toFixed(2)}</span>
@@ -2661,17 +2672,20 @@ function ProductModal({
   productToEdit,
   isDark,
   existingCategories = [],
+  existingBrands = [],
 }: {
   onClose: () => void
   onSave: (product: Product) => void
   productToEdit?: Product | null
   isDark: boolean
   existingCategories?: string[]
+  existingBrands?: string[]
 }) {
   const [customId, setCustomId] = useState(
     productToEdit?.id || String(Math.floor(1000 + Math.random() * 9000))
   )
   const [name, setName] = useState(productToEdit?.name || '')
+  const [brand, setBrand] = useState(productToEdit?.brand || '')
   const [category, setCategory] = useState(productToEdit?.category || 'Acessórios')
   const [isAddingNewCategory, setIsAddingNewCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -2681,6 +2695,10 @@ function ProductModal({
 
   const mergedCategories = Array.from(
     new Set([...DEFAULT_PRODUCT_CATEGORIES, ...existingCategories.filter(Boolean)])
+  )
+
+  const mergedBrands = Array.from(
+    new Set(['Kingston', 'Samsung', 'SanDisk', 'Apple', 'Xiaomi', 'Corsair', 'Asus', 'Dell', 'Lenovo', 'HP', ...existingBrands.filter(Boolean)])
   )
 
   const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
@@ -2703,6 +2721,7 @@ function ProductModal({
     onSave({
       id: trimmedId,
       name: trimmedName,
+      brand: brand.trim() || undefined,
       category: chosenCategory,
       cost_price: Math.max(0, Number(costPrice.replace(',', '.')) || 0),
       sale_price: Math.max(0, Number(salePrice.replace(',', '.')) || 0),
@@ -2752,46 +2771,65 @@ function ProductModal({
               placeholder="Ex: 1001, 7891234567..."
               className={inputClass}
             />
-            <p className="text-[10px] text-neutral-400 mt-1 font-mono">
-              Use este código para buscar ou bipar o item rapidamente no PDV.
-            </p>
           </div>
 
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome do Item *</label>
-            <input autoFocus required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston" className={inputClass} />
+            <input autoFocus required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Tela iPhone Incell" className={inputClass} />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-              <button
-                type="button"
-                onClick={() => setIsAddingNewCategory(!isAddingNewCategory)}
-                className="text-[11px] font-bold text-[#0066FF] hover:underline"
-              >
-                {isAddingNewCategory ? '← Escolher Existente' : '+ Nova Categoria'}
-              </button>
-            </div>
-
-            {isAddingNewCategory ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {/* Categoria Aberta de Marca */}
+            <div>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">
+                Marca (aberta)
+              </label>
               <input
-                value={newCategoryName}
-                onChange={e => setNewCategoryName(e.target.value)}
-                placeholder="Ex: Carregadores, Periféricos, etc."
+                list="brand-options-list"
+                value={brand}
+                onChange={e => setBrand(e.target.value)}
+                placeholder="Ex: Apple, Kingston..."
                 className={inputClass}
               />
-            ) : (
-              <select
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                className={inputClass}
-              >
-                {mergedCategories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+              <datalist id="brand-options-list">
+                {mergedBrands.map(b => (
+                  <option key={b} value={b} />
                 ))}
-              </select>
-            )}
+              </datalist>
+            </div>
+
+            {/* Categoria de Produto */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingNewCategory(!isAddingNewCategory)}
+                  className="text-[10px] font-bold text-[#0066FF] hover:underline"
+                >
+                  {isAddingNewCategory ? '← Escolher' : '+ Nova'}
+                </button>
+              </div>
+
+              {isAddingNewCategory ? (
+                <input
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                  placeholder="Nova categoria..."
+                  className={inputClass}
+                />
+              ) : (
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  className={inputClass}
+                >
+                  {mergedCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -3150,7 +3188,17 @@ export default function App() {
 
     try {
       const { data: pData } = await supabase.from('products').select('*')
-      if (pData && pData.length > 0) setProducts(pData)
+      if (pData && pData.length > 0) {
+        setProducts(pData.map(p => ({
+          id: p.id,
+          name: p.name,
+          brand: p.brand || '',
+          category: p.category || 'Geral',
+          cost_price: Number(p.cost_price) || 0,
+          sale_price: Number(p.sale_price) || 0,
+          stock: Number(p.stock) || 0,
+        })))
+      }
     } catch {}
 
     try {
@@ -3725,12 +3773,14 @@ export default function App() {
           onClose={() => { setShowProductModal(false); setProductEditing(null) }}
           productToEdit={productEditing}
           existingCategories={products.map(p => p.category)}
+          existingBrands={products.map(p => p.brand || '').filter(Boolean)}
           onSave={async (prod) => {
             const exists = products.some(p => p.id === prod.id)
             setProducts(prev => exists ? prev.map(p => p.id === prod.id ? prod : p) : [prod, ...prev])
             if (exists) {
               await supabase.from('products').update({
                 name: prod.name,
+                brand: prod.brand,
                 category: prod.category,
                 cost_price: prod.cost_price,
                 sale_price: prod.sale_price,
