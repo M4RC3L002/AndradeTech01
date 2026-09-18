@@ -95,7 +95,7 @@ const DEFAULT_STATUSES: CustomStatus[] = [
   { id: '3', label: 'Em Análise', dot: '#007BFF' },
   { id: '4', label: 'Aguardando Aprovação', dot: '#EAB308' },
   { id: '5', label: 'Aguardando Peça', dot: '#8A2BE2' },
-  { id: '6', label: 'Concluído', dot: '#10B981' },
+  { id: '6', label: 'Finalizado', dot: '#10B981' },
   { id: '7', label: 'Entregue', dot: '#059669' },
   { id: '8', label: 'Cancelado', dot: '#EF4444' },
 ]
@@ -172,6 +172,12 @@ const NAV_ITEMS = [
   },
 ] as const
 
+// Função auxiliar para checar se a OS foi finalizada
+function isOrderFinalized(status?: string) {
+  const s = (status || '').trim().toLowerCase()
+  return s === 'finalizado' || s === 'concluído' || s === 'concluido' || s === 'entregue'
+}
+
 // ─── Componentes Auxiliares ───────────────────────────────────────────────────
 
 function AppLogo({ size = 36 }: { size?: number }) {
@@ -246,7 +252,6 @@ function StatusBadge({ status, statuses = [] }: { status: string; statuses?: Cus
   )
 }
 
-// Botão com apenas o ícone do WhatsApp
 function WhatsAppBtn({ phone, label = '', orderDetails }: { phone: string; label?: string; orderDetails?: Partial<Order> }) {
   let msg = `Olá! Passando para falar sobre seu atendimento na AndradeTech.`
 
@@ -706,7 +711,7 @@ function PrintModal({
   )
 }
 
-// ─── Telas Principais (Dashboard, Orders, Quotes, PDV, Clients, Settings) ─────
+// ─── Telas Principais ─────────────────────────────────────────────────────────
 
 const DashboardScreen = ({
   orders = [],
@@ -736,8 +741,8 @@ const DashboardScreen = ({
   const safeOrders = Array.isArray(orders) ? orders : []
   const safeQuotes = Array.isArray(quotes) ? quotes : []
 
-  const openOrders = safeOrders.filter(o => o && o.status !== 'Concluído' && o.status !== 'Entregue' && o.status !== 'Cancelado').length
-  const completedOrders = safeOrders.filter(o => o && (o.status === 'Concluído' || o.status === 'Entregue')).length
+  const openOrders = safeOrders.filter(o => o && !isOrderFinalized(o.status) && o.status !== 'Cancelado').length
+  const completedOrders = safeOrders.filter(o => o && isOrderFinalized(o.status)).length
   const pendingQuotes = safeQuotes.filter(q => q && q.status === 'Pendente').length
   const totalRevenue = safeOrders.filter(o => o && o.status !== 'Cancelado').reduce((sum, o) => sum + Number(o.value || 0), 0)
 
@@ -825,41 +830,47 @@ const DashboardScreen = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.slice(0, 10).map(order => (
-                    <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
-                      <td className="px-3 py-2.5">
-                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
-                        <div className="font-mono text-[10px] text-neutral-400">{order.phone || 'Sem telefone'}</div>
-                      </td>
-                      <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
-                      <td className="px-3 py-2.5"><StatusBadge status={order.status} statuses={statuses} /></td>
-                      <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
-                        {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
-                      </td>
-                      <td className="px-3 py-2.5 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => onPrintOrder(order)}
-                            className="p-1 rounded text-neutral-400 hover:text-purple-500"
-                            title="Imprimir OS / Cupom"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onEditOrder(order)}
-                            className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
-                            title="Editar OS"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          <WhatsAppBtn phone={order.phone} orderDetails={order} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  filteredOrders.slice(0, 10).map(order => {
+                    const finalized = isOrderFinalized(order.status)
+                    return (
+                      <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                        <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
+                        <td className="px-3 py-2.5">
+                          <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                          <div className="font-mono text-[10px] text-neutral-400">{order.phone || 'Sem telefone'}</div>
+                        </td>
+                        <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                        <td className="px-3 py-2.5"><StatusBadge status={order.status} statuses={statuses} /></td>
+                        <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                          {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => onPrintOrder(order)}
+                              className="p-1.5 rounded-lg text-neutral-400 hover:text-purple-500"
+                              title="Imprimir OS / Cupom"
+                            >
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                            </button>
+                            {/* Oculta botão de editar se a OS estiver finalizada */}
+                            {!finalized && (
+                              <button
+                                type="button"
+                                onClick={() => onEditOrder(order)}
+                                className="rounded p-1.5 text-neutral-400 hover:text-[#0066FF]"
+                                title="Editar OS"
+                              >
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                              </button>
+                            )}
+                            <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
@@ -969,52 +980,60 @@ function OrdersScreen({
                       </td>
                     </tr>
                   ) : (
-                    filtered.map(order => (
-                      <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                        <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
-                        <td className="px-3 py-2.5">
-                          <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
-                          <div className="font-mono text-[10px] text-neutral-400">{order.phone || '—'}</div>
-                        </td>
-                        <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
-                        {/* Apenas visualização do status com StatusBadge, sem dropdown direto */}
-                        <td className="px-3 py-2.5">
-                          <StatusBadge status={order.status} statuses={statuses} />
-                        </td>
-                        <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
-                          {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
-                        </td>
-                        <td className="px-3 py-2.5 text-right">
-                          <div className="inline-flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => onPrintOrder(order)}
-                              className="p-1.5 rounded-lg text-neutral-400 hover:text-purple-500 hover:bg-neutral-800/50"
-                              title="Imprimir OS / Cupom"
-                            >
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => onEditOrder(order)}
-                              className="p-1.5 rounded-lg text-neutral-400 hover:text-[#0066FF] hover:bg-neutral-800/50"
-                              title="Editar OS"
-                            >
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                            </button>
-                            <WhatsAppBtn phone={order.phone} orderDetails={order} />
-                            <button
-                              type="button"
-                              onClick={() => { if(confirm(`Excluir ${order.id}?`)) onDeleteOrder(order.id) }}
-                              className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-neutral-800/50"
-                              title="Excluir OS"
-                            >
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    filtered.map(order => {
+                      const finalized = isOrderFinalized(order.status)
+                      return (
+                        <tr key={order.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                          <td className="px-3 py-2.5 font-mono font-bold text-[#0066FF]">{order.id}</td>
+                          <td className="px-3 py-2.5">
+                            <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                            <div className="font-mono text-[10px] text-neutral-400">{order.phone || '—'}</div>
+                          </td>
+                          <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                          <td className="px-3 py-2.5">
+                            <StatusBadge status={order.status} statuses={statuses} />
+                          </td>
+                          <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
+                            {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
+                          </td>
+                          <td className="px-3 py-2.5 text-right">
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => onPrintOrder(order)}
+                                className="p-1.5 rounded-lg text-neutral-400 hover:text-purple-500 hover:bg-neutral-800/50"
+                                title="Imprimir OS / Cupom"
+                              >
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                              </button>
+                              
+                              {/* Oculta edição caso o serviço esteja finalizado */}
+                              {!finalized && (
+                                <button
+                                  type="button"
+                                  onClick={() => onEditOrder(order)}
+                                  className="p-1.5 rounded-lg text-neutral-400 hover:text-[#0066FF] hover:bg-neutral-800/50"
+                                  title="Editar OS"
+                                >
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                </button>
+                              )}
+
+                              <WhatsAppBtn phone={order.phone} orderDetails={order} />
+
+                              <button
+                                type="button"
+                                onClick={() => { if(confirm(`Excluir ${order.id}?`)) onDeleteOrder(order.id) }}
+                                className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-neutral-800/50"
+                                title="Excluir OS"
+                              >
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
                   )}
                 </tbody>
               </table>
@@ -1039,30 +1058,35 @@ function OrdersScreen({
                     {colOrders.length === 0 ? (
                       <div className="py-8 text-center font-mono text-xs text-neutral-400">vazio</div>
                     ) : (
-                      colOrders.map(order => (
-                        <div key={order.id} className={`space-y-1.5 rounded-lg border p-3 ${
-                          isDark ? 'border-neutral-800/80 bg-[#141414]' : 'border-slate-200 bg-slate-50'
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono text-xs font-bold text-[#0066FF]">{order.id}</span>
-                            <span className="font-mono text-[10px] text-neutral-400">{order.date}</span>
-                          </div>
-                          <div className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
-                          <div className="text-[11px] text-neutral-400">{order.device}</div>
-                          <div className={`flex items-center justify-between border-t pt-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                            <span className="font-mono text-xs font-bold text-[#8A2BE2]">R$ {Number(order.value || 0).toFixed(2)}</span>
-                            <div className="flex gap-1 items-center">
-                              <button type="button" onClick={() => onPrintOrder(order)} className="p-1 text-neutral-400 hover:text-purple-500" title="Imprimir OS">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                              </button>
-                              <button type="button" onClick={() => onEditOrder(order)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar OS">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                              </button>
-                              <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                      colOrders.map(order => {
+                        const finalized = isOrderFinalized(order.status)
+                        return (
+                          <div key={order.id} className={`space-y-1.5 rounded-lg border p-3 ${
+                            isDark ? 'border-neutral-800/80 bg-[#141414]' : 'border-slate-200 bg-slate-50'
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <span className="font-mono text-xs font-bold text-[#0066FF]">{order.id}</span>
+                              <span className="font-mono text-[10px] text-neutral-400">{order.date}</span>
+                            </div>
+                            <div className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{order.client}</div>
+                            <div className="text-[11px] text-neutral-400">{order.device}</div>
+                            <div className={`flex items-center justify-between border-t pt-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                              <span className="font-mono text-xs font-bold text-[#8A2BE2]">R$ {Number(order.value || 0).toFixed(2)}</span>
+                              <div className="flex gap-1 items-center">
+                                <button type="button" onClick={() => onPrintOrder(order)} className="p-1 text-neutral-400 hover:text-purple-500" title="Imprimir OS">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                </button>
+                                {!finalized && (
+                                  <button type="button" onClick={() => onEditOrder(order)} className="p-1 text-neutral-400 hover:text-[#0066FF]" title="Editar OS">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                  </button>
+                                )}
+                                <WhatsAppBtn phone={order.phone} orderDetails={order} />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
+                        )
+                      })
                     )}
                   </div>
                 </div>
@@ -2068,7 +2092,6 @@ function OrderModal({
                 className={inputClass}
               />
             </div>
-            {/* Campo da Foto 03: Único local onde a situação da OS é alterada */}
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
               <select
@@ -3233,7 +3256,6 @@ export default function App() {
     setShowClientModal(true)
   }
 
-  // Ao salvar a OS, se a situação for "Orçamento" ou "Aguardando Aprovação", converte de volta para orçamento
   const handleSaveOrder = async (orderData: Order) => {
     const isReturningToQuote =
       orderData.status.toLowerCase() === 'orçamento' ||
@@ -3242,11 +3264,9 @@ export default function App() {
       orderData.status.toLowerCase() === 'aguardando aprovacao'
 
     if (isReturningToQuote) {
-      // Remove da listagem de OS
       setOrders(prev => prev.filter(o => o.id !== orderData.id))
       await supabase.from('orders').delete().eq('id', orderData.id)
 
-      // Transforma em orçamento
       const expDate = new Date()
       expDate.setDate(expDate.getDate() + 7)
 
@@ -3305,7 +3325,6 @@ export default function App() {
     await supabase.from('orders').delete().eq('id', orderId)
   }
 
-  // Salvar ou atualizar orçamento
   const handleSaveQuote = async (quoteData: Quote) => {
     setQuotes(prev => {
       const exists = prev.some(q => q.id === quoteData.id)
@@ -3325,7 +3344,6 @@ export default function App() {
     }])
   }
 
-  // Conversão de orçamento em OS
   const handleConvertToOrder = async (quote: Quote) => {
     setQuotes(prev => prev.filter(q => q.id !== quote.id))
     await supabase.from('quotes').delete().eq('id', quote.id)
