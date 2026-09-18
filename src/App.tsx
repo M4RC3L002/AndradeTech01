@@ -1280,6 +1280,9 @@ function PDVScreen({
     if (found) {
       setClientPhone(found.phone)
       setClientCpf(found.cpf)
+    } else {
+      setClientPhone('')
+      setClientCpf('')
     }
   }
 
@@ -1488,24 +1491,26 @@ function PDVScreen({
             </div>
           </div>
 
-          {/* Coluna da Direita: Carrinho e Finalização */}
+          {/* Coluna da Direita: Carrinho e Finalização com Select Suspenso de Clientes */}
           <div className="lg:col-span-5 space-y-4">
             <div className={`p-4 rounded-xl border flex flex-col justify-between ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
               <div>
                 <h2 className="text-sm font-bold mb-3">Carrinho de Compras</h2>
                 
-                {/* Dados do Cliente */}
+                {/* Dados do Cliente via Dropdown Suspenso */}
                 <div className="space-y-2 mb-4">
-                  <input
-                    list="pdv-client-list"
+                  <select
                     value={selectedClient}
                     onChange={e => handleSelectClient(e.target.value)}
-                    placeholder="Cliente (opcional, padrão: Consumidor Final)"
                     className={inputClass}
-                  />
-                  <datalist id="pdv-client-list">
-                    {clients.map(c => <option key={c.id} value={c.name} />)}
-                  </datalist>
+                  >
+                    <option value="">Cliente (opcional, padrão: Consumidor Final)</option>
+                    {clients.map(c => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}{c.phone ? ` — ${c.phone}` : ''}
+                      </option>
+                    ))}
+                  </select>
 
                   <div className="grid grid-cols-2 gap-2">
                     <input
@@ -1953,7 +1958,11 @@ function OrderModal({
   const handleClientSelectChange = (name: string) => {
     setClient(name)
     const found = safeClients.find(c => c.name === name)
-    if (found) setPhone(found.phone)
+    if (found) {
+      setPhone(found.phone)
+    } else {
+      setPhone('')
+    }
   }
 
   const handleApplyPreset = (value: string, index: number) => {
@@ -3465,7 +3474,7 @@ export default function App() {
                   AndradeTech
                 </span>
               </div>
-              <button type="button" onClick={onMobileMenuClose} className="p-1 text-neutral-400 hover:text-red-400">
+              <button type="button" onClick={() => setMobileMenuOpen(false)} className="p-1 text-neutral-400 hover:text-red-400">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
             </div>
