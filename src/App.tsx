@@ -4355,7 +4355,7 @@ export default function App() {
                 stock: prod.stock,
               }).eq('id', prod.id)
             } else {
-              await supabase.from('products').insert([prod])
+              const { error } = await supabase.from('products').insert([prod]); if (error) { alert('Não foi possível salvar o produto: ' + error.message); await fetchData() }
             }
           }}
           isDark={isDark}
