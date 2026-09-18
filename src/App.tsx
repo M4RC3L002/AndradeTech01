@@ -51,7 +51,7 @@ interface Quote {
 interface Client {
   id: string
   name: string
-  phone: string; email: string; cpf: string
+  phone: string; email: string; cpf: string; cep: string; addressNumber: string; complement: string
   address: string
   city: string
   totalOrders: number
@@ -1444,8 +1444,8 @@ function QuotesScreen({
 
 // ─── Tela de PDV (Frente de Caixa) ────────────────────────────────────────────
 
-function PixPaymentModal({ payment, onClose, isDark }: { payment: { id: string; total: number; customer?: { name: string; phone: string; email?: string } }; onClose: () => void; isDark: boolean }) {
-  const pixCode = createPixCopyPaste(payment.total, payment.id); useEffect(() => { let cancelled = false; (async () => { try { const response = await fetch('/api/infinitepay/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referenceType: payment.id.toUpperCase().startsWith('OS') ? 'order' : 'sale', referenceId: payment.id, amount: payment.total, description: 'Pagamento AndradeTech #' + payment.id, customer: payment.customer ? { name: payment.customer.name, email: payment.customer.email || undefined, phone: '+55' + payment.customer.phone.replace(/\D/g, '') } : undefined }) }); const data = await response.json(); if (!response.ok || !data.url) throw new Error(data.error || 'Não foi possível iniciar o pagamento.'); if (!cancelled) window.location.assign(data.url); } catch (error) { if (!cancelled) alert(error instanceof Error ? error.message : 'Falha ao iniciar pagamento.'); } })(); return () => { cancelled = true }; }, [payment.id, payment.total])
+function PixPaymentModal({ payment, onClose, isDark }: { payment: { id: string; total: number; customer?: { name: string; phone: string; email?: string; cep?: string; addressNumber?: string; complement?: string } }; onClose: () => void; isDark: boolean }) {
+  const pixCode = createPixCopyPaste(payment.total, payment.id); useEffect(() => { let cancelled = false; (async () => { try { const response = await fetch('/api/infinitepay/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referenceType: payment.id.toUpperCase().startsWith('OS') ? 'order' : 'sale', referenceId: payment.id, amount: payment.total, description: 'Pagamento AndradeTech #' + payment.id, customer: payment.customer ? { name: payment.customer.name, email: payment.customer.email || undefined, phone: '+55' + payment.customer.phone.replace(/\D/g, '') } : undefined, address: payment.customer?.cep && payment.customer?.addressNumber ? { cep: payment.customer.cep.replace(/\D/g, ''), number: payment.customer.addressNumber, complement: payment.customer.complement || undefined } : undefined }) }); const data = await response.json(); if (!response.ok || !data.url) throw new Error(data.error || 'Não foi possível iniciar o pagamento.'); if (!cancelled) window.location.assign(data.url); } catch (error) { if (!cancelled) alert(error instanceof Error ? error.message : 'Falha ao iniciar pagamento.'); } })(); return () => { cancelled = true }; }, [payment.id, payment.total])
   return null; const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&data=${encodeURIComponent(pixCode)}`
   const copyPixCode = async () => {
     try {
@@ -2970,7 +2970,7 @@ function ClientModal({
   const [name, setName] = useState(clientToEdit?.name || '')
   const [phone, setPhone] = useState(() => formatPhone(clientToEdit?.phone || ''))
   const [email, setEmail] = useState(clientToEdit?.email || ''); const [cpf, setCpf] = useState(() => formatCpf(clientToEdit?.cpf || ''))
-  const [address, setAddress] = useState(clientToEdit?.address || '')
+  const [cep, setCep] = useState(clientToEdit?.cep || ''); const [addressNumber, setAddressNumber] = useState(clientToEdit?.addressNumber || ''); const [complement, setComplement] = useState(clientToEdit?.complement || ''); const [address, setAddress] = useState(clientToEdit?.address || '')
   const [city, setCity] = useState(clientToEdit?.city || '')
 
   const handleSave = (e: React.FormEvent) => {
@@ -2979,7 +2979,7 @@ function ClientModal({
 
     onSave({
       id: clientToEdit?.id || `CLI-${Math.floor(100 + Math.random() * 900)}`,
-      name, phone, email, cpf, address,
+      name, phone, email, cpf, cep, addressNumber, complement, address,
       city: city || 'São João do Paraíso',
       totalOrders: clientToEdit?.totalOrders || 0,
       totalSpent: clientToEdit?.totalSpent || 0,
@@ -3429,7 +3429,7 @@ export default function App() {
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null)
   const [printDocumentKind, setPrintDocumentKind] = useState<'order' | 'sale' | 'quote'>('order')
-  const [pixOrderPayment, setPixOrderPayment] = useState<{ id: string; total: number; customer?: { name: string; phone: string; email?: string } } | null>(null)
+  const [pixOrderPayment, setPixOrderPayment] = useState<{ id: string; total: number; customer?: { name: string; phone: string; email?: string; cep?: string; addressNumber?: string; complement?: string } } | null>(null)
 
   const [clients, setClients] = useState<Client[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -3536,7 +3536,7 @@ export default function App() {
           name: c.name,
           phone: c.phone || '', email: c.email || '',
           cpf: c.cpf || '',
-          address: c.address || '',
+          address: c.address || '', cep: c.cep || '', addressNumber: c.address_number || '', complement: c.complement || '',
           city: c.city || '',
           totalOrders: c.total_orders || 0,
           totalSpent: Number(c.total_spent) || 0,
@@ -3731,7 +3731,7 @@ export default function App() {
       name: clientData.name,
       phone: clientData.phone, email: clientData.email,
       cpf: clientData.cpf,
-      address: clientData.address,
+      address: clientData.address, cep: clientData.cep, address_number: clientData.addressNumber, complement: clientData.complement,
       city: clientData.city,
       total_orders: clientData.totalOrders,
       total_spent: clientData.totalSpent,
@@ -3819,7 +3819,7 @@ export default function App() {
     }])
 
     if (isOrderFinalized(orderData.status) && isPixConfigured()) {
-      setPixOrderPayment({ id: orderData.id, total: orderData.value, customer: { name: orderData.client, phone: orderData.phone, email: clients.find(c => c.name === orderData.client)?.email } })
+      setPixOrderPayment({ id: orderData.id, total: orderData.value, customer: { name: orderData.client, phone: orderData.phone, email: clients.find(c => c.name === orderData.client)?.email, cep: clients.find(c => c.name === orderData.client)?.cep, addressNumber: clients.find(c => c.name === orderData.client)?.addressNumber, complement: clients.find(c => c.name === orderData.client)?.complement } })
     }
   }
 
@@ -3957,7 +3957,7 @@ export default function App() {
     }
 
     if (saleData.payment_method === 'PIX') {
-      setPixOrderPayment({ id: saleData.id, total: saleData.total, customer: { name: saleData.client, phone: saleData.phone, email: clients.find(c => c.name === saleData.client)?.email } })
+      setPixOrderPayment({ id: saleData.id, total: saleData.total, customer: { name: saleData.client, phone: saleData.phone, email: clients.find(c => c.name === saleData.client)?.email, cep: clients.find(c => c.name === saleData.client)?.cep, addressNumber: clients.find(c => c.name === saleData.client)?.addressNumber, complement: clients.find(c => c.name === saleData.client)?.complement } })
       return
     }
 
