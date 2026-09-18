@@ -9,7 +9,7 @@ const getOrigin = (req: any) => {
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { referenceType, referenceId, amount, description, customer } = req.body || {}
+  const { referenceType, referenceId, amount, description, customer, address } = req.body || {}
   if (!['sale', 'order'].includes(referenceType) || !referenceId || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
     return res.status(400).json({ error: 'Dados de cobrança inválidos.' })
   }
@@ -33,7 +33,7 @@ export default async function handler(req: any, res: any) {
       handle,
       order_nsu: orderNsu,
       redirect_url: origin + '/?payment_return=1',
-      webhook_url: origin + '/api/infinitepay/webhook',
+      webhook_url: origin + '/api/infinitepay/webhook', address: address?.cep && address?.number ? { cep: String(address.cep).replace(/\D/g, ''), number: String(address.number), complement: address.complement || undefined } : undefined,
       customer: customer?.name ? {
         name: customer.name,
         email: customer.email || undefined,
