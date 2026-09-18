@@ -3581,9 +3581,14 @@ export default function App() {
     if (user.id === session?.user?.id) return alert('Não é permitido apagar o próprio usuário.')
     if (!confirm(`Deseja realmente apagar o usuário ${user.name}?`)) return
 
-    const { error } = await supabase.from('profiles').delete().eq('id', user.id)
-    if (error) {
-      alert(`Não foi possível apagar o usuário: ${error.message}`)
+    const { data: deletedProfiles, error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', user.id)
+      .select('id')
+
+    if (error || !deletedProfiles?.some(profile => profile.id === user.id)) {
+      alert(`Não foi possível apagar o usuário${error ? `: ${error.message}` : '. Verifique a política de exclusão no Supabase.'}`)
       return
     }
     setProfiles(prev => prev.filter(profile => profile.id !== user.id))
