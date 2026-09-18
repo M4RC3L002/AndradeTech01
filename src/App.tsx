@@ -1899,7 +1899,7 @@ function ClientsScreen({
 
 function UsersScreen({
   profiles = [], onlineUsers = [], currentUserProfile, isDark,
-  onOpenNewUser, onEditUser, onForceDisconnect, onOpenMenu,
+  onOpenNewUser, onEditUser, onForceDisconnect, onDeleteUser, onOpenMenu,
 }: {
   profiles: UserProfile[]
   onlineUsers: any[]
@@ -1908,6 +1908,7 @@ function UsersScreen({
   onOpenNewUser: () => void
   onEditUser: (user: UserProfile) => void
   onForceDisconnect: (userId: string) => void
+  onDeleteUser: (user: UserProfile) => void
   onOpenMenu: () => void
 }) {
   const [search, setSearch] = useState('')
@@ -1941,7 +1942,7 @@ function UsersScreen({
                     <td className="px-4 py-3 font-semibold"><div className="flex items-center gap-2"><span className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]' : 'bg-neutral-600'}`} /><span className={isDark ? 'text-white' : 'text-slate-900'}>{u.name}</span></div></td>
                     <td className="px-4 py-3 font-mono text-neutral-400">{u.email}</td><td className="px-4 py-3"><span className="rounded border border-purple-500/20 bg-purple-500/10 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-purple-400">{u.role}</span></td>
                     <td className="px-4 py-3"><span className={`rounded border px-2 py-0.5 font-mono text-[10px] font-bold ${u.active ? 'border-green-500/20 bg-green-500/10 text-green-500' : 'border-red-500/20 bg-red-500/10 text-red-500'}`}>{u.active ? 'Ativo' : 'Desativado'}</span></td>
-                    <td className="max-w-xs truncate px-4 py-3 text-neutral-400">{u.modules?.join(', ') || 'Nenhum'}</td><td className="px-4 py-3 text-right"><div className="inline-flex items-center gap-2">{isOnline && u.id !== currentUserProfile?.id && <button type="button" onClick={() => onForceDisconnect(u.id)} className="rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-500 hover:text-white">Desconectar</button>}<button type="button" onClick={() => onEditUser(u)} className="rounded p-1.5 text-neutral-400 hover:bg-neutral-800/50 hover:text-[#0066FF]" title="Editar usuario e permissoes"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div></td>
+                    <td className="max-w-xs truncate px-4 py-3 text-neutral-400">{u.modules?.join(', ') || 'Nenhum'}</td><td className="px-4 py-3 text-right"><div className="inline-flex items-center gap-2">{isOnline && u.id !== currentUserProfile?.id && <button type="button" onClick={() => onForceDisconnect(u.id)} className="rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-500 hover:text-white">Desconectar</button>}<button type="button" onClick={() => onEditUser(u)} className="rounded p-1.5 text-neutral-400 hover:bg-neutral-800/50 hover:text-[#0066FF]" title="Editar usuario e permissoes"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>{currentUserProfile?.role === 'admin' && u.id !== currentUserProfile.id && <button type="button" onClick={() => onDeleteUser(u)} className="rounded p-1.5 text-neutral-400 hover:bg-red-500/10 hover:text-red-500" title="Apagar usuario"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/></svg></button>}</div></td>
                   </tr>
                 })}
               </tbody>
@@ -1957,16 +1958,11 @@ function SettingsScreen({
   services = [],
   products = [],
   statuses = [],
-  profiles = [],
-  onlineUsers = [],
-  currentUserProfile,
   isDark,
   onOpenProductModal,
   onEditProduct,
   onOpenServiceModal,
   onOpenStatusModal,
-  onEditUser,
-  onForceDisconnect,
   onDeleteProduct,
   onDeleteService,
   onDeleteStatus,
@@ -1975,16 +1971,11 @@ function SettingsScreen({
   services: CustomService[]
   products: Product[]
   statuses: CustomStatus[]
-  profiles: UserProfile[]
-  onlineUsers: any[]
-  currentUserProfile: UserProfile | null
   isDark: boolean
   onOpenProductModal: () => void
   onEditProduct: (product: Product) => void
   onOpenServiceModal: () => void
   onOpenStatusModal: () => void
-  onEditUser: (user: UserProfile) => void
-  onForceDisconnect: (userId: string) => void
   onDeleteProduct: (id: string) => void
   onDeleteService: (id: string) => void
   onDeleteStatus: (id: string) => void
@@ -1993,14 +1984,13 @@ function SettingsScreen({
   const safeProducts = Array.isArray(products) ? products : []
   const safeServices = Array.isArray(services) ? services : []
   const safeStatuses = Array.isArray(statuses) ? statuses : []
-  const safeProfiles = Array.isArray(profiles) ? profiles : []
-
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <Topbar title="Configurações & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
         
-        {/* Gestão de Usuários e Permissões (Visível para todos ou configurável para admin) */}
+        {/* Gestão de usuários movida para a aba Usuários. */}
+        {/*
         <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
           isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
         }`}>
@@ -2064,6 +2054,7 @@ function SettingsScreen({
           </div>
         </div>
 
+        */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* Card Produtos */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
@@ -2226,6 +2217,7 @@ function OrderModal({
   statuses = [],
   services = [],
   products = [],
+  profiles = [],
   onSave,
   onQuickNewClient,
   orderToEdit,
@@ -2236,6 +2228,7 @@ function OrderModal({
   statuses: CustomStatus[]
   services: CustomService[]
   products: Product[]
+  profiles: UserProfile[]
   onSave: (order: Order) => void
   onQuickNewClient: () => void
   orderToEdit?: Order | null
@@ -2245,11 +2238,14 @@ function OrderModal({
   const safeStatuses = Array.isArray(statuses) ? statuses : []
   const safeServices = Array.isArray(services) ? services : []
   const safeProducts = Array.isArray(products) ? products : []
+  const availableOperators = (Array.isArray(profiles) ? profiles : []).filter(profile =>
+    profile.active && (profile.role === 'technician' || profile.role === 'attendant')
+  )
 
   const [client, setClient] = useState(orderToEdit?.client || '')
   const [phone, setPhone] = useState(orderToEdit?.phone || '')
   const [device, setDevice] = useState(orderToEdit?.device || '')
-  const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
+  const [technician, setTechnician] = useState(orderToEdit?.technician || availableOperators[0]?.name || '')
   const [notes, setNotes] = useState(orderToEdit?.notes || '')
   const [status, setStatus] = useState(orderToEdit?.status || (safeStatuses.length > 0 ? safeStatuses[0].label : 'Entrada'))
   const [items, setItems] = useState<OrderItem[]>(
@@ -2291,8 +2287,8 @@ function OrderModal({
 
   const handleSave = (e: React.FormEvent, sendToWhatsApp = false) => {
     e.preventDefault()
-    if (!client.trim() || !device.trim()) {
-      alert('Selecione o cliente e informe o aparelho!')
+    if (!client.trim() || !device.trim() || !technician) {
+      alert('Selecione o cliente, informe o aparelho e escolha o responsável!')
       return
     }
 
@@ -2306,7 +2302,7 @@ function OrderModal({
       status,
       value: total,
       date: orderToEdit?.date || new Date().toLocaleDateString('pt-BR'),
-      technician: technician || 'Admin',
+      technician,
       notes,
       items,
     }
@@ -2418,11 +2414,17 @@ function OrderModal({
 
           <div>
             <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Técnico Responsável</label>
-            <input
-              value={technician}
-              onChange={e => setTechnician(e.target.value)}
-              className={inputClass}
-            />
+            <select value={technician} onChange={e => setTechnician(e.target.value)} className={inputClass}>
+              <option value="">Selecione o técnico ou atendente...</option>
+              {availableOperators.map(operator => (
+                <option key={operator.id} value={operator.name}>
+                  {operator.name} — {operator.role === 'technician' ? 'Técnico' : 'Atendente'}
+                </option>
+              ))}
+            </select>
+            {availableOperators.length === 0 && (
+              <p className="mt-1 text-[10px] text-amber-500">Nenhum técnico ou atendente ativo cadastrado.</p>
+            )}
           </div>
 
           <div>
@@ -3574,6 +3576,20 @@ export default function App() {
     alert('Comando de desconexão enviado.')
   }
 
+  const handleDeleteUser = async (user: UserProfile) => {
+    if (currentUserProfile?.role !== 'admin') return
+    if (user.id === session?.user?.id) return alert('Não é permitido apagar o próprio usuário.')
+    if (!confirm(`Deseja realmente apagar o usuário ${user.name}?`)) return
+
+    const { error } = await supabase.from('profiles').delete().eq('id', user.id)
+    if (error) {
+      alert(`Não foi possível apagar o usuário: ${error.message}`)
+      return
+    }
+    setProfiles(prev => prev.filter(profile => profile.id !== user.id))
+    alert('Usuário apagado com sucesso.')
+  }
+
   // Atualiza perfil e permissões do usuário
   const handleSaveUser = async (data: Partial<UserProfile> & { password?: string }) => {
     if (!data.id) {
@@ -4140,6 +4156,7 @@ export default function App() {
             onOpenNewUser={() => { setUserEditing(null); setShowUserModal(true) }}
             onEditUser={(u) => { setUserEditing(u); setShowUserModal(true) }}
             onForceDisconnect={handleForceDisconnect}
+            onDeleteUser={handleDeleteUser}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
         )}
@@ -4148,16 +4165,11 @@ export default function App() {
             services={services}
             products={products}
             statuses={statuses}
-            profiles={profiles}
-            onlineUsers={onlineUsers}
-            currentUserProfile={currentUserProfile}
             isDark={isDark}
             onOpenProductModal={() => { setProductEditing(null); setShowProductModal(true) }}
             onEditProduct={(p) => { setProductEditing(p); setShowProductModal(true) }}
             onOpenServiceModal={() => setShowServiceModal(true)}
             onOpenStatusModal={() => setShowStatusModal(true)}
-            onEditUser={(u) => { setUserEditing(u); setShowUserModal(true) }}
-            onForceDisconnect={handleForceDisconnect}
             onDeleteProduct={async (id) => {
               setProducts(prev => prev.filter(p => p.id !== id))
               await supabase.from('products').delete().eq('id', id)
@@ -4186,6 +4198,7 @@ export default function App() {
           statuses={statuses}
           services={services}
           products={products}
+          profiles={profiles}
           onSave={handleSaveOrder}
           onQuickNewClient={handleOpenNewClient}
           orderToEdit={orderEditing}
