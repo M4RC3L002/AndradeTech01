@@ -3960,6 +3960,11 @@ export default function App() {
       }
     }
 
+    if (saleData.payment_method === 'PIX') {
+      setPixOrderPayment({ id: saleData.id, total: saleData.total })
+      return
+    }
+
     if (confirm(`Venda #${saleData.id} concluída com sucesso!\nDeseja imprimir o cupom da venda?`)) {
       setPrintDocumentKind('sale')
       setOrderToPrint({
