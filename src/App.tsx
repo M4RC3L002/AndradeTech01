@@ -93,10 +93,11 @@ const DEFAULT_STATUSES: CustomStatus[] = [
   { id: '1', label: 'Entrada', dot: '#64748B' },
   { id: '2', label: 'Orçamento', dot: '#F59E0B' },
   { id: '3', label: 'Em Análise', dot: '#007BFF' },
-  { id: '4', label: 'Aguardando Peça', dot: '#8A2BE2' },
-  { id: '5', label: 'Concluído', dot: '#10B981' },
-  { id: '6', label: 'Entregue', dot: '#059669' },
-  { id: '7', label: 'Cancelado', dot: '#EF4444' },
+  { id: '4', label: 'Aguardando Aprovação', dot: '#EAB308' },
+  { id: '5', label: 'Aguardando Peça', dot: '#8A2BE2' },
+  { id: '6', label: 'Concluído', dot: '#10B981' },
+  { id: '7', label: 'Entregue', dot: '#059669' },
+  { id: '8', label: 'Cancelado', dot: '#EF4444' },
 ]
 
 const DEFAULT_SERVICES: CustomService[] = [
@@ -245,6 +246,7 @@ function StatusBadge({ status, statuses = [] }: { status: string; statuses?: Cus
   )
 }
 
+// Botão com apenas o ícone do WhatsApp
 function WhatsAppBtn({ phone, label = '', orderDetails }: { phone: string; label?: string; orderDetails?: Partial<Order> }) {
   let msg = `Olá! Passando para falar sobre seu atendimento na AndradeTech.`
 
@@ -276,12 +278,11 @@ function WhatsAppBtn({ phone, label = '', orderDetails }: { phone: string; label
         }
       }}
       title="Enviar WhatsApp"
-      className="inline-flex flex-shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-white transition-all bg-[#25D366] hover:opacity-90 active:scale-95 shadow-sm"
+      className="inline-flex flex-shrink-0 cursor-pointer items-center justify-center rounded-full p-2 text-white transition-all bg-[#25D366] hover:opacity-90 active:scale-95 shadow-sm"
     >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
       </svg>
-      <span className="hidden sm:inline">{label || 'WhatsApp'}</span>
     </a>
   )
 }
@@ -876,7 +877,6 @@ function OrdersScreen({
   onNewOrder,
   onEditOrder,
   onPrintOrder,
-  onUpdateStatus,
   onDeleteOrder,
   onOpenMenu,
 }: {
@@ -886,7 +886,6 @@ function OrdersScreen({
   onNewOrder: () => void
   onEditOrder: (order: Order) => void
   onPrintOrder: (order: Order) => void
-  onUpdateStatus: (id: string, status: string) => void
   onDeleteOrder: (id: string) => void
   onOpenMenu: () => void
 }) {
@@ -978,48 +977,39 @@ function OrdersScreen({
                           <div className="font-mono text-[10px] text-neutral-400">{order.phone || '—'}</div>
                         </td>
                         <td className="px-3 py-2.5 text-neutral-400">{order.device}</td>
+                        {/* Apenas visualização do status com StatusBadge, sem dropdown direto */}
                         <td className="px-3 py-2.5">
-                          <select
-                            value={order.status}
-                            onChange={e => onUpdateStatus(order.id, e.target.value)}
-                            className={`rounded border px-1.5 py-0.5 font-mono text-xs outline-none ${
-                              isDark ? 'border-neutral-800 bg-[#181818] text-neutral-200' : 'border-slate-300 bg-white text-slate-800'
-                            }`}
-                          >
-                            {safeStatuses.map(st => (
-                              <option key={st.id} value={st.label}>{st.label}</option>
-                            ))}
-                          </select>
+                          <StatusBadge status={order.status} statuses={statuses} />
                         </td>
                         <td className={`px-3 py-2.5 font-mono font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>
                           {order.value > 0 ? `R$ ${Number(order.value).toFixed(2)}` : '—'}
                         </td>
                         <td className="px-3 py-2.5 text-right">
-                          <div className="inline-flex items-center gap-1.5">
+                          <div className="inline-flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => onPrintOrder(order)}
-                              className="p-1 rounded text-neutral-400 hover:text-purple-500"
+                              className="p-1.5 rounded-lg text-neutral-400 hover:text-purple-500 hover:bg-neutral-800/50"
                               title="Imprimir OS / Cupom"
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                             </button>
                             <button
                               type="button"
                               onClick={() => onEditOrder(order)}
-                              className="rounded p-1 text-neutral-400 hover:text-[#0066FF]"
+                              className="p-1.5 rounded-lg text-neutral-400 hover:text-[#0066FF] hover:bg-neutral-800/50"
                               title="Editar OS"
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                             </button>
                             <WhatsAppBtn phone={order.phone} orderDetails={order} />
                             <button
                               type="button"
                               onClick={() => { if(confirm(`Excluir ${order.id}?`)) onDeleteOrder(order.id) }}
-                              className="rounded p-1 text-neutral-400 hover:text-red-500"
+                              className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-neutral-800/50"
                               title="Excluir OS"
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
                             </button>
                           </div>
                         </td>
@@ -1061,7 +1051,7 @@ function OrdersScreen({
                           <div className="text-[11px] text-neutral-400">{order.device}</div>
                           <div className={`flex items-center justify-between border-t pt-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
                             <span className="font-mono text-xs font-bold text-[#8A2BE2]">R$ {Number(order.value || 0).toFixed(2)}</span>
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 items-center">
                               <button type="button" onClick={() => onPrintOrder(order)} className="p-1 text-neutral-400 hover:text-purple-500" title="Imprimir OS">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                               </button>
@@ -1090,7 +1080,6 @@ function QuotesScreen({
   isDark,
   onNewQuote,
   onEditQuote,
-  onConvertToOrder,
   onUpdateStatus,
   onPrintQuote,
   onDeleteQuote,
@@ -1100,7 +1089,6 @@ function QuotesScreen({
   isDark: boolean
   onNewQuote: () => void
   onEditQuote: (quote: Quote) => void
-  onConvertToOrder: (quote: Quote) => void
   onUpdateStatus: (quote: Quote, status: Quote['status']) => void
   onPrintQuote: (quote: Quote) => void
   onDeleteQuote: (id: string) => void
@@ -1153,75 +1141,66 @@ function QuotesScreen({
                     </td>
                   </tr>
                 ) : (
-                  safeQuotes.map(q => (
-                    <tr key={q.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">{q.id}</td>
-                      <td className="px-3 py-2.5">
-                        <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{q.client}</div>
-                        <div className="text-[10px] text-neutral-400">{q.device}</div>
-                      </td>
-                      <td className="max-w-[180px] truncate px-3 py-2.5 text-neutral-400">{q.description}</td>
-                      <td className={`px-3 py-2.5 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ {Number(q.value || 0).toFixed(2)}</td>
-                      <td className="px-3 py-2.5 font-mono text-neutral-400">{q.validUntil}</td>
-                      <td className="px-3 py-2.5">
-                        <select
-                          value={q.status}
-                          onChange={e => onUpdateStatus(q, e.target.value as Quote['status'])}
-                          className={`rounded-lg border px-2 py-1 font-mono text-[10px] font-bold outline-none cursor-pointer transition-colors ${
-                            q.status === 'Aprovado' ? 'border-green-500/40 bg-green-500/10 text-green-600' :
-                            q.status === 'Reprovado' || q.status === 'Cancelado' ? 'border-red-500/40 bg-red-500/10 text-red-600' :
-                            'border-yellow-500/40 bg-yellow-500/10 text-yellow-600'
-                          }`}
-                        >
-                          <option value="Pendente">Pendente</option>
-                          <option value="Aprovado">Aprovado</option>
-                          <option value="Reprovado">Reprovado</option>
-                        </select>
-                      </td>
-                      <td className="px-3 py-2.5 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => onPrintQuote(q)}
-                            className="rounded p-1 text-neutral-400 hover:text-purple-500 transition-colors"
-                            title="Imprimir Orçamento"
+                  safeQuotes.map(q => {
+                    const isRejected = q.status === 'Reprovado' || q.status === 'Cancelado'
+                    return (
+                      <tr key={q.id} className={`${isRejected ? 'opacity-50 bg-neutral-900/20' : ''} ${isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}`}>
+                        <td className="px-3 py-2.5 font-mono font-bold text-[#8A2BE2]">{q.id}</td>
+                        <td className="px-3 py-2.5">
+                          <div className={`font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{q.client}</div>
+                          <div className="text-[10px] text-neutral-400">{q.device}</div>
+                        </td>
+                        <td className="max-w-[180px] truncate px-3 py-2.5 text-neutral-400">{q.description}</td>
+                        <td className={`px-3 py-2.5 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ {Number(q.value || 0).toFixed(2)}</td>
+                        <td className="px-3 py-2.5 font-mono text-neutral-400">{q.validUntil}</td>
+                        <td className="px-3 py-2.5">
+                          <select
+                            value={q.status}
+                            disabled={isRejected}
+                            onChange={e => onUpdateStatus(q, e.target.value as Quote['status'])}
+                            className={`rounded-lg border px-2 py-1 font-mono text-[10px] font-bold outline-none transition-colors ${
+                              isRejected ? 'cursor-not-allowed border-red-500/30 bg-red-500/10 text-red-500' :
+                              q.status === 'Aprovado' ? 'border-green-500/40 bg-green-500/10 text-green-600' :
+                              'border-yellow-500/40 bg-yellow-500/10 text-yellow-600 cursor-pointer'
+                            }`}
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onEditQuote(q)}
-                            className="rounded p-1 text-neutral-400 hover:text-[#8A2BE2] transition-colors"
-                            title="Editar Orçamento"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          {q.status !== 'Aprovado' && (
+                            <option value="Pendente">Pendente</option>
+                            <option value="Aprovado">Aprovado (Vira OS)</option>
+                            <option value="Reprovado">Reprovado</option>
+                          </select>
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          <div className="inline-flex items-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() => {
-                                if (confirm(`Deseja converter o orçamento ${q.id} em uma Ordem de Serviço?`)) {
-                                  onConvertToOrder(q)
-                                }
-                              }}
-                              className="rounded border border-[#0066FF]/30 bg-[#0066FF]/10 px-2 py-1 text-[11px] font-semibold text-[#0066FF] hover:bg-[#0066FF] hover:text-white transition-all"
-                              title="Converter para OS"
+                              onClick={() => onPrintQuote(q)}
+                              className="rounded p-1 text-neutral-400 hover:text-purple-500 transition-colors"
+                              title="Imprimir Orçamento"
                             >
-                              Virar OS
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                             </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
-                            className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
-                            title="Descartar orçamento"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                            <button
+                              type="button"
+                              disabled={isRejected}
+                              onClick={() => onEditQuote(q)}
+                              className={`rounded p-1 transition-colors ${isRejected ? 'opacity-30 cursor-not-allowed text-neutral-500' : 'text-neutral-400 hover:text-[#8A2BE2]'}`}
+                              title={isRejected ? "Orçamento reprovado/desabilitado" : "Editar Orçamento"}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { if(confirm(`Descartar o orçamento ${q.id}?`)) onDeleteQuote(q.id) }}
+                              className="rounded p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                              title="Descartar orçamento"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
@@ -1372,7 +1351,6 @@ function PDVScreen({
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-5">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          {/* Coluna da Esquerda: Catálogo e Busca de Produtos */}
           <div className="lg:col-span-7 space-y-4">
             <div className={`p-4 rounded-xl border ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
@@ -1391,7 +1369,6 @@ function PDVScreen({
                 </div>
               </div>
 
-              {/* Filtro por Categorias */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
                 {productCategories.map(cat => {
                   const isCatActive = selectedCategory === cat
@@ -1414,7 +1391,6 @@ function PDVScreen({
                 })}
               </div>
 
-              {/* Grid dos Cards de Produtos */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
                 {filteredProducts.length === 0 ? (
                   <div className="col-span-2 text-center py-8 text-neutral-400 text-xs">
@@ -1459,7 +1435,6 @@ function PDVScreen({
               </div>
             </div>
 
-            {/* Histórico de Vendas Recentes */}
             <div className={`p-4 rounded-xl border ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
               <h2 className="text-sm font-bold mb-3">Últimas Vendas Realizadas</h2>
               <div className="max-h-48 overflow-y-auto divide-y divide-neutral-500/10 text-xs">
@@ -1498,13 +1473,11 @@ function PDVScreen({
             </div>
           </div>
 
-          {/* Coluna da Direita: Carrinho e Finalização com Select Suspenso de Clientes */}
           <div className="lg:col-span-5 space-y-4">
             <div className={`p-4 rounded-xl border flex flex-col justify-between ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
               <div>
                 <h2 className="text-sm font-bold mb-3">Carrinho de Compras</h2>
                 
-                {/* Dados do Cliente via Dropdown Suspenso */}
                 <div className="space-y-2 mb-4">
                   <select
                     value={selectedClient}
@@ -1535,7 +1508,6 @@ function PDVScreen({
                   </div>
                 </div>
 
-                {/* Itens no Carrinho */}
                 <div className="border-t border-b border-neutral-500/20 py-2 max-h-48 overflow-y-auto divide-y divide-neutral-500/10">
                   {cart.length === 0 ? (
                     <div className="text-center py-6 text-neutral-400 text-xs">Carrinho vazio</div>
@@ -1574,7 +1546,6 @@ function PDVScreen({
                   )}
                 </div>
 
-                {/* Forma de Pagamento */}
                 <div className="mt-4">
                   <label className="block text-xs font-mono text-neutral-400 mb-1">Forma de Pagamento:</label>
                   <select
@@ -1590,7 +1561,6 @@ function PDVScreen({
                 </div>
               </div>
 
-              {/* Total e Conclusão */}
               <div className="mt-5 pt-3 border-t border-neutral-500/20">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xs uppercase font-mono text-neutral-400">Total a Pagar:</span>
@@ -1764,7 +1734,6 @@ function SettingsScreen({
       <Topbar title="Configurações, Peças & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Card Produtos / Peças */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -1829,7 +1798,6 @@ function SettingsScreen({
             </div>
           </div>
 
-          {/* Card Serviços */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -1871,7 +1839,6 @@ function SettingsScreen({
             </div>
           </div>
 
-          {/* Card Situações / Status */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -2101,6 +2068,7 @@ function OrderModal({
                 className={inputClass}
               />
             </div>
+            {/* Campo da Foto 03: Único local onde a situação da OS é alterada */}
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Situação</label>
               <select
@@ -2261,8 +2229,8 @@ function QuoteModal({
   services = [],
   products = [],
   onSave,
-  onConvertToOrder,
   onQuickNewClient,
+  quoteToEdit,
   isDark,
 }: {
   onClose: () => void
@@ -2270,20 +2238,24 @@ function QuoteModal({
   services: CustomService[]
   products: Product[]
   onSave: (quote: Quote) => void
-  onConvertToOrder: (quote: Quote) => void
   onQuickNewClient: () => void
+  quoteToEdit?: Quote | null
   isDark: boolean
 }) {
   const safeClients = Array.isArray(clients) ? clients : []
   const safeServices = Array.isArray(services) ? services : []
   const safeProducts = Array.isArray(products) ? products : []
 
-  const [client, setClient] = useState('')
-  const [phone, setPhone] = useState('')
-  const [device, setDevice] = useState('')
-  const [description, setDescription] = useState('')
+  const [client, setClient] = useState(quoteToEdit?.client || '')
+  const [phone, setPhone] = useState(quoteToEdit?.phone || '')
+  const [device, setDevice] = useState(quoteToEdit?.device || '')
+  const [description, setDescription] = useState(quoteToEdit?.description || '')
   const [validDays, setValidDays] = useState('7')
-  const [items, setItems] = useState<OrderItem[]>([{ desc: '', qty: 1, unit: 0 }])
+  const [items, setItems] = useState<OrderItem[]>(
+    quoteToEdit?.items && quoteToEdit.items.length > 0
+      ? quoteToEdit.items
+      : [{ desc: '', qty: 1, unit: 0 }]
+  )
 
   useEffect(() => {
     if (!phone && client && safeClients.length > 0) {
@@ -2297,7 +2269,11 @@ function QuoteModal({
   const handleClientSelectChange = (name: string) => {
     setClient(name)
     const found = safeClients.find(c => c.name === name)
-    if (found) setPhone(found.phone)
+    if (found) {
+      setPhone(found.phone)
+    } else {
+      setPhone('')
+    }
   }
 
   const handleApplyPreset = (value: string, index: number) => {
@@ -2323,15 +2299,15 @@ function QuoteModal({
     expDate.setDate(expDate.getDate() + (Number(validDays) || 7))
 
     const quoteData: Quote = {
-      id: `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: quoteToEdit?.id || `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
       client,
       phone,
       device,
       description: description || items[0]?.desc || 'Proposta de serviço',
       value: total,
-      validUntil: expDate.toLocaleDateString('pt-BR'),
-      createdAt: new Date().toLocaleDateString('pt-BR'),
-      status: 'Pendente',
+      validUntil: quoteToEdit?.validUntil || expDate.toLocaleDateString('pt-BR'),
+      createdAt: quoteToEdit?.createdAt || new Date().toLocaleDateString('pt-BR'),
+      status: quoteToEdit?.status || 'Pendente',
       items,
     }
 
@@ -2362,8 +2338,12 @@ function QuoteModal({
       }`}>
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
-            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">PROPOSTA COMERCIAL</div>
-            <h2 className="text-sm font-bold sm:text-base">Criar Novo Orçamento</h2>
+            <div className="font-mono text-[10px] uppercase text-[#8A2BE2] font-bold">
+              {quoteToEdit ? `EDITANDO ${quoteToEdit.id}` : 'PROPOSTA COMERCIAL'}
+            </div>
+            <h2 className="text-sm font-bold sm:text-base">
+              {quoteToEdit ? 'Editar Orçamento' : 'Criar Novo Orçamento'}
+            </h2>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -2779,7 +2759,6 @@ function ProductModal({
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {/* Categoria Aberta de Marca */}
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">
                 Marca (aberta)
@@ -2798,7 +2777,6 @@ function ProductModal({
               </datalist>
             </div>
 
-            {/* Categoria de Produto */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
@@ -3036,6 +3014,7 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [showQuoteModal, setShowQuoteModal] = useState(false)
+  const [quoteEditing, setQuoteEditing] = useState<Quote | null>(null)
   const [showClientModal, setShowClientModal] = useState(false)
   const [showProductModal, setShowProductModal] = useState(false)
   const [productEditing, setProductEditing] = useState<Product | null>(null)
@@ -3254,7 +3233,53 @@ export default function App() {
     setShowClientModal(true)
   }
 
+  // Ao salvar a OS, se a situação for "Orçamento" ou "Aguardando Aprovação", converte de volta para orçamento
   const handleSaveOrder = async (orderData: Order) => {
+    const isReturningToQuote =
+      orderData.status.toLowerCase() === 'orçamento' ||
+      orderData.status.toLowerCase() === 'orcamento' ||
+      orderData.status.toLowerCase() === 'aguardando aprovação' ||
+      orderData.status.toLowerCase() === 'aguardando aprovacao'
+
+    if (isReturningToQuote) {
+      // Remove da listagem de OS
+      setOrders(prev => prev.filter(o => o.id !== orderData.id))
+      await supabase.from('orders').delete().eq('id', orderData.id)
+
+      // Transforma em orçamento
+      const expDate = new Date()
+      expDate.setDate(expDate.getDate() + 7)
+
+      const returnedQuote: Quote = {
+        id: `ORC-${Math.floor(1000 + Math.random() * 9000)}`,
+        client: orderData.client,
+        phone: orderData.phone,
+        device: orderData.device,
+        description: orderData.notes || orderData.service || 'Retornado de OS',
+        value: orderData.value,
+        validUntil: expDate.toLocaleDateString('pt-BR'),
+        createdAt: new Date().toLocaleDateString('pt-BR'),
+        status: 'Pendente',
+        items: orderData.items || [],
+      }
+
+      setQuotes(prev => [returnedQuote, ...prev])
+      await supabase.from('quotes').insert([{
+        id: returnedQuote.id,
+        client: returnedQuote.client,
+        phone: returnedQuote.phone,
+        device: returnedQuote.device,
+        description: returnedQuote.description,
+        value: returnedQuote.value,
+        valid_until: returnedQuote.validUntil,
+        status: returnedQuote.status,
+        items: returnedQuote.items,
+      }])
+
+      alert(`A OS ${orderData.id} foi transferida de volta para a aba de Orçamentos (#${returnedQuote.id})!`)
+      return
+    }
+
     setOrders(prev => {
       const exists = prev.some(o => o.id === orderData.id)
       return exists ? prev.map(o => o.id === orderData.id ? orderData : o) : [orderData, ...prev]
@@ -3275,19 +3300,19 @@ export default function App() {
     }])
   }
 
-  const handleUpdateOrderStatus = async (orderId: string, nextStatus: string) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: nextStatus } : o))
-    await supabase.from('orders').update({ status: nextStatus }).eq('id', orderId)
-  }
-
   const handleDeleteOrder = async (orderId: string) => {
     setOrders(prev => prev.filter(o => o.id !== orderId))
     await supabase.from('orders').delete().eq('id', orderId)
   }
 
+  // Salvar ou atualizar orçamento
   const handleSaveQuote = async (quoteData: Quote) => {
-    setQuotes(prev => [quoteData, ...prev])
-    await supabase.from('quotes').insert([{
+    setQuotes(prev => {
+      const exists = prev.some(q => q.id === quoteData.id)
+      return exists ? prev.map(q => q.id === quoteData.id ? quoteData : q) : [quoteData, ...prev]
+    })
+
+    await supabase.from('quotes').upsert([{
       id: quoteData.id,
       client: quoteData.client,
       phone: quoteData.phone,
@@ -3300,9 +3325,10 @@ export default function App() {
     }])
   }
 
+  // Conversão de orçamento em OS
   const handleConvertToOrder = async (quote: Quote) => {
-    setQuotes(prev => prev.map(q => q.id === quote.id ? { ...q, status: 'Aprovado' } : q))
-    await supabase.from('quotes').update({ status: 'Aprovado' }).eq('id', quote.id)
+    setQuotes(prev => prev.filter(q => q.id !== quote.id))
+    await supabase.from('quotes').delete().eq('id', quote.id)
 
     const newOrder: Order = {
       id: `OS-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -3334,14 +3360,14 @@ export default function App() {
     }])
 
     setScreen('orders')
-    alert(`Orçamento #${quote.id} convertido com sucesso na Ordem #${newOrder.id}!`)
+    alert(`Orçamento #${quote.id} aprovado e convertido com sucesso na Ordem #${newOrder.id}!`)
   }
 
   const handleUpdateQuoteStatus = async (quote: Quote, nextStatus: Quote['status']) => {
     if (nextStatus === 'Aprovado') {
-      if (quote.status === 'Aprovado') return
-      if (!confirm(`Aprovar o orçamento ${quote.id} e transformá-lo imediatamente em uma Ordem de Serviço?`)) return
-      await handleConvertToOrder(quote)
+      if (confirm(`Aprovar o orçamento ${quote.id} e transformá-lo imediatamente em uma Ordem de Serviço?`)) {
+        await handleConvertToOrder(quote)
+      }
       return
     }
 
@@ -3358,7 +3384,7 @@ export default function App() {
     await supabase.from('quotes').delete().eq('id', id)
   }
 
-  // ─── Lógica de PDV (Frente de Caixa & Baixa no Estoque) ───────────────────────
+  // ─── Lógica de PDV ─────────────────────────────────────────────────────────
 
   const handleDeleteSale = async (sale: Sale) => {
     const confirmed = confirm(
@@ -3589,7 +3615,7 @@ export default function App() {
             statuses={statuses}
             isDark={isDark}
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
-            onNewQuote={() => { setShowQuoteModal(true) }}
+            onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
             onNewClient={handleOpenNewClient}
             onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
             onPrintOrder={(o) => { setOrderToPrint(o); setPrintDocumentKind('order') }}
@@ -3604,7 +3630,6 @@ export default function App() {
             onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
             onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
             onPrintOrder={(o) => { setOrderToPrint(o); setPrintDocumentKind('order') }}
-            onUpdateStatus={handleUpdateOrderStatus}
             onDeleteOrder={handleDeleteOrder}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
@@ -3613,11 +3638,11 @@ export default function App() {
           <QuotesScreen
             quotes={quotes}
             isDark={isDark}
-            onNewQuote={() => { setShowQuoteModal(true) }}
+            onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
             onEditQuote={(q) => {
-              handleConvertToOrder(q)
+              setQuoteEditing(q)
+              setShowQuoteModal(true)
             }}
-            onConvertToOrder={handleConvertToOrder}
             onUpdateStatus={handleUpdateQuoteStatus}
             onPrintQuote={(q) => {
               setOrderToPrint({
@@ -3744,13 +3769,16 @@ export default function App() {
 
       {showQuoteModal && (
         <QuoteModal
-          onClose={() => setShowQuoteModal(false)}
+          onClose={() => {
+            setShowQuoteModal(false)
+            setQuoteEditing(null)
+          }}
           clients={clients}
           services={services}
           products={products}
           onSave={handleSaveQuote}
-          onConvertToOrder={handleConvertToOrder}
           onQuickNewClient={handleOpenNewClient}
+          quoteToEdit={quoteEditing}
           isDark={isDark}
         />
       )}
