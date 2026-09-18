@@ -3,7 +3,8 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method not allowed' })
   const payload = req.body || {}
   const orderNsu = String(payload.order_nsu || '')
-  const [referenceType, referenceId] = orderNsu.split(':')
+  const referenceType = orderNsu.startsWith('1') ? 'sale' : orderNsu.startsWith('2') ? 'order' : ''
+  const referenceId = (referenceType === 'sale' ? 'VD-' : 'OS-') + orderNsu.slice(1)
   const slug = payload.invoice_slug || payload.slug
   const transactionNsu = payload.transaction_nsu
   const handle = process.env.INFINITEPAY_HANDLE
