@@ -22,7 +22,7 @@ export default async function handler(req: any, res: any) {
   }
 
   const origin = getOrigin(req)
-  const orderNsu = referenceType + ':' + referenceId
+  const orderNsu = (referenceType === 'sale' ? '1' : '2') + String(referenceId).replace(/\D/g, '')
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
   const price = Math.round(Number(amount) * 100)
 
