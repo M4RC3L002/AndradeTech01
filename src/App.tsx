@@ -747,7 +747,7 @@ function PrintModal({
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-neutral-200/50 flex justify-center">
           {printType === 'a4' && (
-            <div id="print-area" className="a4-sheet w-full max-w-[210mm] bg-white text-black p-8 sm:p-10 rounded shadow-md border border-neutral-300 font-sans text-xs print:m-0 print:p-0 print:border-none print:shadow-none">
+            <div id="print-area" className="a4-sheet flex w-full max-w-[210mm] flex-col bg-white p-8 text-xs text-black rounded border border-neutral-300 font-sans shadow-md print:m-0 print:border-none print:p-0 print:shadow-none sm:p-10">
               <div className="flex justify-between items-center border-b-2 border-slate-900 pb-4 mb-5">
                 <div className="flex items-center gap-3">
                   <img src={LOGO_URL} alt="Logo" className="w-14 h-14 object-contain" />
@@ -827,7 +827,7 @@ function PrintModal({
                 <p>Em caso de nova falha coberta, a assistência tem o prazo legal de até 30 dias para sanar o vício (Art. 18, CDC).</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-10 text-center pt-8">
+              <div className="mt-auto grid grid-cols-2 gap-10 pt-8 text-center">
                 <div>
                   <div className="border-t border-slate-400 w-full mb-1"></div>
                   <div className="font-bold text-[11px] text-slate-800">{order.client}</div>
