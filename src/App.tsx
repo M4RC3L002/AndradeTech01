@@ -99,6 +99,39 @@ interface Sale {
 
 const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
 
+// PIX estatico: preencha e altere enabled para true somente quando desejar receber pagamentos.
+const PIX_CONFIG = {
+  enabled: true,
+  key: '09332276552',
+  receiverName: 'Marcelo Andrade do Nascimento',
+  city: 'Eunapolis',
+  description: 'Pagamento AndradeTech',
+}
+
+const isPixConfigured = () => PIX_CONFIG.enabled && !!PIX_CONFIG.key && !!PIX_CONFIG.receiverName && !!PIX_CONFIG.city
+
+const pixField = (id: string, value: string) => `${id}${String(value.length).padStart(2, '0')}${value}`
+
+const pixCrc16 = (payload: string) => {
+  let crc = 0xffff
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8
+    for (let bit = 0; bit < 8; bit++) crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1
+  }
+  return (crc & 0xffff).toString(16).toUpperCase().padStart(4, '0')
+}
+
+const createPixCopyPaste = (amount: number, transactionId: string) => {
+  const clean = (value: string, max: number) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 ]/g, '').trim().slice(0, max)
+  const merchantAccount = pixField('00', 'BR.GOV.BCB.PIX') + pixField('01', PIX_CONFIG.key) + pixField('02', clean(PIX_CONFIG.description, 72))
+  const payload = [
+    pixField('00', '01'), pixField('26', merchantAccount), pixField('52', '0000'), pixField('53', '986'),
+    pixField('54', amount.toFixed(2)), pixField('58', 'BR'), pixField('59', clean(PIX_CONFIG.receiverName, 25)),
+    pixField('60', clean(PIX_CONFIG.city, 15)), pixField('62', pixField('05', clean(transactionId, 25))), '6304',
+  ].join('')
+  return `${payload}${pixCrc16(payload)}`
+}
+
 const ALL_MODULES: { id: Screen; label: string }[] = [
   { id: 'dashboard', label: 'Painel (Visão Geral)' },
   { id: 'orders', label: 'Ordens de Serviço' },
@@ -1412,6 +1445,31 @@ function QuotesScreen({
 
 // ─── Tela de PDV (Frente de Caixa) ────────────────────────────────────────────
 
+function PixPaymentModal({ payment, onClose, isDark }: { payment: { id: string; total: number }; onClose: () => void; isDark: boolean }) {
+  const pixCode = createPixCopyPaste(payment.total, payment.id)
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&data=${encodeURIComponent(pixCode)}`
+  const copyPixCode = async () => {
+    try {
+      await navigator.clipboard.writeText(pixCode)
+      alert('Codigo PIX copiado!')
+    } catch {
+      alert('Nao foi possivel copiar automaticamente. Selecione e copie o codigo.')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
+      <div className={`w-full max-w-md rounded-2xl border p-5 shadow-2xl ${isDark ? 'border-neutral-800 bg-[#111] text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
+        <div className="mb-4 flex items-start justify-between"><div><div className="font-mono text-[10px] font-bold uppercase text-[#0066FF]">Cobranca PIX</div><h2 className="text-base font-bold">Pagamento #{payment.id}</h2></div><button type="button" onClick={onClose} className="text-neutral-400 hover:text-red-500">✕</button></div>
+        <div className={`mb-4 rounded-xl border p-4 text-center ${isDark ? 'border-neutral-800 bg-black/20' : 'border-slate-200 bg-slate-50'}`}><div className="text-xs text-neutral-400">Valor a receber</div><div className="mt-1 font-mono text-2xl font-black text-green-500">R$ {payment.total.toFixed(2)}</div><img src={qrCodeUrl} alt="QR Code PIX" className="mx-auto mt-3 h-48 w-48 rounded-lg bg-white p-2"/><div className="mt-2 text-[11px] text-neutral-400">Aponte a camera do banco para o QR Code ou use o Copia e Cola.</div></div>
+        <label className="mb-1 block font-mono text-[10px] uppercase text-neutral-400">PIX Copia e Cola</label>
+        <textarea readOnly value={pixCode} rows={4} className={`w-full resize-none rounded-lg border p-2 font-mono text-[10px] outline-none ${isDark ? 'border-neutral-800 bg-black text-neutral-300' : 'border-slate-300 bg-slate-50 text-slate-700'}`} />
+        <button type="button" onClick={copyPixCode} className="mt-3 w-full rounded-xl bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2.5 text-sm font-bold text-white">Copiar codigo PIX</button>
+      </div>
+    </div>
+  )
+}
+
 function PDVScreen({
   products = [],
   clients = [],
@@ -1436,6 +1494,7 @@ function PDVScreen({
   const [clientPhone, setClientPhone] = useState('')
   const [clientCpf, setClientCpf] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'Dinheiro' | 'PIX' | 'Cartão de Crédito' | 'Cartão de Débito'>('PIX')
+  const [pixSale, setPixSale] = useState<Sale | null>(null)
   const [productSearch, setProductSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas')
 
@@ -1534,6 +1593,9 @@ function PDVScreen({
     }
 
     onCompleteSale(saleData)
+    if (paymentMethod === 'PIX' && isPixConfigured()) {
+      setPixSale(saleData)
+    }
     setCart([])
     setSelectedClient('')
     setClientPhone('')
@@ -1779,6 +1841,7 @@ function PDVScreen({
           </div>
         </div>
       </div>
+      {pixSale && <PixPaymentModal payment={pixSale} onClose={() => setPixSale(null)} isDark={isDark} />}
     </div>
   )
 }
@@ -3370,6 +3433,7 @@ export default function App() {
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null)
   const [printDocumentKind, setPrintDocumentKind] = useState<'order' | 'sale' | 'quote'>('order')
+  const [pixOrderPayment, setPixOrderPayment] = useState<{ id: string; total: number } | null>(null)
 
   const [clients, setClients] = useState<Client[]>([])
   const [orders, setOrders] = useState<Order[]>([])
@@ -3757,6 +3821,10 @@ export default function App() {
       notes: orderData.notes,
       items: orderData.items || [],
     }])
+
+    if (isOrderFinalized(orderData.status) && isPixConfigured()) {
+      setPixOrderPayment({ id: orderData.id, total: orderData.value })
+    }
   }
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -4318,6 +4386,14 @@ export default function App() {
           onClose={() => { setOrderToPrint(null); setPrintDocumentKind('order') }}
           isDark={isDark}
           documentKind={printDocumentKind}
+        />
+      )}
+
+      {pixOrderPayment && (
+        <PixPaymentModal
+          payment={pixOrderPayment}
+          onClose={() => setPixOrderPayment(null)}
+          isDark={isDark}
         />
       )}
     </div>
