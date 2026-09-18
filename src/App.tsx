@@ -108,7 +108,7 @@ const PIX_CONFIG = {
   description: 'Pagamento AndradeTech',
 }
 
-const isPixConfigured = () => PIX_CONFIG.enabled && !!PIX_CONFIG.key && !!PIX_CONFIG.receiverName && !!PIX_CONFIG.city
+const isPixConfigured = () => true
 
 const pixField = (id: string, value: string) => `${id}${String(value.length).padStart(2, '0')}${value}`
 
@@ -1446,7 +1446,7 @@ function QuotesScreen({
 // ─── Tela de PDV (Frente de Caixa) ────────────────────────────────────────────
 
 function PixPaymentModal({ payment, onClose, isDark }: { payment: { id: string; total: number }; onClose: () => void; isDark: boolean }) {
-  const pixCode = createPixCopyPaste(payment.total, payment.id)
+  const pixCode = createPixCopyPaste(payment.total, payment.id); useEffect(() => { let cancelled = false; (async () => { try { const response = await fetch('/api/infinitepay/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ referenceType: payment.id.toUpperCase().startsWith('OS') ? 'order' : 'sale', referenceId: payment.id, amount: payment.total, description: 'Pagamento AndradeTech #' + payment.id }) }); const data = await response.json(); if (!response.ok || !data.url) throw new Error(data.error || 'Não foi possível iniciar o pagamento.'); if (!cancelled) window.location.assign(data.url); } catch (error) { if (!cancelled) alert(error instanceof Error ? error.message : 'Falha ao iniciar pagamento.'); } })(); return () => { cancelled = true }; }, [payment.id, payment.total])
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&format=svg&data=${encodeURIComponent(pixCode)}`
   const copyPixCode = async () => {
     try {
