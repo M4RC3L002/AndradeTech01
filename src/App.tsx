@@ -92,12 +92,13 @@ const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/pub
 const DEFAULT_STATUSES: CustomStatus[] = [
   { id: '1', label: 'Entrada', dot: '#64748B' },
   { id: '2', label: 'Orçamento', dot: '#F59E0B' },
-  { id: '3', label: 'Em Análise', dot: '#007BFF' },
-  { id: '4', label: 'Aguardando Aprovação', dot: '#EAB308' },
-  { id: '5', label: 'Aguardando Peça', dot: '#8A2BE2' },
-  { id: '6', label: 'Finalizado', dot: '#10B981' },
-  { id: '7', label: 'Entregue', dot: '#059669' },
-  { id: '8', label: 'Cancelado', dot: '#EF4444' },
+  { id: '3', label: 'Aprovado', dot: '#10B981' },
+  { id: '4', label: 'Em Análise', dot: '#007BFF' },
+  { id: '5', label: 'Aguardando Aprovação', dot: '#EAB308' },
+  { id: '6', label: 'Aguardando Peça', dot: '#8A2BE2' },
+  { id: '7', label: 'Finalizado', dot: '#10B981' },
+  { id: '8', label: 'Entregue', dot: '#059669' },
+  { id: '9', label: 'Cancelado', dot: '#EF4444' },
 ]
 
 const DEFAULT_SERVICES: CustomService[] = [
@@ -172,7 +173,6 @@ const NAV_ITEMS = [
   },
 ] as const
 
-// Função auxiliar para checar se a OS foi finalizada
 function isOrderFinalized(status?: string) {
   const s = (status || '').trim().toLowerCase()
   return s === 'finalizado' || s === 'concluído' || s === 'concluido' || s === 'entregue'
@@ -711,7 +711,7 @@ function PrintModal({
   )
 }
 
-// ─── Telas Principais ─────────────────────────────────────────────────────────
+// ─── Telas Principais (Dashboard, Orders, Quotes, PDV, Clients, Settings) ─────
 
 const DashboardScreen = ({
   orders = [],
@@ -854,7 +854,6 @@ const DashboardScreen = ({
                             >
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                             </button>
-                            {/* Oculta botão de editar se a OS estiver finalizada */}
                             {!finalized && (
                               <button
                                 type="button"
@@ -1007,7 +1006,6 @@ function OrdersScreen({
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                               </button>
                               
-                              {/* Oculta edição caso o serviço esteja finalizado */}
                               {!finalized && (
                                 <button
                                   type="button"
@@ -3344,9 +3342,12 @@ export default function App() {
     }])
   }
 
+  // Conversão de orçamento com situação Aprovado
   const handleConvertToOrder = async (quote: Quote) => {
     setQuotes(prev => prev.filter(q => q.id !== quote.id))
     await supabase.from('quotes').delete().eq('id', quote.id)
+
+    const approvedStatus = statuses.find(s => s.label.toLowerCase() === 'aprovado')?.label || 'Aprovado'
 
     const newOrder: Order = {
       id: `OS-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -3354,7 +3355,7 @@ export default function App() {
       phone: quote.phone,
       device: quote.device,
       service: (quote.items && quote.items[0]?.desc) || quote.description || 'Serviço Técnico',
-      status: 'Entrada',
+      status: approvedStatus,
       value: quote.value,
       date: new Date().toLocaleDateString('pt-BR'),
       technician: 'Admin',
@@ -3378,7 +3379,7 @@ export default function App() {
     }])
 
     setScreen('orders')
-    alert(`Orçamento #${quote.id} aprovado e convertido com sucesso na Ordem #${newOrder.id}!`)
+    alert(`Orçamento #${quote.id} aprovado e cadastrado nas Ordens como ${approvedStatus}!`)
   }
 
   const handleUpdateQuoteStatus = async (quote: Quote, nextStatus: Quote['status']) => {
