@@ -866,7 +866,7 @@ const DashboardScreen = ({
       </div>
     </div>
   )
-};
+}
 
 function OrdersScreen({
   orders = [],
@@ -1262,7 +1262,6 @@ function PDVScreen({
 
   const total = cart.reduce((acc, item) => acc + (item.product.sale_price * item.qty), 0)
 
-  // Lista dinâmica de categorias dos produtos cadastrados
   const productCategories = ['Todas', ...Array.from(new Set(products.map(p => p.category || 'Geral')))]
 
   const filteredProducts = products.filter(p => {
@@ -1930,7 +1929,7 @@ function OrderModal({
   const safeServices = Array.isArray(services) ? services : []
   const safeProducts = Array.isArray(products) ? products : []
 
-  const [client, setClient] = useState(orderToEdit?.client || (safeClients.length > 0 ? safeClients[0].name : ''))
+  const [client, setClient] = useState(orderToEdit?.client || '')
   const [phone, setPhone] = useState(orderToEdit?.phone || '')
   const [device, setDevice] = useState(orderToEdit?.device || '')
   const [technician, setTechnician] = useState(orderToEdit?.technician || 'Admin')
@@ -1943,15 +1942,9 @@ function OrderModal({
   )
 
   useEffect(() => {
-    if (client && !safeClients.some(c => c.name === client)) {
-      setClient('')
-      setPhone('')
-      return
-    }
-
-    if (client && safeClients.length > 0) {
+    if (!phone && client && safeClients.length > 0) {
       const found = safeClients.find(c => c.name === client)
-      if (found && phone !== found.phone) setPhone(found.phone)
+      if (found) setPhone(found.phone)
     }
   }, [client, safeClients, phone])
 
@@ -2050,16 +2043,22 @@ function OrderModal({
                   <span>+</span> Cliente
                 </button>
               </div>
-              <input
-                list="order-client-options"
+              <select
+                required
                 value={client}
                 onChange={e => handleClientSelectChange(e.target.value)}
-                placeholder="Selecione ou digite..."
                 className={inputClass}
-              />
-              <datalist id="order-client-options">
-                {safeClients.map(c => <option key={c.id} value={c.name} />)}
-              </datalist>
+              >
+                <option value="">Selecione um cliente...</option>
+                {safeClients.map(c => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}{c.phone ? ` — ${c.phone}` : ''}
+                  </option>
+                ))}
+              </select>
+              {safeClients.length === 0 && (
+                <p className="mt-1 text-[10px] text-amber-500">Nenhum cliente cadastrado. Clique em "+ Cliente" para cadastrar.</p>
+              )}
             </div>
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
@@ -2271,7 +2270,7 @@ function QuoteModal({
       const found = safeClients.find(c => c.name === client)
       if (found) setPhone(found.phone)
     }
-  }, [client, safeClients])
+  }, [client, safeClients, phone])
 
   const total = items.reduce((s, i) => s + (Number(i.qty || 1) * Number(i.unit || 0)), 0)
 
@@ -2724,7 +2723,6 @@ function ProductModal({
         </div>
 
         <div className="space-y-3 px-5 py-4">
-          {/* Identificador / Código de Barras / ID PDV */}
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">
@@ -2755,7 +2753,6 @@ function ProductModal({
             <input autoFocus required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston" className={inputClass} />
           </div>
 
-          {/* Categoria com Opção de Nova Categoria */}
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
@@ -3468,7 +3465,7 @@ export default function App() {
                   AndradeTech
                 </span>
               </div>
-              <button type="button" onClick={() => setMobileMenuOpen(false)} className="p-1 text-neutral-400 hover:text-red-400">
+              <button type="button" onClick={onMobileMenuClose} className="p-1 text-neutral-400 hover:text-red-400">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
             </div>
