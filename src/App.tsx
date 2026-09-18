@@ -2890,9 +2890,24 @@ function ClientModal({
   clientToEdit?: Client | null
   isDark: boolean
 }) {
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11)
+    if (digits.length <= 2) return digits ? `(${digits}` : ''
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+  }
+
+  const formatCpf = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11)
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
+    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+  }
+
   const [name, setName] = useState(clientToEdit?.name || '')
-  const [phone, setPhone] = useState(clientToEdit?.phone || '')
-  const [cpf, setCpf] = useState(clientToEdit?.cpf || '')
+  const [phone, setPhone] = useState(() => formatPhone(clientToEdit?.phone || ''))
+  const [cpf, setCpf] = useState(() => formatCpf(clientToEdit?.cpf || ''))
   const [address, setAddress] = useState(clientToEdit?.address || '')
   const [city, setCity] = useState(clientToEdit?.city || '')
 
@@ -2945,11 +2960,11 @@ function ClientModal({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Telefone / WhatsApp *</label>
-              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(DDD) 99999-9999" className={inputClass} />
+              <input value={phone} inputMode="numeric" maxLength={15} onChange={e => setPhone(formatPhone(e.target.value))} placeholder="(00) 00000-0000" className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">CPF / CNPJ</label>
-              <input value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className={inputClass} />
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">CPF</label>
+              <input value={cpf} inputMode="numeric" maxLength={14} onChange={e => setCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" className={inputClass} />
             </div>
           </div>
           <div>
