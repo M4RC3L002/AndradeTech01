@@ -107,10 +107,22 @@ const DEFAULT_SERVICES: CustomService[] = [
   { id: '6', name: 'Diagnóstico e Orçamento', default_price: 0, category: 'Diagnóstico' },
 ]
 
+const DEFAULT_PRODUCT_CATEGORIES = [
+  'Acessórios',
+  'Armazenamento',
+  'Upgrade',
+  'Telas',
+  'Fontes',
+  'Peças',
+  'Geral',
+]
+
 const DEFAULT_PRODUCTS: Product[] = [
-  { id: '1', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
-  { id: '2', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
-  { id: '3', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
+  { id: '1001', name: 'SSD 480GB Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
+  { id: '1002', name: 'Tela iPhone 11 Incell', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
+  { id: '1003', name: 'Fonte ATX 500W', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
+  { id: '1004', name: 'Cabo USB-C Trançado 1.5m', category: 'Acessórios', cost_price: 15, sale_price: 45, stock: 10 },
+  { id: '1005', name: 'Memória RAM 16GB DDR4 3200MHz', category: 'Upgrade', cost_price: 180, sale_price: 290, stock: 5 },
 ]
 
 const NAV_ITEMS = [
@@ -1245,8 +1257,23 @@ function PDVScreen({
   const [clientPhone, setClientPhone] = useState('')
   const [clientCpf, setClientCpf] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'Dinheiro' | 'PIX' | 'Cartão de Crédito' | 'Cartão de Débito'>('PIX')
+  const [productSearch, setProductSearch] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('Todas')
 
   const total = cart.reduce((acc, item) => acc + (item.product.sale_price * item.qty), 0)
+
+  // Lista dinâmica de categorias dos produtos cadastrados
+  const productCategories = ['Todas', ...Array.from(new Set(products.map(p => p.category || 'Geral')))]
+
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = selectedCategory === 'Todas' || (p.category || 'Geral') === selectedCategory
+    const searchLower = productSearch.toLowerCase().trim()
+    const matchesSearch = !searchLower ||
+      p.id.toLowerCase().includes(searchLower) ||
+      p.name.toLowerCase().includes(searchLower) ||
+      p.category.toLowerCase().includes(searchLower)
+    return matchesCategory && matchesSearch
+  })
 
   const handleSelectClient = (name: string) => {
     setSelectedClient(name)
@@ -1275,6 +1302,22 @@ function PDVScreen({
     })
   }
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (filteredProducts.length === 1) {
+        addToCart(filteredProducts[0])
+        setProductSearch('')
+      } else {
+        const exactIdMatch = products.find(p => p.id.toLowerCase() === productSearch.trim().toLowerCase())
+        if (exactIdMatch) {
+          addToCart(exactIdMatch)
+          setProductSearch('')
+        }
+      }
+    }
+  }
+
   const updateCartQty = (productId: string, qty: number, stock: number) => {
     if (qty > stock) {
       alert('Quantidade superior ao estoque disponível!')
@@ -1300,7 +1343,7 @@ function PDVScreen({
       cpf: clientCpf,
       payment_method: paymentMethod,
       items: cart.map(item => ({
-        desc: item.product.name,
+        desc: `${item.product.name} [Cod: ${item.product.id}]`,
         qty: item.qty,
         unit: item.product.sale_price,
       })),
@@ -1325,31 +1368,81 @@ function PDVScreen({
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-5">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          {/* Coluna da Esquerda: Catálogo de Produtos para Venda */}
+          {/* Coluna da Esquerda: Catálogo e Busca de Produtos */}
           <div className="lg:col-span-7 space-y-4">
             <div className={`p-4 rounded-xl border ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
-              <h2 className="text-sm font-bold mb-3">Selecione os Produtos</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <h2 className="text-sm font-bold">Catálogo de Produtos</h2>
+                <div className="relative w-full sm:w-64">
+                  <input
+                    type="text"
+                    value={productSearch}
+                    onChange={e => setProductSearch(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
+                    placeholder="Buscar por ID ou Nome (Enter)..."
+                    className={`w-full rounded-lg border px-3 py-1.5 text-xs outline-none transition-colors ${
+                      isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Filtro por Categorias */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
+                {productCategories.map(cat => {
+                  const isCatActive = selectedCategory === cat
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-mono transition-all border ${
+                        isCatActive
+                          ? 'bg-[#0066FF] text-white border-[#0066FF] font-bold shadow-sm'
+                          : isDark
+                          ? 'bg-[#181818] border-neutral-800 text-neutral-400 hover:text-white'
+                          : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Grid dos Cards de Produtos */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
-                {products.length === 0 ? (
-                  <div className="col-span-2 text-center py-8 text-neutral-400 text-xs">Nenhum produto cadastrado no estoque</div>
+                {filteredProducts.length === 0 ? (
+                  <div className="col-span-2 text-center py-8 text-neutral-400 text-xs">
+                    Nenhum produto encontrado para a busca ou categoria selecionada.
+                  </div>
                 ) : (
-                  products.map(p => (
+                  filteredProducts.map(p => (
                     <div
                       key={p.id}
                       onClick={() => addToCart(p)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between ${
+                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.01] flex flex-col justify-between ${
                         p.stock <= 0
                           ? 'opacity-40 border-neutral-700 bg-neutral-900 pointer-events-none'
                           : isDark ? 'border-neutral-800 bg-[#181818] hover:border-[#0066FF]' : 'border-slate-200 bg-slate-50 hover:border-[#0066FF]'
                       }`}
                     >
                       <div>
-                        <div className="font-bold text-xs">{p.name}</div>
-                        <div className="text-[10px] text-neutral-400">{p.category}</div>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
+                            #{p.id}
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${isDark ? 'bg-neutral-800 text-neutral-300' : 'bg-slate-200 text-slate-700'}`}>
+                            {p.category || 'Geral'}
+                          </span>
+                        </div>
+                        <div className="font-bold text-xs mt-1 text-ellipsis overflow-hidden">{p.name}</div>
                       </div>
                       <div className="flex items-center justify-between mt-3 pt-2 border-t border-neutral-500/20">
                         <span className="font-mono text-xs font-bold text-green-500">R$ {p.sale_price.toFixed(2)}</span>
-                        <span className="text-[10px] font-mono text-neutral-400">Estoque: {p.stock}</span>
+                        <span className={`text-[10px] font-mono ${p.stock <= 2 ? 'text-amber-500 font-bold' : 'text-neutral-400'}`}>
+                          Estoque: {p.stock}
+                        </span>
                       </div>
                     </div>
                   ))
@@ -1439,7 +1532,10 @@ function PDVScreen({
                     cart.map(item => (
                       <div key={item.product.id} className="py-2 flex items-center justify-between text-xs">
                         <div className="pr-2 flex-1">
-                          <div className="font-semibold">{item.product.name}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-[9px] text-blue-400">#{item.product.id}</span>
+                            <span className="font-semibold">{item.product.name}</span>
+                          </div>
                           <div className="text-[10px] text-neutral-400">R$ {item.product.sale_price.toFixed(2)} un</div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1680,8 +1776,15 @@ function SettingsScreen({
                 safeProducts.map(p => (
                   <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
                     <div>
-                      <div className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</div>
-                      <div className="flex gap-2 text-[10px] font-mono text-neutral-400">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-[9px] px-1 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
+                          #{p.id}
+                        </span>
+                        <span className={`font-medium ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>{p.name}</span>
+                      </div>
+                      <div className="flex gap-2 text-[10px] font-mono text-neutral-400 mt-0.5">
+                        <span className="text-purple-400 font-semibold">{p.category || 'Geral'}</span>
+                        <span>•</span>
                         <span>Venda: R$ {Number(p.sale_price || 0).toFixed(2)}</span>
                         <span>•</span>
                         <span>Qtd: {p.stock}</span>
@@ -1840,7 +1943,6 @@ function OrderModal({
   )
 
   useEffect(() => {
-    // Se o cliente atual deixou de existir, limpa a seleção.
     if (client && !safeClients.some(c => c.name === client)) {
       setClient('')
       setPhone('')
@@ -2063,7 +2165,7 @@ function OrderModal({
                             </optgroup>
                             <optgroup label="Produtos / Peças">
                               {safeProducts.map(p => (
-                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
+                                <option key={p.id} value={p.name}>📦 [{p.id}] {p.name} (R${p.sale_price})</option>
                               ))}
                             </optgroup>
                           </select>
@@ -2375,7 +2477,7 @@ function QuoteModal({
                             </optgroup>
                             <optgroup label="Produtos / Peças">
                               {safeProducts.map(p => (
-                                <option key={p.id} value={p.name}>📦 {p.name} (R${p.sale_price})</option>
+                                <option key={p.id} value={p.name}>📦 [{p.id}] {p.name} (R${p.sale_price})</option>
                               ))}
                             </optgroup>
                           </select>
@@ -2446,7 +2548,7 @@ function QuoteModal({
   )
 }
 
-// ─── Modal de Cliente (Estrutura Real) ────────────────────────────────────────
+// ─── Modal de Cliente ────────────────────────────────────────────────────────
 
 function ClientModal({
   onClose,
@@ -2550,17 +2652,28 @@ function ProductModal({
   onSave,
   productToEdit,
   isDark,
+  existingCategories = [],
 }: {
   onClose: () => void
   onSave: (product: Product) => void
   productToEdit?: Product | null
   isDark: boolean
+  existingCategories?: string[]
 }) {
+  const [customId, setCustomId] = useState(
+    productToEdit?.id || String(Math.floor(1000 + Math.random() * 9000))
+  )
   const [name, setName] = useState(productToEdit?.name || '')
-  const [category, setCategory] = useState(productToEdit?.category || 'Geral')
+  const [category, setCategory] = useState(productToEdit?.category || 'Acessórios')
+  const [isAddingNewCategory, setIsAddingNewCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
   const [costPrice, setCostPrice] = useState(productToEdit ? String(productToEdit.cost_price) : '')
   const [salePrice, setSalePrice] = useState(productToEdit ? String(productToEdit.sale_price) : '')
   const [stock, setStock] = useState(productToEdit ? String(productToEdit.stock) : '0')
+
+  const mergedCategories = Array.from(
+    new Set([...DEFAULT_PRODUCT_CATEGORIES, ...existingCategories.filter(Boolean)])
+  )
 
   const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
     isDark
@@ -2571,12 +2684,18 @@ function ProductModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmedName = name.trim()
+    const trimmedId = customId.trim()
     if (!trimmedName) return alert('Nome do produto é obrigatório')
+    if (!trimmedId) return alert('ID do produto é obrigatório')
+
+    const chosenCategory = isAddingNewCategory
+      ? newCategoryName.trim() || 'Geral'
+      : category.trim() || 'Geral'
 
     onSave({
-      id: productToEdit?.id || `PROD-${Date.now()}`,
+      id: trimmedId,
       name: trimmedName,
-      category: category.trim() || 'Geral',
+      category: chosenCategory,
       cost_price: Math.max(0, Number(costPrice.replace(',', '.')) || 0),
       sale_price: Math.max(0, Number(salePrice.replace(',', '.')) || 0),
       stock: Math.max(0, Math.floor(Number(stock.replace(',', '.')) || 0)),
@@ -2594,8 +2713,10 @@ function ProductModal({
       >
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
-            <div className="font-mono text-[10px] font-bold uppercase text-[#0066FF]">{productToEdit ? `EDITANDO ${productToEdit.id}` : 'CATÁLOGO'}</div>
-            <h2 className="text-base font-bold">{productToEdit ? 'Editar Produto / Peça' : 'Nova Peça / Produto'}</h2>
+            <div className="font-mono text-[10px] font-bold uppercase text-[#0066FF]">
+              {productToEdit ? `EDITANDO #${productToEdit.id}` : 'NOVO ITEM DE CATÁLOGO'}
+            </div>
+            <h2 className="text-base font-bold">{productToEdit ? 'Editar Produto / Peça' : 'Cadastrar Peça / Produto'}</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 text-neutral-400 hover:text-red-400" aria-label="Fechar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -2603,21 +2724,77 @@ function ProductModal({
         </div>
 
         <div className="space-y-3 px-5 py-4">
+          {/* Identificador / Código de Barras / ID PDV */}
           <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">
+                ID / Código de Identificação (PDV) *
+              </label>
+              <button
+                type="button"
+                onClick={() => setCustomId(String(Math.floor(1000 + Math.random() * 9000)))}
+                className="font-mono text-[10px] text-blue-400 hover:underline"
+              >
+                Gerar automático
+              </button>
+            </div>
+            <input
+              required
+              value={customId}
+              onChange={e => setCustomId(e.target.value)}
+              placeholder="Ex: 1001, 7891234567..."
+              className={inputClass}
+            />
+            <p className="text-[10px] text-neutral-400 mt-1 font-mono">
+              Use este código para buscar ou bipar o item rapidamente no PDV.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Nome do Item *</label>
             <input autoFocus required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: SSD 480GB Kingston" className={inputClass} />
           </div>
+
+          {/* Categoria com Opção de Nova Categoria */}
           <div>
-            <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
-            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Ex: Armazenamento" className={inputClass} />
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Categoria</label>
+              <button
+                type="button"
+                onClick={() => setIsAddingNewCategory(!isAddingNewCategory)}
+                className="text-[11px] font-bold text-[#0066FF] hover:underline"
+              >
+                {isAddingNewCategory ? '← Escolher Existente' : '+ Nova Categoria'}
+              </button>
+            </div>
+
+            {isAddingNewCategory ? (
+              <input
+                value={newCategoryName}
+                onChange={e => setNewCategoryName(e.target.value)}
+                placeholder="Ex: Carregadores, Periféricos, etc."
+                className={inputClass}
+              />
+            ) : (
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className={inputClass}
+              >
+                {mergedCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            )}
           </div>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Custo</label>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Custo (R$)</label>
               <input inputMode="decimal" value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="0,00" className={inputClass} />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Venda</label>
+              <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">Venda (R$)</label>
               <input inputMode="decimal" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="0,00" className={inputClass} />
             </div>
             <div>
@@ -2629,7 +2806,9 @@ function ProductModal({
 
         <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">Cancelar</button>
-          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:opacity-95">{productToEdit ? 'Salvar Alterações' : 'Salvar Produto'}</button>
+          <button type="submit" className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:opacity-95">
+            {productToEdit ? 'Salvar Alterações' : 'Salvar Produto'}
+          </button>
         </div>
       </form>
     </div>
@@ -3133,12 +3312,10 @@ export default function App() {
     )
     if (!confirmed) return
 
-    // Remove imediatamente da interface para evitar a sensação de atraso.
     setSales(prev => prev.filter(s => s.id !== sale.id))
 
-    // Devolve ao estoque os itens dessa venda.
     for (const item of sale.items || []) {
-      const prod = products.find(p => p.name === item.desc)
+      const prod = products.find(p => p.name === item.desc || item.desc.includes(p.name))
       if (prod) {
         const restoredStock = prod.stock + Number(item.qty || 0)
         setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock: restoredStock } : p))
@@ -3148,7 +3325,6 @@ export default function App() {
 
     const { error } = await supabase.from('sales').delete().eq('id', sale.id)
     if (error) {
-      // Se o banco falhar, recarrega os dados para manter a interface consistente.
       await fetchData()
       alert(`Não foi possível excluir a venda #${sale.id}. Verifique a conexão com o banco de dados.`)
       return
@@ -3160,7 +3336,6 @@ export default function App() {
   const handleCompleteSale = async (saleData: Sale) => {
     setSales(prev => [saleData, ...prev])
 
-    // Registra a venda na tabela sales
     await supabase.from('sales').insert([{
       id: saleData.id,
       client: saleData.client,
@@ -3171,9 +3346,8 @@ export default function App() {
       total: saleData.total,
     }])
 
-    // Dá baixa automática na quantidade de cada produto vendido
     for (const item of saleData.items) {
-      const prod = products.find(p => p.name === item.desc)
+      const prod = products.find(p => item.desc.includes(p.name) || item.desc.includes(p.id))
       if (prod) {
         const updatedStock = Math.max(0, prod.stock - item.qty)
         setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock: updatedStock } : p))
@@ -3181,7 +3355,6 @@ export default function App() {
       }
     }
 
-    // Pergunta se deseja imprimir o comprovante/cupom fiscal da venda imediatamente
     if (confirm(`Venda #${saleData.id} concluída com sucesso!\nDeseja imprimir o cupom da venda?`)) {
       setPrintDocumentKind('sale')
       setOrderToPrint({
@@ -3545,6 +3718,7 @@ export default function App() {
         <ProductModal
           onClose={() => { setShowProductModal(false); setProductEditing(null) }}
           productToEdit={productEditing}
+          existingCategories={products.map(p => p.category)}
           onSave={async (prod) => {
             const exists = products.some(p => p.id === prod.id)
             setProducts(prev => exists ? prev.map(p => p.id === prod.id ? prod : p) : [prod, ...prev])
