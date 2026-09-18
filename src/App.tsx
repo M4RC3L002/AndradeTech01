@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-type Screen = 'dashboard' | 'orders' | 'quotes' | 'clients' | 'pdv' | 'settings'
+type Screen = 'dashboard' | 'orders' | 'quotes' | 'clients' | 'pdv' | 'users' | 'settings'
 
 interface UserProfile {
   id: string
@@ -104,6 +105,7 @@ const ALL_MODULES: { id: Screen; label: string }[] = [
   { id: 'quotes', label: 'Orçamentos & Propostas' },
   { id: 'pdv', label: 'Frente de Caixa (PDV)' },
   { id: 'clients', label: 'Base de Clientes' },
+  { id: 'users', label: 'Gestão de Usuários' },
   { id: 'settings', label: 'Configurações & Ajustes' },
 ]
 
@@ -178,6 +180,13 @@ const BASE_NAV_ITEMS = [
     label: 'Clientes',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>
+    ),
+  },
+  {
+    id: 'users' as Screen,
+    label: 'Usuários',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     ),
   },
   {
@@ -507,10 +516,12 @@ function UserModal({
 }: {
   userToEdit?: UserProfile | null
   onClose: () => void
-  onSave: (data: Partial<UserProfile>) => Promise<void>
+  onSave: (data: Partial<UserProfile> & { password?: string }) => Promise<void>
   isDark: boolean
 }) {
   const [name, setName] = useState(userToEdit?.name || '')
+  const [email, setEmail] = useState(userToEdit?.email || '')
+  const [password, setPassword] = useState('')
   const [role, setRole] = useState<UserProfile['role']>(userToEdit?.role || 'technician')
   const [active, setActive] = useState(userToEdit ? userToEdit.active : true)
   const [selectedModules, setSelectedModules] = useState<Screen[]>(
@@ -526,6 +537,8 @@ function UserModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!email.trim()) return alert('E-mail obrigatorio')
+    if (!userToEdit && password.length < 6) return alert('A senha provisoria deve ter no minimo 6 caracteres')
     if (!name.trim()) return alert('Nome é obrigatório')
     if (selectedModules.length === 0) return alert('Selecione pelo menos 1 módulo de acesso!')
 
@@ -533,6 +546,8 @@ function UserModal({
     await onSave({
       id: userToEdit?.id,
       name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: password ? password.trim() : undefined,
       role,
       active,
       modules: selectedModules,
@@ -553,7 +568,7 @@ function UserModal({
         <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <div>
             <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">GESTÃO DE ACESSO</div>
-            <h2 className="text-base font-bold">Editar Usuário & Permissões</h2>
+            <h2 className="text-base font-bold">{userToEdit ? 'Editar Usuário & Permissões' : 'Cadastrar Novo Usuário'}</h2>
           </div>
           <button type="button" onClick={onClose} className="p-1 text-neutral-400 hover:text-red-400">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -562,14 +577,21 @@ function UserModal({
 
         <div className="space-y-3 px-5 py-4 text-xs">
           <div>
-            <label className="block mb-1 font-mono uppercase text-neutral-400">Nome de Exibição *</label>
+            <label className="block mb-1 font-mono uppercase text-neutral-400">Nome do Operador *</label>
             <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Lucas Silva" className={inputClass} />
           </div>
 
           <div>
-            <label className="block mb-1 font-mono uppercase text-neutral-400">E-mail (Definido no Supabase)</label>
-            <input disabled value={userToEdit?.email || ''} className={`${inputClass} opacity-60 cursor-not-allowed`} />
+            <label className="block mb-1 font-mono uppercase text-neutral-400">E-mail de Acesso *</label>
+            <input required type="email" disabled={!!userToEdit} value={email} onChange={e => setEmail(e.target.value)} placeholder="lucas@andradetech.com" className={`${inputClass} ${userToEdit ? 'opacity-60 cursor-not-allowed' : ''}`} />
           </div>
+
+          {!userToEdit && (
+            <div>
+              <label className="block mb-1 font-mono uppercase text-neutral-400">Senha Provisória *</label>
+              <input required type="password" minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" className={inputClass} />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -613,7 +635,7 @@ function UserModal({
         <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
           <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">Cancelar</button>
           <button type="submit" disabled={loading} className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white shadow-md hover:opacity-95">
-            {loading ? 'Salvando...' : 'Salvar Alterações'}
+            {loading ? 'Salvando...' : userToEdit ? 'Salvar Alterações' : 'Criar Conta de Usuário'}
           </button>
         </div>
       </form>
@@ -647,7 +669,37 @@ function PrintModal({
   const documentTitle = isQuote ? 'ORÇAMENTO' : isSale ? 'CUPOM NÃO FISCAL DE VENDA' : 'ORDEM DE SERVIÇO'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+        <style>{`
+          .a4-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            box-sizing: border-box;
+          }
+
+          @page {
+            size: A4 portrait;
+            margin: 10mm;
+          }
+
+          @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area {
+              position: fixed;
+              left: 0;
+              top: 0;
+              width: 100% !important;
+              min-height: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              border: none !important;
+              box-shadow: none !important;
+              background: white !important;
+              color: black !important;
+            }
+          }
+        `}</style>
       <div className={`w-full max-w-3xl max-h-[92vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden ${
         isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
@@ -695,7 +747,7 @@ function PrintModal({
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-neutral-200/50 flex justify-center">
           {printType === 'a4' && (
-            <div id="print-area" className="w-full max-w-[210mm] bg-white text-black p-8 sm:p-10 rounded shadow-md border border-neutral-300 font-sans text-xs print:m-0 print:p-0 print:border-none print:shadow-none">
+            <div id="print-area" className="a4-sheet w-full max-w-[210mm] bg-white text-black p-8 sm:p-10 rounded shadow-md border border-neutral-300 font-sans text-xs print:m-0 print:p-0 print:border-none print:shadow-none">
               <div className="flex justify-between items-center border-b-2 border-slate-900 pb-4 mb-5">
                 <div className="flex items-center gap-3">
                   <img src={LOGO_URL} alt="Logo" className="w-14 h-14 object-contain" />
@@ -1836,6 +1888,62 @@ function ClientsScreen({
                     </tr>
                   ))
                 )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function UsersScreen({
+  profiles = [], onlineUsers = [], currentUserProfile, isDark,
+  onOpenNewUser, onEditUser, onForceDisconnect, onOpenMenu,
+}: {
+  profiles: UserProfile[]
+  onlineUsers: any[]
+  currentUserProfile: UserProfile | null
+  isDark: boolean
+  onOpenNewUser: () => void
+  onEditUser: (user: UserProfile) => void
+  onForceDisconnect: (userId: string) => void
+  onOpenMenu: () => void
+}) {
+  const [search, setSearch] = useState('')
+  const filteredProfiles = profiles.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.email.toLowerCase().includes(search.toLowerCase()) ||
+    p.role.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Gestao de Usuarios & Operadores" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <div className="relative w-full sm:w-80">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nome, e-mail ou cargo..." className={`w-full rounded-xl border py-2.5 pl-9 pr-4 text-xs outline-none transition-colors sm:text-sm ${isDark ? 'border-neutral-800 bg-[#111] text-white focus:border-[#0066FF]' : 'border-slate-200 bg-white text-slate-900 focus:border-[#0066FF]'}`} />
+          </div>
+          <button type="button" onClick={onOpenNewUser} className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:opacity-95 sm:w-auto">
+            <span>+ Novo Usuario</span>
+          </button>
+        </div>
+        <div className={`overflow-hidden rounded-xl border transition-colors ${isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'}`}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[650px] text-xs">
+              <thead><tr className={`border-b text-left text-neutral-400 ${isDark ? 'border-neutral-800 bg-[#0e0e0e]' : 'border-slate-200 bg-slate-50'}`}><th className="px-4 py-3 font-mono uppercase">Usuario / Nome</th><th className="px-4 py-3 font-mono uppercase">E-mail</th><th className="px-4 py-3 font-mono uppercase">Cargo</th><th className="px-4 py-3 font-mono uppercase">Status</th><th className="px-4 py-3 font-mono uppercase">Modulos liberados</th><th className="px-4 py-3 text-right font-mono uppercase">Acoes</th></tr></thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+                {filteredProfiles.length === 0 ? <tr><td colSpan={6}><EmptyState icon={<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>} title="Nenhum usuario encontrado" sub="Clique em '+ Novo Usuario' para cadastrar operadores" isDark={isDark} /></td></tr> : filteredProfiles.map(u => {
+                  const isOnline = onlineUsers.some(onU => onU.user_id === u.id || onU.email === u.email)
+                  return <tr key={u.id} className={isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'}>
+                    <td className="px-4 py-3 font-semibold"><div className="flex items-center gap-2"><span className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]' : 'bg-neutral-600'}`} /><span className={isDark ? 'text-white' : 'text-slate-900'}>{u.name}</span></div></td>
+                    <td className="px-4 py-3 font-mono text-neutral-400">{u.email}</td><td className="px-4 py-3"><span className="rounded border border-purple-500/20 bg-purple-500/10 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-purple-400">{u.role}</span></td>
+                    <td className="px-4 py-3"><span className={`rounded border px-2 py-0.5 font-mono text-[10px] font-bold ${u.active ? 'border-green-500/20 bg-green-500/10 text-green-500' : 'border-red-500/20 bg-red-500/10 text-red-500'}`}>{u.active ? 'Ativo' : 'Desativado'}</span></td>
+                    <td className="max-w-xs truncate px-4 py-3 text-neutral-400">{u.modules?.join(', ') || 'Nenhum'}</td><td className="px-4 py-3 text-right"><div className="inline-flex items-center gap-2">{isOnline && u.id !== currentUserProfile?.id && <button type="button" onClick={() => onForceDisconnect(u.id)} className="rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-500 hover:text-white">Desconectar</button>}<button type="button" onClick={() => onEditUser(u)} className="rounded p-1.5 text-neutral-400 hover:bg-neutral-800/50 hover:text-[#0066FF]" title="Editar usuario e permissoes"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div></td>
+                  </tr>
+                })}
               </tbody>
             </table>
           </div>
@@ -3467,8 +3575,40 @@ export default function App() {
   }
 
   // Atualiza perfil e permissões do usuário
-  const handleSaveUserProfile = async (data: Partial<UserProfile>) => {
-    if (!data.id) return
+  const handleSaveUser = async (data: Partial<UserProfile> & { password?: string }) => {
+    if (!data.id) {
+      try {
+        const supabaseUrl = (supabase as any).supabaseUrl
+        const supabaseKey = (supabase as any).supabaseKey
+        if (!supabaseUrl || !supabaseKey) throw new Error('Nao foi possivel obter a configuracao do Supabase.')
+
+        const tempAuthClient = createClient(supabaseUrl, supabaseKey, {
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        })
+        const { data: authData, error: authError } = await tempAuthClient.auth.signUp({
+          email: data.email!, password: data.password!, options: { data: { name: data.name } },
+        })
+        if (authError) throw authError
+
+        if (authData.user) {
+          const { error } = await supabase.from('profiles').upsert([{
+            id: authData.user.id,
+            email: data.email!,
+            name: data.name!,
+            role: data.role || 'technician',
+            active: data.active ?? true,
+            modules: data.modules || ['dashboard', 'orders', 'pdv'],
+          }])
+          if (error) throw error
+          alert(`Usuario ${data.name} cadastrado com sucesso! Ja pode realizar o login.`)
+          await fetchData()
+        }
+      } catch (err: any) {
+        alert(`Falha no cadastro: ${err.message}`)
+        throw err
+      }
+      return
+    }
     setProfiles(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as UserProfile : p))
     await supabase.from('profiles').update({
       name: data.name,
@@ -3476,6 +3616,7 @@ export default function App() {
       active: data.active,
       modules: data.modules,
     }).eq('id', data.id)
+    alert('Usuario atualizado com sucesso!')
 
     // Se editou o próprio perfil, atualiza na hora
     if (data.id === session?.user?.id) {
@@ -3747,7 +3888,9 @@ export default function App() {
 
   // Filtra itens de menu de acordo com as permissões do perfil do usuário logado
   const allowedNavItems = BASE_NAV_ITEMS.filter(item =>
-    currentUserProfile?.modules ? currentUserProfile.modules.includes(item.id) : true
+    item.id === 'users'
+      ? currentUserProfile?.role === 'admin'
+      : currentUserProfile?.modules ? currentUserProfile.modules.includes(item.id) : true
   )
 
   const safeClients = Array.isArray(clients) ? clients : []
@@ -3988,6 +4131,18 @@ export default function App() {
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
         )}
+        {screen === 'users' && (
+          <UsersScreen
+            profiles={profiles}
+            onlineUsers={onlineUsers}
+            currentUserProfile={currentUserProfile}
+            isDark={isDark}
+            onOpenNewUser={() => { setUserEditing(null); setShowUserModal(true) }}
+            onEditUser={(u) => { setUserEditing(u); setShowUserModal(true) }}
+            onForceDisconnect={handleForceDisconnect}
+            onOpenMenu={() => setMobileMenuOpen(true)}
+          />
+        )}
         {screen === 'settings' && (
           <SettingsScreen
             services={services}
@@ -4070,7 +4225,7 @@ export default function App() {
         <UserModal
           userToEdit={userEditing}
           onClose={() => { setShowUserModal(false); setUserEditing(null) }}
-          onSave={handleSaveUserProfile}
+          onSave={handleSaveUser}
           isDark={isDark}
         />
       )}
