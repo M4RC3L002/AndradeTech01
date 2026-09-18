@@ -5,6 +5,15 @@ import { supabase } from './supabase'
 
 type Screen = 'dashboard' | 'orders' | 'quotes' | 'clients' | 'pdv' | 'settings'
 
+interface UserProfile {
+  id: string
+  email: string
+  name: string
+  role: 'admin' | 'technician' | 'attendant'
+  active: boolean
+  modules: Screen[]
+}
+
 interface OrderItem {
   desc: string
   qty: number
@@ -89,6 +98,15 @@ interface Sale {
 
 const LOGO_URL = 'https://yqpgdnztjoplteltassu.supabase.co/storage/v1/object/public/public-assets/logo.png'
 
+const ALL_MODULES: { id: Screen; label: string }[] = [
+  { id: 'dashboard', label: 'Painel (Visão Geral)' },
+  { id: 'orders', label: 'Ordens de Serviço' },
+  { id: 'quotes', label: 'Orçamentos & Propostas' },
+  { id: 'pdv', label: 'Frente de Caixa (PDV)' },
+  { id: 'clients', label: 'Base de Clientes' },
+  { id: 'settings', label: 'Configurações & Ajustes' },
+]
+
 const DEFAULT_STATUSES: CustomStatus[] = [
   { id: '1', label: 'Entrada', dot: '#64748B' },
   { id: '2', label: 'Orçamento', dot: '#F59E0B' },
@@ -124,54 +142,52 @@ const DEFAULT_PRODUCTS: Product[] = [
   { id: '1001', name: 'SSD 480GB Kingston', brand: 'Kingston', category: 'Armazenamento', cost_price: 130, sale_price: 240, stock: 4 },
   { id: '1002', name: 'Tela iPhone 11 Incell', brand: 'Apple', category: 'Telas', cost_price: 110, sale_price: 250, stock: 2 },
   { id: '1003', name: 'Fonte ATX 500W', brand: 'Corsair', category: 'Fontes', cost_price: 160, sale_price: 280, stock: 3 },
-  { id: '1004', name: 'Cabo USB-C Trançado 1.5m', brand: 'Baseus', category: 'Acessórios', cost_price: 15, sale_price: 45, stock: 10 },
-  { id: '1005', name: 'Memória RAM 16GB DDR4 3200MHz', brand: 'Asgard', category: 'Upgrade', cost_price: 180, sale_price: 290, stock: 5 },
 ]
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   {
-    id: 'dashboard',
+    id: 'dashboard' as Screen,
     label: 'Painel',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>
     ),
   },
   {
-    id: 'orders',
+    id: 'orders' as Screen,
     label: 'Ordens',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12h6M9 16h4" /></svg>
     ),
   },
   {
-    id: 'quotes',
+    id: 'quotes' as Screen,
     label: 'Orçamentos',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
     ),
   },
   {
-    id: 'pdv',
+    id: 'pdv' as Screen,
     label: 'PDV (Vendas)',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
     ),
   },
   {
-    id: 'clients',
+    id: 'clients' as Screen,
     label: 'Clientes',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>
     ),
   },
   {
-    id: 'settings',
+    id: 'settings' as Screen,
     label: 'Ajustes',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M20 12h2M2 12h2" /></svg>
     ),
   },
-] as const
+]
 
 function isOrderFinalized(status?: string) {
   const s = (status || '').trim().toLowerCase()
@@ -182,7 +198,6 @@ function isOrderFinalized(status?: string) {
 
 function AppLogo({ size = 36 }: { size?: number }) {
   const [imgError, setImgError] = useState(false)
-
   if (imgError) {
     return (
       <div
@@ -193,7 +208,6 @@ function AppLogo({ size = 36 }: { size?: number }) {
       </div>
     )
   }
-
   return (
     <img
       src={LOGO_URL}
@@ -236,7 +250,6 @@ function StatusBadge({ status, statuses = [] }: { status: string; statuses?: Cus
     label: status || 'Entrada',
     dot: '#888888',
   }
-
   return (
     <span
       className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 font-mono text-xs font-medium"
@@ -254,7 +267,6 @@ function StatusBadge({ status, statuses = [] }: { status: string; statuses?: Cus
 
 function WhatsAppBtn({ phone, label = '', orderDetails }: { phone: string; label?: string; orderDetails?: Partial<Order> }) {
   let msg = `Olá! Passando para falar sobre seu atendimento na AndradeTech.`
-
   if (orderDetails) {
     msg = `*AndradeTech - Atualização de OS*\n\n` +
           `Olá, *${orderDetails.client || 'Cliente'}*!\n` +
@@ -381,9 +393,9 @@ function Topbar({
   )
 }
 
-// ─── Login Screen ─────────────────────────────────────────────────────────────
+// ─── Login Screen com Validação de Ativo/Bloqueado ────────────────────────────
 
-function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; isDark: boolean }) {
+function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: (user: any) => void; isDark: boolean }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -394,7 +406,7 @@ function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; i
     setLoading(true)
     setErrorMsg('')
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: password.trim(),
     })
@@ -402,8 +414,25 @@ function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; i
     if (error) {
       setErrorMsg('E-mail ou senha incorretos.')
       setLoading(false)
-    } else {
-      onLoginSuccess()
+      return
+    }
+
+    if (data?.user) {
+      // Checa se o usuário está ativo no banco
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profile && profile.active === false) {
+        setErrorMsg('Esta conta foi desativada pelo administrador.')
+        await supabase.auth.signOut()
+        setLoading(false)
+        return
+      }
+
+      onLoginSuccess(data.user)
     }
   }
 
@@ -468,7 +497,131 @@ function LoginScreen({ onLoginSuccess, isDark }: { onLoginSuccess: () => void; i
   )
 }
 
-// ─── Modal de Emissão (OS e Vendas PDV) ─────────────────────────────────────────
+// ─── Modal de Edição de Usuário & Permissões (Dentro do Sistema) ──────────────
+
+function UserModal({
+  userToEdit,
+  onClose,
+  onSave,
+  isDark,
+}: {
+  userToEdit?: UserProfile | null
+  onClose: () => void
+  onSave: (data: Partial<UserProfile>) => Promise<void>
+  isDark: boolean
+}) {
+  const [name, setName] = useState(userToEdit?.name || '')
+  const [role, setRole] = useState<UserProfile['role']>(userToEdit?.role || 'technician')
+  const [active, setActive] = useState(userToEdit ? userToEdit.active : true)
+  const [selectedModules, setSelectedModules] = useState<Screen[]>(
+    userToEdit?.modules || ['dashboard', 'orders', 'pdv']
+  )
+  const [loading, setLoading] = useState(false)
+
+  const toggleModule = (modId: Screen) => {
+    setSelectedModules(prev =>
+      prev.includes(modId) ? prev.filter(m => m !== modId) : [...prev, modId]
+    )
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return alert('Nome é obrigatório')
+    if (selectedModules.length === 0) return alert('Selecione pelo menos 1 módulo de acesso!')
+
+    setLoading(true)
+    await onSave({
+      id: userToEdit?.id,
+      name: name.trim(),
+      role,
+      active,
+      modules: selectedModules,
+    })
+    setLoading(false)
+    onClose()
+  }
+
+  const inputClass = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors ${
+    isDark ? 'bg-[#181818] border-neutral-800 text-white focus:border-[#0066FF]' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#0066FF]'
+  }`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto">
+      <form onSubmit={handleSubmit} className={`w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden ${
+        isDark ? 'bg-[#111] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+      }`}>
+        <div className={`flex items-center justify-between border-b px-5 py-3.5 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div>
+            <div className="font-mono text-[10px] uppercase text-[#0066FF] font-bold">GESTÃO DE ACESSO</div>
+            <h2 className="text-base font-bold">Editar Usuário & Permissões</h2>
+          </div>
+          <button type="button" onClick={onClose} className="p-1 text-neutral-400 hover:text-red-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="space-y-3 px-5 py-4 text-xs">
+          <div>
+            <label className="block mb-1 font-mono uppercase text-neutral-400">Nome de Exibição *</label>
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Lucas Silva" className={inputClass} />
+          </div>
+
+          <div>
+            <label className="block mb-1 font-mono uppercase text-neutral-400">E-mail (Definido no Supabase)</label>
+            <input disabled value={userToEdit?.email || ''} className={`${inputClass} opacity-60 cursor-not-allowed`} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block mb-1 font-mono uppercase text-neutral-400">Cargo / Função</label>
+              <select value={role} onChange={e => setRole(e.target.value as any)} className={inputClass}>
+                <option value="technician">Técnico</option>
+                <option value="attendant">Atendente / Caixa</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+            <div>
+              <label className="block mb-1 font-mono uppercase text-neutral-400">Status da Conta</label>
+              <select value={active ? 'true' : 'false'} onChange={e => setActive(e.target.value === 'true')} className={inputClass}>
+                <option value="true">🟢 Ativo</option>
+                <option value="false">🔴 Desativado</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block mb-1.5 font-mono uppercase text-neutral-400 font-bold">Módulos Permitidos para este usuário:</label>
+            <div className="space-y-1.5 rounded-xl border p-3 border-neutral-700/40">
+              {ALL_MODULES.map(m => {
+                const isChecked = selectedModules.includes(m.id)
+                return (
+                  <label key={m.id} className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleModule(m.id)}
+                      className="rounded border-neutral-700 text-blue-600 focus:ring-0"
+                    />
+                    <span className={isChecked ? 'font-bold text-blue-400' : 'text-neutral-400'}>{m.label}</span>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className={`flex justify-end gap-2 border-t px-5 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-neutral-400 hover:text-neutral-600">Cancelar</button>
+          <button type="submit" disabled={loading} className="rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-4 py-2 text-xs font-semibold text-white shadow-md hover:opacity-95">
+            {loading ? 'Salvando...' : 'Salvar Alterações'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ─── Modal de Emissão ─────────────────────────────────────────────────────────
 
 function PrintModal({
   order,
@@ -675,38 +828,10 @@ function PrintModal({
                 <div className="border-t border-black w-4/5 mx-auto mb-1"></div>
                 <div className="text-[9px]">Obrigado pela preferência!</div>
               </div>
-              <div className="mt-3 pt-3 border-t border-dashed border-black text-[8px] leading-tight">
-                <div className="font-black mb-1">TERMO DE GARANTIA (Art. 26, II, Lei 8.078/90 - CDC)</div>
-                <div>Este serviço e as peças substituídas possuem garantia legal de 90 (noventa) dias, contados a partir da data de entrega do produto.</div>
-                <div>A garantia cobre exclusivamente defeitos no reparo realizado ou nas peças trocadas sob condições normais de uso.</div>
-                <div>A garantia será anulada em caso de mau uso, quedas, contato com líquidos/oxidação, variações elétricas ou caso o aparelho seja aberto por terceiros sem nossa autorização.</div>
-                <div>Em caso de nova falha coberta, a assistência tem o prazo legal de até 30 dias para sanar o vício (Art. 18, CDC).</div>
-              </div>
             </div>
           )}
         </div>
       </div>
-
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #print-area, #print-area * {
-            visibility: visible;
-          }
-          #print-area {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 15mm !important;
-            background: white !important;
-            color: black !important;
-          }
-        }
-      `}</style>
     </div>
   )
 }
@@ -1724,11 +1849,16 @@ function SettingsScreen({
   services = [],
   products = [],
   statuses = [],
+  profiles = [],
+  onlineUsers = [],
+  currentUserProfile,
   isDark,
   onOpenProductModal,
   onEditProduct,
   onOpenServiceModal,
   onOpenStatusModal,
+  onEditUser,
+  onForceDisconnect,
   onDeleteProduct,
   onDeleteService,
   onDeleteStatus,
@@ -1737,11 +1867,16 @@ function SettingsScreen({
   services: CustomService[]
   products: Product[]
   statuses: CustomStatus[]
+  profiles: UserProfile[]
+  onlineUsers: any[]
+  currentUserProfile: UserProfile | null
   isDark: boolean
   onOpenProductModal: () => void
   onEditProduct: (product: Product) => void
   onOpenServiceModal: () => void
   onOpenStatusModal: () => void
+  onEditUser: (user: UserProfile) => void
+  onForceDisconnect: (userId: string) => void
   onDeleteProduct: (id: string) => void
   onDeleteService: (id: string) => void
   onDeleteStatus: (id: string) => void
@@ -1750,12 +1885,79 @@ function SettingsScreen({
   const safeProducts = Array.isArray(products) ? products : []
   const safeServices = Array.isArray(services) ? services : []
   const safeStatuses = Array.isArray(statuses) ? statuses : []
+  const safeProfiles = Array.isArray(profiles) ? profiles : []
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Topbar title="Configurações, Peças & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
+      <Topbar title="Configurações & Catálogo" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
       <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        
+        {/* Gestão de Usuários e Permissões (Visível para todos ou configurável para admin) */}
+        <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
+          isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+        }`}>
+          <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+            <div>
+              <span className={`text-xs font-semibold ${isDark ? 'text-neutral-200' : 'text-slate-800'}`}>Gestão de Usuários & Permissões</span>
+              <span className="ml-1.5 text-[10px] font-mono text-neutral-400">({safeProfiles.length} cadastrados)</span>
+            </div>
+            <span className="text-[10px] text-neutral-400">Para cadastrar novos: use Authentication &gt; Users no Supabase</span>
+          </div>
+
+          <div className={`max-h-64 divide-y overflow-y-auto ${isDark ? 'divide-neutral-800' : 'divide-slate-100'}`}>
+            {safeProfiles.length === 0 ? (
+              <div className="p-4 text-center text-xs text-neutral-400">Nenhum perfil carregado</div>
+            ) : (
+              safeProfiles.map(u => {
+                const isOnline = onlineUsers.some(onU => onU.user_id === u.id || onU.email === u.email)
+                return (
+                  <div key={u.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2 w-2 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]' : 'bg-neutral-600'}`} />
+                        <span className="font-bold">{u.name}</span>
+                        <span className="text-[10px] font-mono text-neutral-400">({u.email})</span>
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono border ${u.active ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
+                          {u.active ? 'Ativo' : 'Desativado'}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                          {u.role}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-neutral-400 mt-0.5">
+                        Módulos liberados: {u.modules?.join(', ') || 'Nenhum'}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {isOnline && u.id !== currentUserProfile?.id && (
+                        <button
+                          type="button"
+                          onClick={() => onForceDisconnect(u.id)}
+                          className="rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-500 hover:bg-red-500 hover:text-white"
+                          title="Desconectar sessão imediatamente"
+                        >
+                          Desconectar
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onEditUser(u)}
+                        className="rounded p-1.5 text-neutral-400 hover:text-[#0066FF]"
+                        title="Editar permissões"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Card Produtos */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -1820,6 +2022,7 @@ function SettingsScreen({
             </div>
           </div>
 
+          {/* Card Serviços */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -1861,6 +2064,7 @@ function SettingsScreen({
             </div>
           </div>
 
+          {/* Card Situações */}
           <div className={`flex flex-col overflow-hidden rounded-xl border transition-colors ${
             isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
           }`}>
@@ -1906,7 +2110,7 @@ function SettingsScreen({
   )
 }
 
-// ─── Modais de OS, Orçamento e Cliente ────────────────────────────────────────
+// ─── Modais de Cadastro ───────────────────────────────────────────────────────
 
 function OrderModal({
   onClose,
@@ -2397,9 +2601,6 @@ function QuoteModal({
                   </option>
                 ))}
               </select>
-              {safeClients.length === 0 && (
-                <p className="mt-1 text-[10px] text-amber-500">Nenhum cliente cadastrado. Clique em "+ Cliente" para cadastrar.</p>
-              )}
             </div>
             <div>
               <label className="mb-1 block font-mono text-[11px] uppercase tracking-wider text-neutral-400">WhatsApp / Tel</label>
@@ -2568,8 +2769,6 @@ function QuoteModal({
   )
 }
 
-// ─── Modal de Cliente ────────────────────────────────────────────────────────
-
 function ClientModal({
   onClose,
   onSave,
@@ -2665,8 +2864,6 @@ function ClientModal({
   )
 }
 
-// ─── Modais de Catálogo / Configurações ───────────────────────────────────────
-
 function ProductModal({
   onClose,
   onSave,
@@ -2697,7 +2894,6 @@ function ProductModal({
   const mergedCategories = Array.from(
     new Set([...DEFAULT_PRODUCT_CATEGORIES, ...existingCategories.filter(Boolean)])
   )
-
   const mergedBrands = Array.from(
     new Set(['Kingston', 'Samsung', 'SanDisk', 'Apple', 'Xiaomi', 'Corsair', 'Asus', 'Dell', 'Lenovo', 'HP', ...existingBrands.filter(Boolean)])
   )
@@ -3009,6 +3205,7 @@ function StatusModal({
 
 export default function App() {
   const [session, setSession] = useState<any>(null)
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [onlineUsers, setOnlineUsers] = useState<any[]>([])
 
@@ -3041,6 +3238,8 @@ export default function App() {
   const [productEditing, setProductEditing] = useState<Product | null>(null)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
+  const [showUserModal, setShowUserModal] = useState(false)
+  const [userEditing, setUserEditing] = useState<UserProfile | null>(null)
 
   const [orderEditing, setOrderEditing] = useState<Order | null>(null)
   const [clientEditing, setClientEditing] = useState<Client | null>(null)
@@ -3054,11 +3253,13 @@ export default function App() {
   const [services, setServices] = useState<CustomService[]>(DEFAULT_SERVICES)
   const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS)
   const [statuses, setStatuses] = useState<CustomStatus[]>(DEFAULT_STATUSES)
+  const [profiles, setProfiles] = useState<UserProfile[]>([])
 
+  // Autenticação inicial
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      setAuthLoading(false)
+      if (!session) setAuthLoading(false)
     }).catch(() => {
       setAuthLoading(false)
     })
@@ -3067,16 +3268,17 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      setAuthLoading(false)
+      if (!session) setAuthLoading(false)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
+  // Presença online & Canal de Desconexão Forçada
   useEffect(() => {
     if (!session?.user) return
 
-    const room = supabase.channel('online-users', {
+    const room = supabase.channel('online-presence', {
       config: {
         presence: {
           key: session.user.id,
@@ -3091,6 +3293,12 @@ export default function App() {
           const users = Object.keys(presenceState).map(key => presenceState[key][0] as any)
           setOnlineUsers(users)
         } catch {}
+      })
+      .on('broadcast', { event: 'force-disconnect' }, payload => {
+        if (payload.payload?.userId === session.user.id) {
+          alert('Sua sessão foi encerrada pelo administrador.')
+          supabase.auth.signOut()
+        }
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -3110,6 +3318,31 @@ export default function App() {
   }, [session])
 
   const fetchData = async () => {
+    if (!session?.user) return
+
+    // Busca o perfil do usuário logado
+    try {
+      const { data: myProf } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
+      if (myProf) {
+        if (myProf.active === false) {
+          alert('Sua conta foi desativada.')
+          await supabase.auth.signOut()
+          return
+        }
+        setCurrentUserProfile(myProf)
+        // Se a tela atual não for permitida, vai para a primeira liberada
+        if (myProf.modules && myProf.modules.length > 0 && !myProf.modules.includes(screen)) {
+          setScreen(myProf.modules[0])
+        }
+      }
+    } catch {}
+
+    // Lista de todos os perfis
+    try {
+      const { data: profData } = await supabase.from('profiles').select('*').order('created_at', { ascending: true })
+      if (profData) setProfiles(profData)
+    } catch {}
+
     try {
       const { data: cData } = await supabase.from('clients').select('*')
       if (cData) {
@@ -3205,6 +3438,8 @@ export default function App() {
       const { data: stData } = await supabase.from('statuses').select('*')
       if (stData && stData.length > 0) setStatuses(stData)
     } catch {}
+
+    setAuthLoading(false)
   }
 
   useEffect(() => {
@@ -3216,6 +3451,35 @@ export default function App() {
   const handleLogout = async () => {
     if (confirm('Deseja realmente sair do sistema?')) {
       await supabase.auth.signOut()
+    }
+  }
+
+  // Desconecta remotamente um usuário via broadcast
+  const handleForceDisconnect = async (userId: string) => {
+    if (!confirm('Deseja realmente derrubar a conexão deste usuário?')) return
+    const channel = supabase.channel('online-presence')
+    await channel.send({
+      type: 'broadcast',
+      event: 'force-disconnect',
+      payload: { userId },
+    })
+    alert('Comando de desconexão enviado.')
+  }
+
+  // Atualiza perfil e permissões do usuário
+  const handleSaveUserProfile = async (data: Partial<UserProfile>) => {
+    if (!data.id) return
+    setProfiles(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as UserProfile : p))
+    await supabase.from('profiles').update({
+      name: data.name,
+      role: data.role,
+      active: data.active,
+      modules: data.modules,
+    }).eq('id', data.id)
+
+    // Se editou o próprio perfil, atualiza na hora
+    if (data.id === session?.user?.id) {
+      setCurrentUserProfile(prev => prev ? ({ ...prev, ...data } as UserProfile) : null)
     }
   }
 
@@ -3342,7 +3606,6 @@ export default function App() {
     }])
   }
 
-  // Conversão de orçamento com situação Aprovado
   const handleConvertToOrder = async (quote: Quote) => {
     setQuotes(prev => prev.filter(q => q.id !== quote.id))
     await supabase.from('quotes').delete().eq('id', quote.id)
@@ -3358,7 +3621,7 @@ export default function App() {
       status: approvedStatus,
       value: quote.value,
       date: new Date().toLocaleDateString('pt-BR'),
-      technician: 'Admin',
+      technician: currentUserProfile?.name || 'Admin',
       notes: `Convertido do Orçamento #${quote.id}. ${quote.description || ''}`,
       items: quote.items,
     }
@@ -3403,8 +3666,6 @@ export default function App() {
     await supabase.from('quotes').delete().eq('id', id)
   }
 
-  // ─── Lógica de PDV ─────────────────────────────────────────────────────────
-
   const handleDeleteSale = async (sale: Sale) => {
     const confirmed = confirm(
       `Excluir a venda #${sale.id}?\n\nO estoque dos produtos vendidos será devolvido automaticamente. Essa ação não pode ser desfeita.`
@@ -3425,7 +3686,7 @@ export default function App() {
     const { error } = await supabase.from('sales').delete().eq('id', sale.id)
     if (error) {
       await fetchData()
-      alert(`Não foi possível excluir a venda #${sale.id}. Verifique a conexão com o banco de dados.`)
+      alert(`Não foi possível excluir a venda #${sale.id}.`)
       return
     }
 
@@ -3465,7 +3726,7 @@ export default function App() {
         status: saleData.payment_method,
         value: saleData.total,
         date: saleData.date,
-        technician: 'Frente de Caixa',
+        technician: currentUserProfile?.name || 'Frente de Caixa',
         notes: `Comprovante de Compra emitido no PDV. Pagamento efetuado via ${saleData.payment_method}.`,
         items: saleData.items,
       })
@@ -3484,6 +3745,11 @@ export default function App() {
     return <LoginScreen onLoginSuccess={() => fetchData()} isDark={isDark} />
   }
 
+  // Filtra itens de menu de acordo com as permissões do perfil do usuário logado
+  const allowedNavItems = BASE_NAV_ITEMS.filter(item =>
+    currentUserProfile?.modules ? currentUserProfile.modules.includes(item.id) : true
+  )
+
   const safeClients = Array.isArray(clients) ? clients : []
   const selectedClientForPrint = orderToPrint ? safeClients.find(c => c.name.toLowerCase() === (orderToPrint.client || '').toLowerCase()) : undefined
 
@@ -3500,20 +3766,22 @@ export default function App() {
               <div className="text-sm font-extrabold tracking-tight bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] bg-clip-text text-transparent">
                 AndradeTech
               </div>
-              <div className="font-mono text-[10px] text-neutral-400">Assistência Técnica</div>
+              <div className="font-mono text-[10px] text-neutral-400">
+                {currentUserProfile?.name || 'Assistência Técnica'}
+              </div>
             </div>
           </div>
           <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
         </div>
 
         <nav className="flex-1 space-y-1.5 px-3 py-4">
-          {NAV_ITEMS.map(item => {
+          {allowedNavItems.map(item => {
             const isActive = screen === item.id
             return (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setScreen(item.id as Screen)}
+                onClick={() => setScreen(item.id)}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs font-semibold transition-all ${
                   isActive
                     ? 'bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] text-white shadow-md shadow-blue-500/20'
@@ -3577,12 +3845,12 @@ export default function App() {
             </div>
 
             <div className="flex-1 space-y-1.5">
-              {NAV_ITEMS.map(item => (
+              {allowedNavItems.map(item => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => {
-                    setScreen(item.id as Screen)
+                    setScreen(item.id)
                     setMobileMenuOpen(false)
                   }}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold ${
@@ -3673,7 +3941,7 @@ export default function App() {
                 status: q.status,
                 value: q.value,
                 date: q.createdAt,
-                technician: 'AndradeTech',
+                technician: currentUserProfile?.name || 'AndradeTech',
                 notes: q.description,
                 items: q.items,
               })
@@ -3702,7 +3970,7 @@ export default function App() {
                 status: sale.payment_method,
                 value: sale.total,
                 date: sale.date,
-                technician: 'Frente de Caixa',
+                technician: currentUserProfile?.name || 'Frente de Caixa',
                 notes: `Comprovante de Compra no PDV. Pagamento via ${sale.payment_method}.`,
                 items: sale.items,
               })
@@ -3725,11 +3993,16 @@ export default function App() {
             services={services}
             products={products}
             statuses={statuses}
+            profiles={profiles}
+            onlineUsers={onlineUsers}
+            currentUserProfile={currentUserProfile}
             isDark={isDark}
             onOpenProductModal={() => { setProductEditing(null); setShowProductModal(true) }}
             onEditProduct={(p) => { setProductEditing(p); setShowProductModal(true) }}
             onOpenServiceModal={() => setShowServiceModal(true)}
             onOpenStatusModal={() => setShowStatusModal(true)}
+            onEditUser={(u) => { setUserEditing(u); setShowUserModal(true) }}
+            onForceDisconnect={handleForceDisconnect}
             onDeleteProduct={async (id) => {
               setProducts(prev => prev.filter(p => p.id !== id))
               await supabase.from('products').delete().eq('id', id)
@@ -3746,27 +4019,6 @@ export default function App() {
           />
         )}
       </main>
-
-      {/* Barra Inferior Mobile */}
-      <nav className={`fixed inset-x-0 bottom-0 z-40 flex h-14 items-center justify-around border-t px-2 md:hidden transition-colors ${
-        isDark ? 'border-neutral-800 bg-[#0d0d0d]' : 'border-slate-200 bg-white shadow-lg'
-      }`}>
-        {NAV_ITEMS.map(item => {
-          const isActive = screen === item.id
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setScreen(item.id as Screen)}
-              className="flex flex-1 flex-col items-center justify-center py-1 transition-colors"
-              style={{ color: isActive ? '#0066FF' : (isDark ? '#666' : '#94A3B8') }}
-            >
-              {item.icon}
-              <span className="mt-0.5 font-mono text-[10px]">{item.label}</span>
-            </button>
-          )
-        })}
-      </nav>
 
       {/* Modais Globais */}
       {showOrderModal && (
@@ -3814,7 +4066,15 @@ export default function App() {
         />
       )}
 
-      {/* Modais de Ajustes */}
+      {showUserModal && (
+        <UserModal
+          userToEdit={userEditing}
+          onClose={() => { setShowUserModal(false); setUserEditing(null) }}
+          onSave={handleSaveUserProfile}
+          isDark={isDark}
+        />
+      )}
+
       {showProductModal && (
         <ProductModal
           onClose={() => { setShowProductModal(false); setProductEditing(null) }}
