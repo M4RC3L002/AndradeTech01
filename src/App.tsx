@@ -4038,7 +4038,7 @@ export default function App() {
 
   // Filtra itens de menu de acordo com as permissões do perfil do usuário logado
   const allowedNavItems = BASE_NAV_ITEMS.filter(item =>
-    item.id === 'users'
+    item.id === 'users' || item.id === 'revenue'
       ? currentUserProfile?.role === 'admin'
       : currentUserProfile?.modules ? currentUserProfile.modules.includes(item.id) : true
   )
