@@ -45,7 +45,7 @@ interface Quote {
   validUntil: string
   createdAt: string
   status: 'Pendente' | 'Aprovado' | 'Reprovado' | 'Cancelado'
-  items: OrderItem[]
+  items: OrderItem[]; publicToken?: string
 }
 
 interface Client {
@@ -1325,7 +1325,9 @@ function QuotesScreen({
   onDeleteQuote: (id: string) => void
   onOpenMenu: () => void
 }) {
-  const safeQuotes = Array.isArray(quotes) ? quotes : []
+  const safeQuotes = Array.isArray(quotes) ? quotes : []; const sendQuoteOnWhatsApp = async (q: Quote) => { const token = q.publicToken || crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, ''); const parts = (q.validUntil || '').split('/'); const expiry = parts.length === 3 ? new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]), 23, 59, 59, 999) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); const { error } = await supabase.from('quotes').update({ public_token: token, link_expires_at: expiry.toISOString() }).eq('id', q.id); if (error) return alert('Não foi possível gerar o link de consulta: ' + error.message); const link = window.location.origin + '?orcamento=' + token; const message = 'Segue orçamento da ' + (q.device || 'máquina') + ' que você trouxe na AndradeTech.
+
+' + link; const phone = (q.phone || '').replace(/\D/g, ''); if (!phone) return alert('Telefone do cliente não informado!'); window.open('https://wa.me/55' + phone + '?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer') }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -1413,9 +1415,9 @@ function QuotesScreen({
                             <button
                               type="button"
                               disabled={isRejected}
-                              onClick={() => onEditQuote(q)}
+                              onClick={() => sendQuoteOnWhatsApp(q)}
                               className={`rounded p-1 transition-colors ${isRejected ? 'opacity-30 cursor-not-allowed text-neutral-500' : 'text-neutral-400 hover:text-[#8A2BE2]'}`}
-                              title={isRejected ? "Orçamento reprovado/desabilitado" : "Editar Orçamento"}
+                              title={isRejected ? "Orçamento reprovado/desabilitado" : "Enviar link por WhatsApp"}
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                             </button>
@@ -3047,7 +3049,7 @@ function ClientModal({
   )
 }
 
-function ProductModal({
+function QuotePortal({ token }: { token: string }) { const [quote, setQuote] = useState<any>(null); const [error, setError] = useState(''); const [loading, setLoading] = useState(true); const [sending, setSending] = useState(false); useEffect(() => { fetch('/api/quote-portal?token=' + encodeURIComponent(token)).then(r => r.json()).then(data => { if (data.error) setError(data.error); else setQuote(data.quote) }).catch(() => setError('Não foi possível carregar este orçamento.')).finally(() => setLoading(false)) }, [token]); const decide = async (action: 'approve' | 'reject') => { setSending(true); const response = await fetch('/api/quote-portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, action }) }); const data = await response.json(); if (data.error) setError(data.error); else setQuote(data.quote); setSending(false) }; if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-100 font-mono text-sm text-slate-500">Carregando orçamento...</div>; if (error || !quote) return <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4 text-center text-sm text-slate-600">{error || 'Link não encontrado.'}</div>; const contact = 'https://wa.me/5573988343028?text=' + encodeURIComponent('Olá! Estou falando sobre o orçamento ' + quote.id + '.'); const decided = quote.status === 'Aprovado' || quote.status === 'Reprovado'; return <div className="min-h-screen bg-slate-100 p-4 text-slate-900"><div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"><div className="mb-6 text-center"><div className="text-lg font-black text-blue-600">ANDRADETECH</div><div className="mt-1 text-sm text-slate-500">Consulta de orçamento</div></div><div className="space-y-3 rounded-xl bg-slate-50 p-4 text-sm"><div><span className="text-slate-400">Orçamento</span><div className="font-bold">{quote.id}</div></div><div><span className="text-slate-400">Equipamento</span><div className="font-bold">{quote.device}</div></div><div><span className="text-slate-400">Descrição</span><div>{quote.description}</div></div><div className="border-t pt-3"><span className="text-slate-400">Valor do orçamento</span><div className="text-2xl font-black text-blue-600">R$ {Number(quote.value || 0).toFixed(2)}</div></div></div>{decided ? <div className="mt-5 rounded-xl bg-green-50 p-3 text-center text-sm font-semibold text-green-700">Resposta registrada: {quote.status}. O pagamento será realizado somente na retirada do equipamento.</div> : <div className="mt-5 space-y-2"><button disabled={sending} onClick={() => decide('approve')} className="w-full rounded-xl bg-green-600 px-4 py-3 text-sm font-bold text-white">Aprovar orçamento</button><a href={contact} target="_blank" rel="noreferrer" className="block w-full rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-bold text-white">Entrar em contato</a><button disabled={sending} onClick={() => decide('reject')} className="w-full rounded-xl border border-red-200 px-4 py-3 text-sm font-bold text-red-600">Reprovar orçamento</button><p className="pt-2 text-center text-xs text-slate-400">Nenhum pagamento é solicitado nesta página.</p></div>}</div></div> } function ProductModal({
   onClose,
   onSave,
   productToEdit,
@@ -3576,7 +3578,7 @@ export default function App() {
           value: Number(q.value) || 0,
           validUntil: q.valid_until || '',
           createdAt: q.created_at ? new Date(q.created_at).toLocaleDateString('pt-BR') : '',
-          status: q.status || 'Pendente',
+          status: q.status || 'Pendente', publicToken: q.public_token || '',
           items: Array.isArray(q.items) ? q.items : [],
         })))
       }
@@ -3978,7 +3980,7 @@ export default function App() {
     }
   }
 
-  if (authLoading) {
+  const quotePortalToken = new URLSearchParams(window.location.search).get('orcamento'); if (quotePortalToken) return <QuotePortal token={quotePortalToken} />; if (authLoading) {
     return (
       <div className={`flex h-screen items-center justify-center font-mono text-xs ${isDark ? 'bg-[#0a0a0a] text-neutral-400' : 'bg-slate-100 text-slate-500'}`}>
         Conectando com o banco de dados...
