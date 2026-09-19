@@ -1325,7 +1325,41 @@ function QuotesScreen({
   onDeleteQuote: (id: string) => void
   onOpenMenu: () => void
 }) {
-  const safeQuotes = Array.isArray(quotes) ? quotes : []; const sendQuoteOnWhatsApp = async (q: Quote) => { const token = q.publicToken || crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, ''); const parts = (q.validUntil || '').split('/'); const expiry = parts.length === 3 ? new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]), 23, 59, 59, 999) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); const { error } = await supabase.from('quotes').update({ public_token: token, link_expires_at: expiry.toISOString() }).eq('id', q.id); if (error) return alert('Não foi possível gerar o link de consulta: ' + error.message); const link = window.location.origin + '?orcamento=' + token; const message = 'Segue orçamento da ' + (q.device || 'máquina') + ' que você trouxe na AndradeTech. ' + link; const phone = (q.phone || '').replace(/\D/g, ''); if (!phone) return alert('Telefone do cliente não informado!'); window.open('https://wa.me/55' + phone + '?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer') }
+  const safeQuotes = Array.isArray(quotes) ? quotes : []
+
+  const sendQuoteOnWhatsApp = async (q: Quote) => {
+    const phone = (q.phone || '').replace(/\D/g, '')
+    if (!phone) {
+      alert('Este orçamento não possui telefone cadastrado. Edite o orçamento e informe o telefone do cliente.')
+      return
+    }
+
+    const token = q.publicToken || crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
+    const parts = (q.validUntil || '').split('/')
+    const expiry = parts.length === 3
+      ? new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]), 23, 59, 59, 999)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const link = window.location.origin + '?orcamento=' + token
+    const message = 'Segue orçamento da ' + (q.device || 'máquina') + ' que você trouxe na AndradeTech. ' + link
+    const whatsappUrl = 'https://wa.me/' + (phone.startsWith('55') ? phone : '55' + phone) + '?text=' + encodeURIComponent(message)
+
+    // Abre dentro do gesto do clique; assim o navegador não bloqueia o WhatsApp após o await.
+    const whatsappWindow = window.open('about:blank', '_blank')
+
+    try {
+      const { error } = await supabase
+        .from('quotes')
+        .update({ public_token: token, link_expires_at: expiry.toISOString() })
+        .eq('id', q.id)
+      if (error) throw error
+
+      if (whatsappWindow) whatsappWindow.location.replace(whatsappUrl)
+      else window.location.assign(whatsappUrl)
+    } catch (error: any) {
+      whatsappWindow?.close()
+      alert('Não foi possível gerar o link de consulta: ' + (error?.message || 'erro desconhecido'))
+    }
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
