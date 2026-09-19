@@ -3084,15 +3084,143 @@ function ClientModal({
 }
 
 function RevenueScreen({ sales = [], orders = [], isDark, onOpenMenu }: { sales: Sale[]; orders: Order[]; isDark: boolean; onOpenMenu: () => void }) {
-  const [months, setMonths] = useState<1 | 2 | 3>(1)
-  const parseDate = (value: string) => { const p = (value || '').split('/'); return p.length === 3 ? new Date(Number(p[2]), Number(p[1]) - 1, Number(p[0]), 12) : new Date(0) }
-  const today = new Date(); const monday = new Date(today); monday.setHours(0,0,0,0); monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7)); const start = new Date(today); start.setHours(0,0,0,0); start.setMonth(start.getMonth() - months + 1); start.setDate(1)
-  const finalized = (status: string) => ['finalizado','concluído','concluido','entregue'].includes((status || '').toLowerCase())
-  const records = [...sales.map(s => ({ id:s.id, date:s.date, client:s.client, payment:s.payment_method, total:Number(s.total||0), source:'PDV' })), ...orders.filter(o => finalized(o.status)).map(o => ({ id:o.id, date:o.date, client:o.client, payment:o.status, total:Number(o.value||0), source:'OS' }))]
-  const inRange = records.filter(r => parseDate(r.date) >= start); const sameDay = (d: Date, n: Date) => d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate(); const total = (list: any[]) => list.reduce((v,r) => v + r.total, 0); const money = (v:number) => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); const todayTotal=total(records.filter(r=>sameDay(parseDate(r.date),today))); const weekTotal=total(records.filter(r=>parseDate(r.date)>=monday)); const monthTotal=total(records.filter(r=>{const d=parseDate(r.date);return d.getFullYear()===today.getFullYear()&&d.getMonth()===today.getMonth()})); const panel = isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm';
-  return <div className="flex flex-1 flex-col overflow-hidden"><Topbar title="Faturamento" isDark={isDark} onOpenMobileMenu={onOpenMenu}/><div className="flex-1 overflow-y-auto p-4 sm:p-5"><div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-base font-bold">Relatório de Faturamento</h2><p className="text-xs text-neutral-400">Vendas do PDV e Ordens de Serviço concluídas</p></div><select value={months} onChange={e=>setMonths(Number(e.target.value) as 1|2|3)} className={isDark ? 'rounded-lg border border-neutral-800 bg-[#111] px-3 py-2 text-xs text-white' : 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs'}><option value={1}>Este mês</option><option value={2}>Últimos 2 meses</option><option value={3}>Últimos 3 meses</option></select></div><div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">{[{l:'Hoje',v:todayTotal,c:'#0066FF'},{l:'Esta semana',v:weekTotal,c:'#8A2BE2'},{l:'Este mês',v:monthTotal,c:'#10B981'},{l:'Período selecionado',v:total(inRange),c:'#F59E0B'}].map(x=><div key={x.l} className={'rounded-xl border p-4 '+panel}><div className="font-mono text-[10px] uppercase text-neutral-400">{x.l}</div><div className="mt-2 text-xl font-black" style={{color:x.c}}>{money(x.v)}</div></div>)}</div><div className={'mt-5 overflow-hidden rounded-xl border '+panel}><div className="border-b px-4 py-3 text-sm font-bold">Movimentações <span className="font-mono text-xs text-neutral-400">({inRange.length})</span></div><div className="overflow-x-auto"><table className="w-full min-w-[650px] text-xs"><thead className={isDark?'bg-[#0e0e0e] text-neutral-400':'bg-slate-50 text-slate-400'}><tr><th className="px-4 py-3 text-left font-mono uppercase">Data</th><th className="px-4 py-3 text-left font-mono uppercase">Origem</th><th className="px-4 py-3 text-left font-mono uppercase">Cliente</th><th className="px-4 py-3 text-left font-mono uppercase">Identificação</th><th className="px-4 py-3 text-right font-mono uppercase">Faturamento</th></tr></thead><tbody className={isDark?'divide-y divide-neutral-800':'divide-y divide-slate-100'}>{inRange.sort((a,b)=>parseDate(b.date).getTime()-parseDate(a.date).getTime()).map(r=><tr key={r.source+r.id}><td className="px-4 py-3 font-mono text-neutral-400">{r.date}</td><td className="px-4 py-3"><span className="rounded bg-blue-500/10 px-2 py-1 font-mono text-[10px] text-blue-500">{r.source}</span></td><td className="px-4 py-3 font-semibold">{r.client}</td><td className="px-4 py-3 font-mono text-neutral-400">#{r.id}</td><td className="px-4 py-3 text-right font-mono font-bold text-green-500">{money(r.total)}</td></tr>)}</tbody></table>{!inRange.length&&<div className="p-10 text-center text-xs text-neutral-400">Nenhum faturamento registrado no período.</div>}</div></div></div></div>
-}
+  type PeriodPreset = 'today' | '7days' | '15days' | 'month' | 'custom'
+  const [period, setPeriod] = useState<PeriodPreset>('month')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
+  const [showReport, setShowReport] = useState(false)
 
+  const parseDate = (value: string) => {
+    const parts = (value || '').split('/')
+    return parts.length === 3 ? new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]), 12) : new Date(0)
+  }
+  const toInputDate = (value: Date) => {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    const day = String(value.getDate()).padStart(2, '0')
+    return year + '-' + month + '-' + day
+  }
+  const fromInputDate = (value: string, end = false) => {
+    if (!value) return null
+    const date = new Date(value + (end ? 'T23:59:59' : 'T00:00:00'))
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+  const atStartOfDay = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate())
+  const today = atStartOfDay(new Date())
+  const periodConfig: Record<Exclude<PeriodPreset, 'custom'>, { label: string; start: Date }> = {
+    today: { label: 'Hoje', start: today },
+    '7days': { label: 'Últimos 7 dias', start: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6) },
+    '15days': { label: 'Últimos 15 dias', start: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 14) },
+    month: { label: 'Este mês', start: new Date(today.getFullYear(), today.getMonth(), 1) },
+  }
+  const fallbackStart = new Date(today.getFullYear(), today.getMonth(), 1)
+  const selectedStart = period === 'custom' ? (fromInputDate(customStart) || fallbackStart) : periodConfig[period].start
+  const selectedEnd = period === 'custom' ? (fromInputDate(customEnd, true) || new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)) : new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
+  const selectedLabel = period === 'custom'
+    ? (customStart && customEnd ? customStart.split('-').reverse().join('/') + ' a ' + customEnd.split('-').reverse().join('/') : 'Intervalo personalizado')
+    : periodConfig[period].label
+
+  const finalized = (status: string) => ['finalizado', 'concluído', 'concluido', 'entregue'].includes((status || '').toLowerCase())
+  const records = [
+    ...sales.map(s => ({ id: s.id, date: s.date, client: s.client, payment: s.payment_method, total: Number(s.total || 0), source: 'PDV' })),
+    ...orders.filter(o => finalized(o.status)).map(o => ({ id: o.id, date: o.date, client: o.client, payment: o.status, total: Number(o.value || 0), source: 'OS' })),
+  ]
+  const between = (date: Date, start: Date, end: Date) => date >= start && date <= end
+  const inRange = records.filter(record => between(parseDate(record.date), selectedStart, selectedEnd))
+  const lastDays = (days: number) => records.filter(record => parseDate(record.date) >= new Date(today.getFullYear(), today.getMonth(), today.getDate() - days + 1))
+  const monthRecords = records.filter(record => {
+    const date = parseDate(record.date)
+    return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth()
+  })
+  const total = (list: Array<{ total: number }>) => list.reduce((sum, record) => sum + record.total, 0)
+  const money = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const panel = isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white shadow-sm'
+  const sortedRecords = [...inRange].sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime())
+
+  const changePeriod = (value: PeriodPreset) => {
+    setPeriod(value)
+    if (value !== 'custom') return
+    if (!customStart) setCustomStart(toInputDate(fallbackStart))
+    if (!customEnd) setCustomEnd(toInputDate(today))
+  }
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Topbar title="Faturamento" isDark={isDark} onOpenMobileMenu={onOpenMenu} />
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <h2 className="text-base font-bold">Relatório de Faturamento</h2>
+            <p className="text-xs text-neutral-400">Vendas do PDV e Ordens de Serviço concluídas</p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <select value={period} onChange={event => changePeriod(event.target.value as PeriodPreset)} className={isDark ? 'rounded-lg border border-neutral-800 bg-[#111] px-3 py-2 text-xs text-white' : 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs'}>
+              <option value="today">Hoje</option>
+              <option value="7days">Últimos 7 dias</option>
+              <option value="15days">Últimos 15 dias</option>
+              <option value="month">Este mês</option>
+              <option value="custom">Selecionar período</option>
+            </select>
+            {period === 'custom' && <>
+              <input type="date" value={customStart} max={toInputDate(today)} onChange={event => setCustomStart(event.target.value)} className={isDark ? 'rounded-lg border border-neutral-800 bg-[#111] px-3 py-2 text-xs text-white' : 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs'} title="Data inicial" />
+              <input type="date" value={customEnd} min={customStart || undefined} max={toInputDate(today)} onChange={event => setCustomEnd(event.target.value)} className={isDark ? 'rounded-lg border border-neutral-800 bg-[#111] px-3 py-2 text-xs text-white' : 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs'} title="Data final" />
+            </>}
+            <button type="button" onClick={() => setShowReport(true)} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3 py-2 text-xs font-bold text-white shadow hover:opacity-95">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+              Gerar Relatório
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            { label: 'Hoje', value: total(lastDays(1)), color: '#0066FF' },
+            { label: '7 dias', value: total(lastDays(7)), color: '#8A2BE2' },
+            { label: '15 dias', value: total(lastDays(15)), color: '#10B981' },
+            { label: 'Este mês', value: total(monthRecords), color: '#EC4899' },
+            { label: selectedLabel, value: total(inRange), color: '#F59E0B' },
+          ].map(item => <div key={item.label} className={'rounded-xl border p-4 ' + panel}>
+            <div className="truncate font-mono text-[10px] uppercase text-neutral-400">{item.label}</div>
+            <div className="mt-2 text-xl font-black" style={{ color: item.color }}>{money(item.value)}</div>
+          </div>)}
+        </div>
+
+        <div className={'mt-5 overflow-hidden rounded-xl border ' + panel}>
+          <div className="border-b px-4 py-3 text-sm font-bold">Movimentações <span className="font-mono text-xs text-neutral-400">({sortedRecords.length}) · {selectedLabel}</span></div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[650px] text-xs">
+              <thead className={isDark ? 'bg-[#0e0e0e] text-neutral-400' : 'bg-slate-50 text-slate-400'}><tr><th className="px-4 py-3 text-left font-mono uppercase">Data</th><th className="px-4 py-3 text-left font-mono uppercase">Origem</th><th className="px-4 py-3 text-left font-mono uppercase">Cliente</th><th className="px-4 py-3 text-left font-mono uppercase">Identificação</th><th className="px-4 py-3 text-right font-mono uppercase">Faturamento</th></tr></thead>
+              <tbody className={isDark ? 'divide-y divide-neutral-800' : 'divide-y divide-slate-100'}>{sortedRecords.map(record => <tr key={record.source + record.id}><td className="px-4 py-3 font-mono text-neutral-400">{record.date}</td><td className="px-4 py-3"><span className="rounded bg-blue-500/10 px-2 py-1 font-mono text-[10px] text-blue-500">{record.source}</span></td><td className="px-4 py-3 font-semibold">{record.client}</td><td className="px-4 py-3 font-mono text-neutral-400">#{record.id}</td><td className="px-4 py-3 text-right font-mono font-bold text-green-500">{money(record.total)}</td></tr>)}</tbody>
+            </table>
+            {!sortedRecords.length && <div className="p-10 text-center text-xs text-neutral-400">Nenhum faturamento registrado no período.</div>}
+          </div>
+        </div>
+      </div>
+
+      {showReport && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-3 backdrop-blur-sm sm:p-4">
+        <style>{`
+          @page { size: A4 portrait; margin: 10mm; }
+          @media print {
+            body * { visibility: hidden; }
+            #revenue-print-area, #revenue-print-area * { visibility: visible; }
+            #revenue-print-area { position: fixed; left: 0; top: 0; width: 100% !important; margin: 0 !important; padding: 0 !important; background: white !important; color: black !important; }
+          }
+        `}</style>
+        <div className={isDark ? 'flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-[#111] text-white shadow-2xl' : 'flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl'}>
+          <div className={isDark ? 'flex items-center justify-between border-b border-neutral-800 bg-[#161616] px-5 py-3.5 print:hidden' : 'flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3.5 print:hidden'}>
+            <span className="text-sm font-bold">Relatório de Faturamento</span>
+            <div className="flex items-center gap-2"><button type="button" onClick={() => window.print()} className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] px-3.5 py-1.5 text-xs font-bold text-white shadow hover:opacity-95"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>Imprimir / Salvar PDF</button><button type="button" onClick={() => setShowReport(false)} className="rounded-lg p-1.5 text-neutral-400 hover:text-red-500"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+          </div>
+          <div className="flex-1 overflow-y-auto bg-neutral-200/50 p-4 sm:p-6"><div id="revenue-print-area" className="mx-auto w-full max-w-[210mm] bg-white p-8 text-xs text-black shadow-md sm:p-10">
+            <div className="mb-5 flex items-center justify-between border-b-2 border-slate-900 pb-4"><div className="flex items-center gap-3"><img src={LOGO_URL} alt="Logo" className="h-14 w-14 object-contain"/><div><h1 className="text-xl font-black tracking-tight text-slate-900">ANDRADETECH</h1><p className="text-[11px] font-semibold text-slate-600">Assistência Técnica em Informática e Acessórios</p><p className="text-[10px] text-slate-500">São João do Paraíso - BA | WhatsApp / Tel: (73) 98834-3028</p><p className="text-[10px] text-slate-500">E-mail: andrade.tech2026@gmail.com</p></div></div><div className="text-right"><span className="rounded border border-slate-300 bg-slate-100 px-2 py-1 font-mono text-[10px] font-bold uppercase">Relatório de Faturamento</span><div className="mt-2 font-mono text-[10px] text-slate-500">Gerado em: {toInputDate(today).split('-').reverse().join('/')}</div></div></div>
+            <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-4"><div className="mb-1 font-mono text-[10px] font-bold uppercase text-slate-400">Período selecionado</div><div className="text-sm font-bold text-slate-800">{selectedLabel}</div><div className="mt-2 text-2xl font-black text-green-600">{money(total(inRange))}</div></div>
+            <div className="overflow-hidden rounded-lg border border-slate-200"><table className="w-full text-left"><thead className="border-b border-slate-200 bg-slate-100 font-mono text-[10px] uppercase text-slate-600"><tr><th className="p-2.5">Data</th><th className="p-2.5">Origem</th><th className="p-2.5">Cliente</th><th className="p-2.5">Identificação</th><th className="p-2.5 text-right">Valor</th></tr></thead><tbody className="divide-y divide-slate-200 text-[11px]">{sortedRecords.map(record => <tr key={'report-' + record.source + record.id}><td className="p-2.5 font-mono">{record.date}</td><td className="p-2.5">{record.source}</td><td className="p-2.5 font-medium">{record.client}</td><td className="p-2.5 font-mono">#{record.id}</td><td className="p-2.5 text-right font-mono font-bold">{money(record.total)}</td></tr>)}</tbody><tfoot><tr className="border-t-2 border-slate-300 bg-slate-100 font-mono"><td colSpan={4} className="p-3 text-right font-bold uppercase">Total faturado</td><td className="p-3 text-right text-base font-black text-green-600">{money(total(inRange))}</td></tr></tfoot></table>{!sortedRecords.length && <div className="p-8 text-center text-slate-500">Nenhum faturamento registrado no período.</div>}</div>
+          </div></div>
+        </div>
+      </div>}
+    </div>
+  )
+}
 function QuotePortal({ token }: { token: string }) { const [quote, setQuote] = useState<any>(null); const [error, setError] = useState(''); const [loading, setLoading] = useState(true); const [sending, setSending] = useState(false); useEffect(() => { fetch('/api/quote-portal?token=' + encodeURIComponent(token)).then(r => r.json()).then(data => { if (data.error) setError(data.error); else setQuote(data.quote) }).catch(() => setError('Não foi possível carregar este orçamento.')).finally(() => setLoading(false)) }, [token]); const decide = async (action: 'approve' | 'reject') => { setSending(true); const response = await fetch('/api/quote-portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, action }) }); const data = await response.json(); if (data.error) setError(data.error); else setQuote(data.quote); setSending(false) }; if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-100 font-mono text-sm text-slate-500">Carregando orçamento...</div>; if (error || !quote) return <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4 text-center text-sm text-slate-600">{error || 'Link não encontrado.'}</div>; const contact = 'https://wa.me/5573988343028?text=' + encodeURIComponent('Olá! Estou falando sobre o orçamento ' + quote.id + '.'); const decided = quote.status === 'Aprovado' || quote.status === 'Reprovado'; return <div className="min-h-screen bg-slate-100 p-4 text-slate-900"><div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"><div className="mb-6 text-center"><div className="text-lg font-black text-blue-600">ANDRADETECH</div><div className="mt-1 text-sm text-slate-500">Consulta de orçamento</div></div><div className="space-y-3 rounded-xl bg-slate-50 p-4 text-sm"><div><span className="text-slate-400">Orçamento</span><div className="font-bold">{quote.id}</div></div><div><span className="text-slate-400">Equipamento</span><div className="font-bold">{quote.device}</div></div><div><span className="text-slate-400">Descrição</span><div>{quote.description}</div></div><div className="border-t pt-3"><span className="text-slate-400">Valor do orçamento</span><div className="text-2xl font-black text-blue-600">R$ {Number(quote.value || 0).toFixed(2)}</div></div></div>{decided ? <div className="mt-5 rounded-xl bg-green-50 p-3 text-center text-sm font-semibold text-green-700">Resposta registrada: {quote.status}. O pagamento será realizado somente na retirada do equipamento.</div> : <div className="mt-5 space-y-2"><button disabled={sending} onClick={() => decide('approve')} className="w-full rounded-xl bg-green-600 px-4 py-3 text-sm font-bold text-white">Aprovar orçamento</button><a href={contact} target="_blank" rel="noreferrer" className="block w-full rounded-xl bg-[#25D366] px-4 py-3 text-center text-sm font-bold text-white">Entrar em contato</a><button disabled={sending} onClick={() => decide('reject')} className="w-full rounded-xl border border-red-200 px-4 py-3 text-sm font-bold text-red-600">Reprovar orçamento</button><p className="pt-2 text-center text-xs text-slate-400">Nenhum pagamento é solicitado nesta página.</p></div>}</div></div> } function ProductModal({
   onClose,
   onSave,
