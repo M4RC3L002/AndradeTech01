@@ -3083,7 +3083,6 @@ function ClientModal({
   )
 }
 
-
 function RevenueScreen({ sales = [], orders = [], isDark, onOpenMenu }: { sales: Sale[]; orders: Order[]; isDark: boolean; onOpenMenu: () => void }) {
   const [months, setMonths] = useState<1 | 2 | 3>(1)
   const parseDate = (value: string) => { const p = (value || '').split('/'); return p.length === 3 ? new Date(Number(p[2]), Number(p[1]) - 1, Number(p[0]), 12) : new Date(0) }
@@ -4039,7 +4038,7 @@ export default function App() {
 
   // Filtra itens de menu de acordo com as permissões do perfil do usuário logado
   const allowedNavItems = BASE_NAV_ITEMS.filter(item =>
-    item.id === 'users' || item.id === 'revenue'
+    item.id === 'users'
       ? currentUserProfile?.role === 'admin'
       : currentUserProfile?.modules ? currentUserProfile.modules.includes(item.id) : true
   )
@@ -4050,4 +4049,402 @@ export default function App() {
   return (
     <div className={`flex h-screen overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-slate-100 text-slate-900'}`}>
       <aside className={`hidden h-screen flex-shrink-0 flex-col border-r transition-colors md:flex ${
-        [Truncated]
+        isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white'
+      }`} style={{ width: 230 }}>
+        
+        <div className={`flex flex-col gap-3 border-b p-4 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div className="flex items-center gap-3">
+            <AppLogo size={38} />
+            <div>
+              <div className="text-sm font-extrabold tracking-tight bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] bg-clip-text text-transparent">
+                AndradeTech
+              </div>
+              <div className="font-mono text-[10px] text-neutral-400">
+                {currentUserProfile?.name || 'Assistência Técnica'}
+              </div>
+            </div>
+          </div>
+          <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+        </div>
+
+        <nav className="flex-1 space-y-1.5 px-3 py-4">
+          {allowedNavItems.map(item => {
+            const isActive = screen === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setScreen(item.id)}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs font-semibold transition-all ${
+                  isActive
+                    ? 'bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] text-white shadow-md shadow-blue-500/20'
+                    : isDark ? 'text-neutral-400 hover:bg-neutral-800/60 hover:text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className={`border-t p-3 pb-2 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+          <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-widest text-neutral-400">
+            Técnicos Online ({onlineUsers.length})
+          </div>
+          <div className="mb-3 max-h-24 space-y-1.5 overflow-y-auto px-1">
+            {onlineUsers.map(u => (
+              <div key={u.user_id} className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
+                <span className={`truncate text-[11px] font-medium ${isDark ? 'text-neutral-300' : 'text-slate-700'}`} title={u.email}>
+                  {u.email ? u.email.split('@')[0] : 'Técnico'}
+                </span>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors ${
+              isDark ? 'text-neutral-400 hover:bg-neutral-800 hover:text-red-400' : 'text-slate-500 hover:bg-slate-100 hover:text-red-500'
+            }`}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+            <span>Encerrar Sessão</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Drawer Mobile */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex bg-black/80 md:hidden backdrop-blur-sm">
+          <div className={`flex h-full w-64 flex-col border-r p-4 transition-colors ${
+            isDark ? 'border-neutral-800 bg-[#111]' : 'border-slate-200 bg-white'
+          }`}>
+            <div className={`mb-4 flex items-center justify-between border-b pb-4 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div className="flex items-center gap-2.5">
+                <AppLogo size={32} />
+                <span className="text-sm font-extrabold bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] bg-clip-text text-transparent">
+                  AndradeTech
+                </span>
+              </div>
+              <button type="button" onClick={() => setMobileMenuOpen(false)} className="p-1 text-neutral-400 hover:text-red-400">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+            </div>
+
+            <div className="flex-1 space-y-1.5">
+              {allowedNavItems.map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setScreen(item.id)
+                    setMobileMenuOpen(false)
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold ${
+                    screen === item.id
+                      ? 'bg-gradient-to-r from-[#0066FF] to-[#8A2BE2] text-white shadow-md'
+                      : isDark ? 'text-neutral-400 hover:bg-neutral-800' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className={`mt-auto border-t pt-3 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+              <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-widest text-neutral-400">
+                Técnicos Online ({onlineUsers.length})
+              </div>
+              <div className="mb-3 max-h-24 space-y-1.5 overflow-y-auto px-1">
+                {onlineUsers.map(u => (
+                  <div key={u.user_id} className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
+                    <span className={`truncate text-[11px] font-medium ${isDark ? 'text-neutral-300' : 'text-slate-700'}`} title={u.email}>
+                      {u.email ? u.email.split('@')[0] : 'Técnico'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-neutral-400 hover:text-red-400"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                <span>Sair da Conta</span>
+              </button>
+            </div>
+          </div>
+          <div className="flex-1" onClick={() => setMobileMenuOpen(false)} />
+        </div>
+      )}
+
+      {/* Área Principal */}
+      <main className="flex flex-1 flex-col overflow-hidden pb-14 md:pb-0">
+        {screen === 'dashboard' && (
+          <DashboardScreen
+            orders={orders}
+            quotes={quotes}
+            statuses={statuses}
+            isDark={isDark}
+            onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
+            onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
+            onNewClient={handleOpenNewClient}
+            onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
+            onPrintOrder={(o) => { setOrderToPrint(o); setPrintDocumentKind('order') }}
+            onOpenMenu={() => setMobileMenuOpen(true)}
+          />
+        )}
+        {screen === 'orders' && (
+          <OrdersScreen
+            orders={orders}
+            statuses={statuses}
+            isDark={isDark}
+            onNewOrder={() => { setOrderEditing(null); setShowOrderModal(true) }}
+            onEditOrder={(o) => { setOrderEditing(o); setShowOrderModal(true) }}
+            onPrintOrder={(o) => { setOrderToPrint(o); setPrintDocumentKind('order') }}
+            onDeleteOrder={handleDeleteOrder}
+            onOpenMenu={() => setMobileMenuOpen(true)}
+          />
+        )}
+        {screen === 'quotes' && (
+          <QuotesScreen
+            quotes={quotes}
+            isDark={isDark}
+            onNewQuote={() => { setQuoteEditing(null); setShowQuoteModal(true) }}
+            onEditQuote={(q) => {
+              setQuoteEditing(q)
+              setShowQuoteModal(true)
+            }}
+            onUpdateStatus={handleUpdateQuoteStatus}
+            onPrintQuote={(q) => {
+              setOrderToPrint({
+                id: q.id,
+                client: q.client,
+                phone: q.phone,
+                device: q.device,
+                service: q.description,
+                status: q.status,
+                value: q.value,
+                date: q.createdAt,
+                technician: currentUserProfile?.name || 'AndradeTech',
+                notes: q.description,
+                items: q.items,
+              })
+              setPrintDocumentKind('quote')
+            }}
+            onDeleteQuote={handleDeleteQuote}
+            onOpenMenu={() => setMobileMenuOpen(true)}
+          />
+        )}
+        {screen === 'pdv' && (
+          <PDVScreen
+            products={products}
+            clients={clients}
+            sales={sales}
+            isDark={isDark}
+            onCompleteSale={handleCompleteSale}
+            onDeleteSale={handleDeleteSale}
+            onPrintSale={(sale) => {
+              setPrintDocumentKind('sale')
+              setOrderToPrint({
+                id: sale.id,
+                client: sale.client,
+                phone: sale.phone,
+                device: 'Venda de Balcão (PDV)',
+                service: `Pagamento: ${sale.payment_method}`,
+                status: sale.payment_method,
+                value: sale.total,
+                date: sale.date,
+                technician: currentUserProfile?.name || 'Frente de Caixa',
+                notes: `Comprovante de Compra no PDV. Pagamento via ${sale.payment_method}.`,
+                items: sale.items,
+              })
+            }}
+            onOpenMenu={() => setMobileMenuOpen(true)}
+          />
+        )}
+        {screen === 'revenue' && (
+          <RevenueScreen sales={sales} orders={orders} isDark={isDark} onOpenMenu={() => setMobileMenuOpen(true)} />
+        )}
+        {screen === 'clients' && (
+          <ClientsScreen
+            clients={clients}
+            isDark={isDark}
+            onNewClient={handleOpenNewClient}
+            onEditClient={handleOpenEditClient}
+            onDeleteClient={handleDeleteClient}
+            onOpenMenu={() => setMobileMenuOpen(true)}
+          />
+        )}
+        {screen === 'users' && (
+          <UsersScreen
+            profiles={profiles}
+            onlineUsers={onlineUsers}
+            currentUserProfile={currentUserProfile}
+            isDark={isDark}
+            onOpenNewUser={() => { setUserEditing(null); setShowUserModal(true) }}
+            onEditUser={(u) => { setUserEditing(u); setShowUserModal(true) }}
+            onForceDisconnect={handleForceDisconnect}
+            onDeleteUser={handleDeleteUser}
+            onOpenMenu={() => setMobileMenuOpen(true)}
+          />
+        )}
+        {screen === 'settings' && (
+          <SettingsScreen
+            services={services}
+            products={products}
+            statuses={statuses}
+            isDark={isDark}
+            onOpenProductModal={() => { setProductEditing(null); setShowProductModal(true) }}
+            onEditProduct={(p) => { setProductEditing(p); setShowProductModal(true) }}
+            onOpenServiceModal={() => setShowServiceModal(true)}
+            onOpenStatusModal={() => setShowStatusModal(true)}
+            onDeleteProduct={async (id) => {
+              setProducts(prev => prev.filter(p => p.id !== id))
+              await supabase.from('products').delete().eq('id', id)
+            }}
+            onDeleteService={async (id) => {
+              setServices(prev => prev.filter(s => s.id !== id))
+              await supabase.from('services').delete().eq('id', id)
+            }}
+            onDeleteStatus={async (id) => {
+              setStatuses(prev => prev.filter(s => s.id !== id))
+              await supabase.from('statuses').delete().eq('id', id)
+            }}
+            onOpenMenu={() => setMobileMenuOpen(true)}
+          />
+        )}
+      </main>
+
+      {/* Modais Globais */}
+      {showOrderModal && (
+        <OrderModal
+          onClose={() => {
+            setShowOrderModal(false)
+            setOrderEditing(null)
+          }}
+          clients={clients}
+          statuses={statuses}
+          services={services}
+          products={products}
+          profiles={profiles}
+          onSave={handleSaveOrder}
+          onQuickNewClient={handleOpenNewClient}
+          orderToEdit={orderEditing}
+          isDark={isDark}
+        />
+      )}
+
+      {showQuoteModal && (
+        <QuoteModal
+          onClose={() => {
+            setShowQuoteModal(false)
+            setQuoteEditing(null)
+          }}
+          clients={clients}
+          services={services}
+          products={products}
+          onSave={handleSaveQuote}
+          onQuickNewClient={handleOpenNewClient}
+          quoteToEdit={quoteEditing}
+          isDark={isDark}
+        />
+      )}
+
+      {showClientModal && (
+        <ClientModal
+          onClose={() => {
+            setShowClientModal(false)
+            setClientEditing(null)
+          }}
+          onSave={handleSaveClient}
+          clientToEdit={clientEditing}
+          isDark={isDark}
+        />
+      )}
+
+      {showUserModal && (
+        <UserModal
+          userToEdit={userEditing}
+          onClose={() => { setShowUserModal(false); setUserEditing(null) }}
+          onSave={handleSaveUser}
+          isDark={isDark}
+        />
+      )}
+
+      {showProductModal && (
+        <ProductModal
+          onClose={() => { setShowProductModal(false); setProductEditing(null) }}
+          productToEdit={productEditing}
+          existingCategories={products.map(p => p.category)}
+          existingBrands={products.map(p => p.brand || '').filter(Boolean)}
+          onSave={async (prod) => {
+            const exists = products.some(p => p.id === prod.id)
+            setProducts(prev => exists ? prev.map(p => p.id === prod.id ? prod : p) : [prod, ...prev])
+            if (exists) {
+              await supabase.from('products').update({
+                name: prod.name,
+                brand: prod.brand,
+                category: prod.category,
+                cost_price: prod.cost_price,
+                sale_price: prod.sale_price,
+                stock: prod.stock,
+              }).eq('id', prod.id)
+            } else {
+              const { error } = await supabase.from('products').insert([prod]); if (error) { alert('Não foi possível salvar o produto: ' + error.message); await fetchData() }
+            }
+          }}
+          isDark={isDark}
+        />
+      )}
+
+      {showServiceModal && (
+        <ServiceModal
+          onClose={() => setShowServiceModal(false)}
+          onSave={async (svc) => {
+            setServices(prev => [svc, ...prev])
+            await supabase.from('services').insert([svc])
+          }}
+          isDark={isDark}
+        />
+      )}
+
+      {showStatusModal && (
+        <StatusModal
+          onClose={() => setShowStatusModal(false)}
+          onSave={async (st) => {
+            setStatuses(prev => [...prev, st])
+            await supabase.from('statuses').insert([st])
+          }}
+          isDark={isDark}
+        />
+      )}
+
+      {orderToPrint && (
+        <PrintModal
+          order={orderToPrint}
+          client={selectedClientForPrint}
+          onClose={() => { setOrderToPrint(null); setPrintDocumentKind('order') }}
+          isDark={isDark}
+          documentKind={printDocumentKind}
+        />
+      )}
+
+      {pixOrderPayment && (
+        <PixPaymentModal
+          payment={pixOrderPayment}
+          onClose={() => setPixOrderPayment(null)}
+          isDark={isDark}
+        />
+      )}
+    </div>
+  )
+}
