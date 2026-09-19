@@ -136,6 +136,7 @@ const ALL_MODULES: { id: Screen; label: string }[] = [
   { id: 'orders', label: 'Ordens de Serviço' },
   { id: 'quotes', label: 'Orçamentos & Propostas' },
   { id: 'pdv', label: 'Frente de Caixa (PDV)' },
+  { id: 'revenue', label: 'Faturamento & Relatórios' },
   { id: 'clients', label: 'Base de Clientes' },
   { id: 'users', label: 'Gestão de Usuários' },
   { id: 'settings', label: 'Configurações & Ajustes' },
@@ -4038,7 +4039,7 @@ export default function App() {
 
   // Filtra itens de menu de acordo com as permissões do perfil do usuário logado
   const allowedNavItems = BASE_NAV_ITEMS.filter(item =>
-    item.id === 'users'
+    item.id === 'users' || item.id === 'revenue'
       ? currentUserProfile?.role === 'admin'
       : currentUserProfile?.modules ? currentUserProfile.modules.includes(item.id) : true
   )
